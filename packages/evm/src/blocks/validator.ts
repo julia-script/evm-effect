@@ -1,13 +1,5 @@
-/**
- * Block Header Validation Functions
- *
- * Direct port of header validation functions from ethereum/forks/osaka/fork.py.
- * All validation logic must match the Python implementation exactly.
- */
-
 import { keccak256 } from "@evm-effect/crypto";
-import { type Bytes, type Hash32, U64, Uint } from "@evm-effect/ethereum-types";
-import { type Extended, encode } from "@evm-effect/rlp";
+import { type Hash32, U64, Uint } from "@evm-effect/ethereum-types";
 import { Effect } from "effect";
 import type { BlockChain } from "../blockchain.js";
 import {
@@ -18,8 +10,14 @@ import {
   GAS_LIMIT_MINIMUM,
   TARGET_BLOB_GAS_PER_BLOCK,
 } from "../constants.js";
-import { InvalidBlock } from "../exceptions.js";
-import type { Header } from "../types/Block.js";
+import {
+  IncorrectBlockFormatError,
+  IncorrectExcessBlobGasError,
+  InvalidBaseFeePerGasError,
+  InvalidBlock,
+  InvalidGasLimitError,
+} from "../exceptions.js";
+import { encodeHeader, type Header } from "../types/Block.js";
 import { Fork } from "../vm/Fork.js";
 
 /**
@@ -39,20 +37,17 @@ import { Fork } from "../vm/Fork.js";
  * header :
  *     Header to check for correctness.
  *
- * Direct port of Python's validate_header function.
  */
 export const validateHeader = Effect.fn("validateHeader")(function* (
   chain: BlockChain,
   header: Header,
 ) {
-  // Block number must be at least 1
   if (header.number.value < 1n) {
     return yield* Effect.fail(
       new InvalidBlock({ message: "Block number must be at least 1" }),
     );
   }
 
-  // Get parent header
   const latestBlock = chain.latestBlock;
   if (!latestBlock) {
     return yield* Effect.fail(
@@ -61,24 +56,29 @@ export const validateHeader = Effect.fn("validateHeader")(function* (
   }
   const parentHeader = latestBlock.header;
 
-  // Validate excess blob gas (Cancun+ only)
   if (header.excessBlobGas !== undefined) {
     const excessBlobGas = yield* calculateExcessBlobGas(parentHeader);
     if (header.excessBlobGas.value !== excessBlobGas.value) {
       return yield* Effect.fail(
-        new InvalidBlock({ message: "Invalid excess blob gas" }),
+        new IncorrectExcessBlobGasError({
+          message: `Invalid excess blob gas: expected ${excessBlobGas.value}, got ${header.excessBlobGas.value}`,
+        }),
       );
     }
   }
 
-  // Gas used cannot exceed gas limit
   if (header.gasUsed.value > header.gasLimit.value) {
     return yield* Effect.fail(
       new InvalidBlock({ message: "Gas used exceeds gas limit" }),
     );
   }
 
-  // Validate base fee per gas (London+ only)
+  if (!(yield* checkGasLimit(header.gasLimit, parentHeader.gasLimit))) {
+    return yield* Effect.fail(
+      new InvalidGasLimitError({ message: "Invalid gas limit" }),
+    );
+  }
+
   if (
     header.baseFeePerGas !== undefined &&
     parentHeader.baseFeePerGas !== undefined
@@ -91,12 +91,11 @@ export const validateHeader = Effect.fn("validateHeader")(function* (
     );
     if (expectedBaseFeePerGas.value !== header.baseFeePerGas.value) {
       return yield* Effect.fail(
-        new InvalidBlock({ message: "Invalid base fee per gas" }),
+        new InvalidBaseFeePerGasError({ message: "Invalid base fee per gas" }),
       );
     }
   }
 
-  // Timestamp must be greater than parent timestamp
   if (header.timestamp.value <= parentHeader.timestamp.value) {
     return yield* Effect.fail(
       new InvalidBlock({
@@ -105,58 +104,49 @@ export const validateHeader = Effect.fn("validateHeader")(function* (
     );
   }
 
-  // Block number must be parent number + 1
   if (header.number.value !== parentHeader.number.value + 1n) {
     return yield* Effect.fail(
       new InvalidBlock({ message: "Block number must be parent number + 1" }),
     );
   }
 
-  // Extra data length must not exceed 32 bytes
   if (header.extraData.value.length > 32) {
     return yield* Effect.fail(
       new InvalidBlock({ message: "Extra data length exceeds 32 bytes" }),
     );
   }
 
-  // Get fork to check which EIPs are enabled
   const fork = yield* Fork;
 
-  // Validate blob fields presence based on fork (EIP-4844 / Cancun+)
   const hasBlobGasUsed = header.blobGasUsed !== undefined;
   const hasExcessBlobGas = header.excessBlobGas !== undefined;
   const hasParentBeaconBlockRoot = header.parentBeaconBlockRoot !== undefined;
 
   if (fork.eip(4844)) {
-    // Cancun+: All blob fields must be present
     if (!hasBlobGasUsed || !hasExcessBlobGas || !hasParentBeaconBlockRoot) {
       return yield* Effect.fail(
-        new InvalidBlock({
+        new IncorrectBlockFormatError({
           message: "Missing blob fields for Cancun+ block",
         }),
       );
     }
   } else {
-    // Pre-Cancun: No blob fields should be present
     if (hasBlobGasUsed || hasExcessBlobGas || hasParentBeaconBlockRoot) {
       return yield* Effect.fail(
-        new InvalidBlock({
+        new IncorrectBlockFormatError({
           message: "Blob fields present in pre-Cancun block",
         }),
       );
     }
   }
 
-  // Post-merge (EIP-3675 / Paris+) validations
   if (fork.eip(3675)) {
-    // Difficulty must be 0 (PoS)
     if (header.difficulty.value !== 0n) {
       return yield* Effect.fail(
         new InvalidBlock({ message: "Difficulty must be 0" }),
       );
     }
 
-    // Nonce must be zero (PoS)
     const expectedNonce = new Uint8Array(8);
     if (!arraysEqual(header.nonce.value, expectedNonce)) {
       return yield* Effect.fail(
@@ -164,7 +154,6 @@ export const validateHeader = Effect.fn("validateHeader")(function* (
       );
     }
 
-    // Ommers hash must be empty (PoS - no uncles)
     if (!arraysEqual(header.ommersHash.value, EMPTY_OMMER_HASH.value)) {
       return yield* Effect.fail(
         new InvalidBlock({ message: "Ommers hash must be empty" }),
@@ -172,7 +161,6 @@ export const validateHeader = Effect.fn("validateHeader")(function* (
     }
   }
 
-  // Validate parent hash
   const encodedParentHeader = encodeHeader(parentHeader);
   const blockParentHash = keccak256(encodedParentHeader);
   if (!arraysEqual(header.parentHash.value, blockParentHash.value)) {
@@ -201,7 +189,6 @@ export const validateHeader = Effect.fn("validateHeader")(function* (
  * base_fee_per_gas : `Uint`
  *     Base fee per gas for the block.
  *
- * Direct port of Python's calculate_base_fee_per_gas function.
  */
 const calculateBaseFeePerGas = (
   blockGasLimit: Uint,
@@ -289,7 +276,6 @@ const calculateBaseFeePerGas = (
  * recent_block_hashes : `List[Hash32]`
  *     Hashes of the recent 256 blocks in order of increasing block number.
  *
- * Direct port of Python's get_last_256_block_hashes function.
  */
 export const getLast256BlockHashes = (chain: BlockChain): Hash32[] => {
   const recentBlocks = chain.blocks.slice(-255);
@@ -305,9 +291,6 @@ export const getLast256BlockHashes = (chain: BlockChain): Hash32[] => {
     recentBlockHashes.push(prevBlockHash);
   }
 
-  // We are computing the hash only for the most recent block and not for
-  // the rest of the blocks as they have successors which have the hash of
-  // the current block as parent hash.
   const encodedHeader = encodeHeader(
     recentBlocks[recentBlocks.length - 1].header,
   );
@@ -347,7 +330,6 @@ export const getLast256BlockHashes = (chain: BlockChain): Hash32[] => {
  * check : `bool`
  *     True if gas limit constraints are satisfied, False otherwise.
  *
- * Direct port of Python's check_gas_limit function.
  */
 const checkGasLimit = (
   gasLimit: Uint,
@@ -385,13 +367,10 @@ const checkGasLimit = (
  * excess_blob_gas: `U64`
  *     The excess blob gas for the current block.
  *
- * Direct port of Python's calculate_excess_blob_gas function.
  */
 const calculateExcessBlobGas = Effect.fn("calculateExcessBlobGas")(function* (
   parentHeader: Header,
 ) {
-  // At the fork block, these are defined as zero.
-  // After the fork block, read them from the parent header (if present).
   const excessBlobGas =
     parentHeader.excessBlobGas !== undefined
       ? parentHeader.excessBlobGas
@@ -427,60 +406,13 @@ const arraysEqual = (a: Uint8Array, b: Uint8Array): boolean => {
 };
 
 /**
- * Helper function to RLP encode a header.
+ * Compute the hash of a block header.
  *
- * This function manually encodes the header fields in the correct order
- * to match the Python RLP encoding.
+ * The block hash is the Keccak-256 hash of the RLP-encoded header.
  *
- * Fork-specific fields are only included if they are defined (not undefined).
- * This is critical for correct hash calculation - older forks don't have
- * these fields in their RLP encoding.
+ * @param header - The block header to hash
+ * @returns The 32-byte hash of the header
  */
-const encodeHeader = (header: Header): Bytes => {
-  // Base fields present in all forks (pre-London)
-  const fields: Extended[] = [
-    header.parentHash.value,
-    header.ommersHash.value,
-    header.coinbase.value,
-    header.stateRoot.value,
-    header.transactionsRoot.value,
-    header.receiptRoot.value,
-    header.bloom.value,
-    header.difficulty,
-    header.number,
-    header.gasLimit,
-    header.gasUsed,
-    header.timestamp,
-    header.extraData.value,
-    header.prevRandao.value,
-    header.nonce.value,
-  ];
-
-  // London+ (EIP-1559): baseFeePerGas
-  if (header.baseFeePerGas !== undefined) {
-    fields.push(header.baseFeePerGas);
-
-    // Shanghai+ (EIP-4895): withdrawalsRoot (only if baseFeePerGas exists)
-    if (header.withdrawalsRoot !== undefined) {
-      fields.push(header.withdrawalsRoot.value);
-
-      // Cancun+ (EIP-4844, EIP-4788): blobGasUsed, excessBlobGas, parentBeaconBlockRoot
-      if (
-        header.blobGasUsed !== undefined &&
-        header.excessBlobGas !== undefined &&
-        header.parentBeaconBlockRoot !== undefined
-      ) {
-        fields.push(header.blobGasUsed);
-        fields.push(header.excessBlobGas);
-        fields.push(header.parentBeaconBlockRoot.value);
-
-        // Prague+ (EIP-7685): requestsHash
-        if (header.requestsHash !== undefined) {
-          fields.push(header.requestsHash.value);
-        }
-      }
-    }
-  }
-
-  return encode(fields as Extended);
+export const computeBlockHash = (header: Header): Hash32 => {
+  return keccak256(encodeHeader(header));
 };

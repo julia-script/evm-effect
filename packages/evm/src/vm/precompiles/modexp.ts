@@ -13,8 +13,8 @@ import * as Gas from "../gas.js";
 
 const min = (a: bigint, b: bigint) => (a < b ? a : b);
 const max = (a: bigint, b: bigint) => (a > b ? a : b);
-const GQUADDIVISOR_BERLIN = 3n; // EIP-2565
-const GQUADDIVISOR_BYZANTIUM = 20n; // EIP-198
+const GQUADDIVISOR_BERLIN = 3n;
+const GQUADDIVISOR_BYZANTIUM = 20n;
 
 /**
  * Convert bytes to Uint (arbitrary precision, for values > 32 bytes)
@@ -43,12 +43,10 @@ function uintToBytes(value: Uint, length: number): Uint8Array {
     tempBytes[i] = parseInt(paddedHex.slice(i * 2, i * 2 + 2), 16);
   }
 
-  // Pad to requested length (left-pad with zeros, result is right-aligned)
   const result = new Uint8Array(length);
   if (tempBytes.length <= length) {
     result.set(tempBytes, length - tempBytes.length);
   } else {
-    // Result is too large, take the rightmost bytes
     result.set(tempBytes.slice(tempBytes.length - length), 0);
   }
   return result;
@@ -132,50 +130,12 @@ export const modexp = Effect.gen(function* () {
     return;
   }
 
-  // Perform modular exponentiation using wrappingPow
   const result = wrappingPow(base, exp, modulus);
 
-  // Convert result to bytes and pad to modulusLength
   const paddedResult = uintToBytes(result, Number(modulusLength.value));
 
   yield* Ref.set(evm.output, new Bytes({ value: paddedResult }));
 }).pipe(Effect.withSpan("modexp-precompile"));
-
-// def gas_cost(
-//   base_length: U256,
-//   modulus_length: U256,
-//   exponent_length: U256,
-//   exponent_head: U256,
-// ) -> Uint:
-//   """
-//   Calculate the gas cost of performing a modular exponentiation.
-
-//   Parameters
-//   ----------
-//   base_length :
-//       Length of the array representing the base integer.
-
-//   modulus_length :
-//       Length of the array representing the modulus integer.
-
-//   exponent_length :
-//       Length of the array representing the exponent integer.
-
-//   exponent_head :
-//       First 32 bytes of the exponent (with leading zero padding if it is
-//       shorter than 32 bytes), as a U256.
-
-//   Returns
-//   -------
-//   gas_cost : `Uint`
-//       Gas required for performing the operation.
-
-//   """
-//   multiplication_complexity = complexity(base_length, modulus_length)
-//   iteration_count = iterations(exponent_length, exponent_head)
-//   cost = multiplication_complexity * iteration_count
-//   cost //= GQUADDIVISOR
-//   return max(Uint(200), cost)
 
 const gasCost = Effect.fn("gasCost")(function* (
   baseLength: U256,
@@ -188,8 +148,6 @@ const gasCost = Effect.fn("gasCost")(function* (
   let cost = multiplicationComplexity * iterationCount;
   const fork = yield* Fork;
   if (!fork.eip(7883)) {
-    // EIP-2565 (Berlin): GQUADDIVISOR = 3, min 200 gas
-    // EIP-198 (Byzantium): GQUADDIVISOR = 20, no minimum
     const divisor = fork.eip(2565)
       ? GQUADDIVISOR_BERLIN
       : GQUADDIVISOR_BYZANTIUM;
@@ -207,28 +165,10 @@ const complexity = Effect.fn("complexity")(function* (
   baseLength: U256,
   modulusLength: U256,
 ) {
-  // """
-  // Estimate the complexity of performing a modular exponentiation.
-
-  // Parameters
-  // ----------
-  // base_length :
-  //     Length of the array representing the base integer.
-
-  // modulus_length :
-  //     Length of the array representing the modulus integer.
-
-  // Returns
-  // -------
-  // complexity : `Uint`
-  //     Complexity of performing the operation.
-
-  // """
   const maxLength = max(baseLength.value, modulusLength.value);
   const fork = yield* Fork;
 
   if (fork.eip(7883)) {
-    // EIP-7883 (Osaka): Different complexity calculation
     const words = (maxLength + 7n) / 8n;
     let complexity = 16n;
     if (maxLength > 32n) {
@@ -236,11 +176,9 @@ const complexity = Effect.fn("complexity")(function* (
     }
     return complexity;
   } else if (fork.eip(2565)) {
-    // EIP-2565 (Berlin): words²
     const words = (maxLength + 7n) / 8n;
     return words ** 2n;
   } else {
-    // EIP-198 (Byzantium): Tiered complexity based on max_length
     if (maxLength <= 64n) {
       return maxLength ** 2n;
     } else if (maxLength <= 1024n) {
@@ -251,34 +189,13 @@ const complexity = Effect.fn("complexity")(function* (
   }
 });
 
-// def iterations(exponent_length: U256, exponent_head: U256) -> Uint:
 const iterations = Effect.fn("iterations")(function* (
   expLength: U256,
   expHead: U256,
 ) {
-  //     """
-  //     Calculate the number of iterations required to perform a modular
-  //     exponentiation.
-
-  //     Parameters
-  //     ----------
-  //     exponent_length :
-  //         Length of the array representing the exponent integer.
-
-  //     exponent_head :
-  //         First 32 bytes of the exponent (with leading zero padding if it is
-  //         shorter than 32 bytes), as a U256.
-
-  //     Returns
-  //     -------
-  //     iterations : `Uint`
-  //         Number of iterations.
-
-  //     """
   const fork = yield* Fork;
 
   if (fork.eip(2565) || fork.eip(7883)) {
-    // EIP-2565 (Berlin+) and EIP-7883 (Osaka)
     let count = 0n;
     if (expLength.value <= 32n && expHead.value === 0n) {
       count = 0n;
@@ -300,7 +217,6 @@ const iterations = Effect.fn("iterations")(function* (
     }
     return max(count, 1n);
   } else {
-    // EIP-198 (Byzantium): Simplified iteration count
     let adjustedExpLength: bigint;
     if (expLength.value < 32n) {
       adjustedExpLength = max(0n, expHead.bitLength() - 1n);

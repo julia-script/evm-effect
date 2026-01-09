@@ -9,7 +9,6 @@ import type { Effect } from "effect";
 import type { EthereumException } from "../exceptions.js";
 import type { Evm } from "./evm.js";
 import type { Fork } from "./Fork.js";
-// Instruction modules
 import * as Arithmetic from "./instructions/arithmetic.js";
 import * as Bitwise from "./instructions/bitwise.js";
 import * as Block from "./instructions/block.js";
@@ -385,11 +384,6 @@ export const BASE_OPCODES: Map<number, OpcodeImplementation> = new Map([
   [Ops.CALLCODE, System.callcode],
   [Ops.SELFDESTRUCT, System.selfdestruct],
   [Ops.CREATE, System.create],
-
-  // [Ops.SHL, Bitwise.bitwiseShl],
-  // [Ops.SHR, Bitwise.bitwiseShr],
-  // [Ops.SAR, Bitwise.bitwiseSar],
-  // [Ops.PUSH0, Stack.push0],
 ]);
 
 /**
@@ -444,10 +438,7 @@ export const LONDON_OPCODES: Map<number, OpcodeImplementation> = extendOpcodes(
 
 export const PARIS_OPCODES: Map<number, OpcodeImplementation> = extendOpcodes(
   LONDON_OPCODES,
-  [
-    // PREVRANDAO (0x44) is already in BASE_OPCODES as it existed from Frontier
-    // (it was called DIFFICULTY before Paris/The Merge)
-  ],
+  [],
 );
 
 export const SHANGHAI_OPCODES: Map<number, OpcodeImplementation> =
@@ -460,13 +451,10 @@ export const SHANGHAI_OPCODES: Map<number, OpcodeImplementation> =
 export const CANCUN_OPCODES: Map<number, OpcodeImplementation> = extendOpcodes(
   SHANGHAI_OPCODES,
   [
-    // EIP-1153: Transient storage opcodes
     [Ops.TLOAD, Storage.tload],
     [Ops.TSTORE, Storage.tstore],
-    // EIP-4844: Shard Blob Transactions
     [Ops.BLOBHASH, Block.blobhash],
     [Ops.BLOBBASEFEE, Block.blobbasefee],
-    // EIP-5656: MCOPY - Memory copying instruction
     [Ops.MCOPY, Memory.mcopy],
   ],
 );

@@ -24,9 +24,8 @@ import {
   g1PointToBytes,
 } from "./bls12-utils.js";
 
-const LENGTH_PER_PAIR = 160; // 128 bytes for G1 point + 32 bytes for scalar
+const LENGTH_PER_PAIR = 160;
 
-// Discount table for k (number of pairs) from 1 to 128
 const G1_K_DISCOUNT = [
   1000, 949, 848, 797, 764, 750, 738, 728, 719, 712, 705, 698, 692, 687, 682,
   677, 673, 669, 665, 661, 658, 654, 651, 648, 645, 642, 640, 637, 635, 632,
@@ -56,7 +55,6 @@ export const bls12G1Msm = Effect.gen(function* () {
   const evm = yield* Evm;
   const data = evm.message.data.value;
 
-  // Validate input length
   if (data.length === 0 || data.length % LENGTH_PER_PAIR !== 0) {
     return yield* Effect.fail(
       new InvalidParameterError({
@@ -65,10 +63,8 @@ export const bls12G1Msm = Effect.gen(function* () {
     );
   }
 
-  // Calculate number of pairs
   const k = data.length / LENGTH_PER_PAIR;
 
-  // Calculate gas cost with discount
   let discount: bigint;
   if (k <= 128) {
     discount = BigInt(G1_K_DISCOUNT[k - 1]);
@@ -79,10 +75,10 @@ export const bls12G1Msm = Effect.gen(function* () {
   const gasCost =
     (BigInt(k) * Gas.GAS_BLS_G1_MUL.value * discount) / MULTIPLIER;
 
-  // GAS - charge before operation
+  // GAS
   yield* Gas.chargeGas(new Uint({ value: gasCost }));
 
-  // OPERATION - naive implementation
+  // OPERATION
   try {
     let result = G1_ZERO;
 
@@ -90,14 +86,10 @@ export const bls12G1Msm = Effect.gen(function* () {
       const startIndex = i * LENGTH_PER_PAIR;
       const endIndex = startIndex + LENGTH_PER_PAIR;
       const pairData = data.slice(startIndex, endIndex);
-      // Decode point and scalar
       const [point, scalar] = decodeG1ScalarPair(pairData);
 
-      // Normalize scalar to be within valid range [0, curve_order)
       const normalizedScalar = scalar % BLS_CURVE_ORDER;
 
-      // Multiply point by scalar
-      // Special case: scalar of 0 results in point at infinity
       let product: WeierstrassPoint<bigint>;
       if (normalizedScalar === 0n) {
         product = G1_ZERO;
@@ -105,11 +97,9 @@ export const bls12G1Msm = Effect.gen(function* () {
         product = point.multiply(normalizedScalar);
       }
 
-      // Add to accumulator
       result = result.add(product);
     }
 
-    // Convert result to bytes
     const output = g1PointToBytes(result.toAffine());
 
     yield* Ref.set(evm.output, new Bytes({ value: output }));

@@ -100,12 +100,10 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
     );
     const currentValue = State.getStorage(state, currentTarget, key);
 
-    // GAS COST CALCULATION - fork-dependent (EIP-2929)
     const fork = yield* Fork;
     let gasCost = new Uint({ value: 0n });
 
     if (fork.eip(2929)) {
-      // EIP-2929 (Berlin+): warm/cold storage access
       const storageKey = new StorageKey({ address: currentTarget, slot: key });
       const wasAccessed = evm.accessedStorageKeys.has(storageKey);
       if (!wasAccessed) {
@@ -135,8 +133,6 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
         });
       }
     } else if (fork.eip(2200)) {
-      // EIP-2200 (Istanbul): Structured Definitions for Net Gas Metering
-      // More complex gas model that considers original values
       if (
         originalValue.value === currentValue.value &&
         currentValue.value !== newValue.value
@@ -150,10 +146,6 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
         gasCost = yield* Gas.GAS_SLOAD;
       }
     } else if (fork.eip(1283)) {
-      // EIP-1283 (Constantinople): Net gas metering for SSTORE without dirty maps
-      // This is the original net gas metering introduced in Constantinople
-      // but removed in Petersburg/ConstantinopleFix due to reentrancy concerns
-
       if (currentValue.value === newValue.value) {
         // No-op: current value equals new value
         gasCost = Gas.GAS_SSTORE_NOOP; // 200
@@ -174,9 +166,6 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
         gasCost = Gas.GAS_SSTORE_NOOP; // 200
       }
     } else {
-      // Pre-EIP-1283 (Byzantium and earlier): Simple gas model
-      // - Setting non-zero value into zero slot: GAS_STORAGE_SET (20000)
-      // - All other cases: GAS_STORAGE_UPDATE (5000)
       if (newValue.value !== 0n && currentValue.value === 0n) {
         gasCost = Gas.GAS_STORAGE_SET; // 20000
       } else {
@@ -187,11 +176,9 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
     // REFUND COUNTER CALCULATION
     if (currentValue.value !== newValue.value) {
       if (fork.eip(2929)) {
-        // EIP-2929 (Berlin+) refund logic
         // Case 3: Storage slot being restored to its original value
         if (originalValue.value === newValue.value) {
           if (originalValue.value === 0n) {
-            // Slot was originally empty and was SET earlier
             const refund =
               Gas.GAS_STORAGE_SET.value - Gas.GAS_WARM_ACCESS.value;
             yield* Ref.update(
@@ -199,7 +186,6 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
               (current) => new U256({ value: current.value + refund }),
             );
           } else {
-            // Slot was originally non-empty and was UPDATED earlier
             const refund =
               Gas.GAS_STORAGE_UPDATE.value -
               Gas.GAS_COLD_SLOAD.value -
@@ -210,10 +196,6 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
             );
           }
         }
-
-        // Get fork-dependent refund amount for clearing storage
-        // Before EIP-3529 (London): 15000 gas refund
-        // After EIP-3529: 4800 gas refund
         const clearRefund = fork.eipSelect(3529, 4800n, 15000n);
 
         // Case 1: Storage is cleared for the first time in the transaction

@@ -37,7 +37,7 @@ export class Log extends Schema.TaggedClass<Log>("Log")("Log", {
 export class Receipt extends Schema.TaggedClass<Receipt>("Receipt")("Receipt", {
   succeeded: Schema.Boolean,
   cumulativeGasUsed: Uint,
-  bloom: Bytes256, // Bloom
+  bloom: Bytes256,
   logs: Schema.Array(Log),
 }) {}
 
@@ -55,8 +55,8 @@ export class Receipt extends Schema.TaggedClass<Receipt>("Receipt")("Receipt", {
 export class LegacyReceipt extends Schema.TaggedClass<LegacyReceipt>(
   "LegacyReceipt",
 )("LegacyReceipt", {
-  postState: Bytes32, // Root of state after transaction
+  postState: Bytes32,
   cumulativeGasUsed: Uint,
-  bloom: Bytes256, // Bloom
+  bloom: Bytes256,
   logs: Schema.Array(Log),
 }) {}

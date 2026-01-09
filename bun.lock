@@ -93,6 +93,21 @@
         "typescript": "catalog:",
       },
     },
+    "packages/examples": {
+      "name": "@evm-effect/examples",
+      "version": "0.0.1",
+      "dependencies": {
+        "@evm-effect/crypto": "workspace:*",
+        "@evm-effect/ethereum-types": "workspace:*",
+        "@evm-effect/evm": "workspace:*",
+        "effect": "catalog:",
+      },
+      "devDependencies": {
+        "@types/bun": "catalog:",
+        "@types/node": "^24.10.0",
+        "typescript": "catalog:",
+      },
+    },
     "packages/rlp": {
       "name": "@evm-effect/rlp",
       "version": "0.1.0",
@@ -149,22 +164,6 @@
         "@evm-effect/shared": "workspace:*",
         "@types/bun": "catalog:",
         "fast-check": "catalog:",
-      },
-    },
-    "scratchpad": {
-      "name": "scratchpad",
-      "devDependencies": {
-        "@effect/experimental": "catalog:",
-        "@evm-effect/crypto": "workspace:*",
-        "@evm-effect/ethereum-types": "workspace:*",
-        "@evm-effect/evm": "workspace:*",
-        "@evm-effect/rlp": "workspace:*",
-        "@evm-effect/shared": "workspace:*",
-        "@evm-effect/solc": "workspace:*",
-        "@types/bun": "latest",
-        "effect": "catalog:",
-        "fast-check": "catalog:",
-        "typescript": "catalog:",
       },
     },
   },
@@ -348,6 +347,8 @@
     "@evm-effect/ethereum-types": ["@evm-effect/ethereum-types@workspace:packages/ethereum-types"],
 
     "@evm-effect/evm": ["@evm-effect/evm@workspace:packages/evm"],
+
+    "@evm-effect/examples": ["@evm-effect/examples@workspace:packages/examples"],
 
     "@evm-effect/rlp": ["@evm-effect/rlp@workspace:packages/rlp"],
 
@@ -881,8 +882,6 @@
 
     "safer-buffer": ["safer-buffer@2.1.2", "", {}, "sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg=="],
 
-    "scratchpad": ["scratchpad@workspace:scratchpad"],
-
     "sembear": ["sembear@0.7.0", "", { "dependencies": { "semver": "^7.3.5" } }, "sha512-XyLTEich2D02FODCkfdto3mB9DetWPLuTzr4tvoofe9SvyM27h4nQSbV3+iVcYQz94AFyKtqBv5pcZbj3k2hdA=="],
 
     "semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
@@ -1067,8 +1066,6 @@
 
     "readdirp/picomatch": ["picomatch@2.3.1", "", {}, "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA=="],
 
-    "scratchpad/@types/bun": ["@types/bun@1.3.5", "", { "dependencies": { "bun-types": "1.3.5" } }, "sha512-RnygCqNrd3srIPEWBd5LFeUYG7plCoH2Yw9WaZGyNmdTEei+gWaHqydbaIRkIkcbXwhBT94q78QljxN0Sk838w=="],
-
     "sembear/semver": ["semver@7.7.3", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q=="],
 
     "solc/commander": ["commander@8.3.0", "", {}, "sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww=="],
@@ -1110,8 +1107,6 @@
     "protobufjs/@types/node/undici-types": ["undici-types@7.14.0", "", {}, "sha512-QQiYxHuyZ9gQUIrmPo3IA+hUl4KYk8uSA7cHrcKd/l3p1OTpZcM0Tbp9x7FAtXdAYhlasd60ncPpgu6ihG6TOA=="],
 
     "read-yaml-file/js-yaml/argparse": ["argparse@1.0.10", "", { "dependencies": { "sprintf-js": "~1.0.2" } }, "sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg=="],
-
-    "scratchpad/@types/bun/bun-types": ["bun-types@1.3.5", "", { "dependencies": { "@types/node": "*" } }, "sha512-inmAYe2PFLs0SUbFOWSVD24sg1jFlMPxOjOSSCYqUgn4Hsc3rDc7dFvfVYjFPNHtov6kgUeulV4SxbuIV/stPw=="],
 
     "string-width/strip-ansi/ansi-regex": ["ansi-regex@6.2.2", "", {}, "sha512-Bq3SmSpyFHaWjPk8If9yc6svM8c56dB5BAtW4Qbw5jHTwwXXcTLoRMkpDJp6VL0XzlWaCHTXrkFURMYmD0sLqg=="],
 

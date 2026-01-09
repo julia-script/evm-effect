@@ -1,7 +1,3 @@
-// """
-// Set EOA account code.
-// """
-
 import { recoverAuthority } from "@evm-effect/crypto/transactions";
 import { Address, Bytes, U64, U256 } from "@evm-effect/ethereum-types";
 import { annotateSafe } from "@evm-effect/shared/traced";
@@ -21,7 +17,6 @@ const PER_AUTH_BASE_COST = 12500n;
 export const isValidDelegation = (code: Bytes): boolean => {
   const lengthMatch = code.value.length === EOA_DELEGATED_CODE_LENGTH;
 
-  // Use simple array comparison instead of Equal.equals
   const codeSlice = code.value.slice(0, EOA_DELEGATION_MARKER.value.length);
   const markerMatch =
     codeSlice.length === EOA_DELEGATION_MARKER.value.length &&
@@ -103,7 +98,6 @@ export const setDelegation = Effect.fn("setDelegation")(function* (
     } else {
     }
 
-    // Check if address is all zeros (EIP-7702: zero address means clear delegation)
     const isZeroAddress = auth.address.value.value.every((byte) => byte === 0);
     const codeToSet = isZeroAddress
       ? new Bytes({ value: new Uint8Array(0) })

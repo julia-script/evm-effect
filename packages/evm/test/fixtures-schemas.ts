@@ -20,12 +20,6 @@ const FixtureFormat = Schema.Union(
 );
 
 const ForkFix = Schema.Union(
-  // Schema.Literal("Berlin"),
-  // Schema.Literal("Shanghai"),
-  // Schema.Literal("Prague"),
-  // Schema.Literal("London"),
-  // Schema.Literal("Cancun"),
-  // Schema.Literal("Paris"),
   Schema.Literal("Osaka"),
   Schema.Literal("Frontier"),
   Schema.Literal("Cancun"),
@@ -99,11 +93,6 @@ const _U256FromHex = Schema.transform(Schema.BigInt, U256, {
   strict: false,
 });
 
-// const AddressFromHex = Schema.transform(Schema.Uint8ArrayFromHex, Address, {
-//   decode: (fromA) => new Address({ value: new Bytes20({ value: fromA }) }),
-//   encode: (toI) => new Uint8Array(toI.value.value),
-//   strict: false,
-// });
 const Uint8ArrayFromHex = Schema.transformOrFail(
   Schema.String,
   Schema.instanceOf(Uint8Array),
@@ -151,43 +140,6 @@ const AddressFromHex = Schema.transformOrFail(Uint8ArrayFromHex, Address, {
   },
   strict: false,
 });
-// Schema.HashMap;
-// export const MutableHashMapSchema = <
-//   K extends Schema.Schema.Any,
-//   V extends Schema.Schema.Any,
-// >({
-//   key,
-//   value,
-// }: {
-//   readonly key: K;
-//   readonly value: V;
-// }) => {
-//   return Schema.declare(
-//     [key, value],
-//     {
-//       decode: (key, value) => {
-//         // const decoder = ParseResult.decodeUnknown(
-//         //   Schema.Array(Schema.Tuple(key, value)),
-//         // );
-//         return (u, options, ast) =>
-
-//           // ParseResult.mapBoth(decoder(u, options), {
-//           //   onSuccess: (a) => MutableHashMap.fromIterable(a),
-//           //   onFailure: (error) => new ParseResult.Composite(ast, u, error),
-//           // });
-//       },
-//       encode: (key, value) => {},
-
-//       // hashMapParse(ParseResult.encodeUnknown(Array$(Tuple(key, value)))),
-//     },
-//     {
-//       // description: `HashMap<${format(key)}, ${format(value)}>`,
-//       // pretty: hashMapPretty,
-//       // arbitrary: hashMapArbitrary,
-//       // equivalence: hashMapEquivalence
-//     },
-//   );
-// };
 
 const _entriesFromRecrod = <
   K extends Schema.Schema.Any,
@@ -215,67 +167,6 @@ const _entriesFromRecrod = <
       strict: false,
     },
   );
-
-// export const HashMapFromRecord = <KType, KEncoded, VType, VEncoded>({
-//   key: keySchema,
-//   value: valueSchema,
-// }: {
-//   key: Schema.Schema<KType, KEncoded>;
-//   value: Schema.Schema<VType, VEncoded>;
-// }) => {
-//   const recordToEntries = entriesFromRecrod({
-//     key: keySchema,
-//     value: valueSchema,
-//   });
-//   const mutableHashMapSchema = MutableHashMapSchema({
-//     key: Schema.typeSchema(keySchema),
-//     value: Schema.typeSchema(valueSchema),
-//   });
-
-//   return Schema.transform(recordToEntries, mutableHashMapSchema, {
-//     decode: (fromA) => MutableHashMap.fromIterable(fromA),
-//     encode: (toI) => Object.entries(toI),
-//     strict: false,
-//   });
-//   // return Schema.transform()
-//   // return Schema.transformOrFail(
-//   //   Schema.HashMapFromSelf<
-//   //     Schema.Schema<KType, KType>,
-//   //     Schema.Schema<VType, VType>
-//   //   >({
-//   //     key: Schema.typeSchema(keySchema),
-//   //     value: Schema.typeSchema(valueSchema),
-//   //   }),
-//   //   {
-//   //     decode: (
-//   //       fromA,
-//   //       options,
-//   //       ast,
-//   //       fromI,
-//   //     ): Effect.Effect<HashMap.HashMap<KType, VType>, ParseIssue, never> => {
-//   //       const decodeKey = Schema.decodeEither(keySchema);
-//   //       const outEntries: [KType, VType][] = [];
-//   //       const out = MutableHashMap.empty<KType, VType>();
-//   //       const entries = Object.entries(fromA);
-//   //       for (let i = 0; i < entries.length; i++) {
-//   //         const key = decodeKey(entries[i][0] as KEncoded);
-//   //         const value = entries[i][1];
-//   //         if (Either.isLeft(key)) {
-//   //           // process.exit(1);
-//   //           return Effect.fail(key.left.issue);
-//   //         }
-//   //         MutableHashMap.set(out, key.right, value);
-//   //       }
-//   //       return Effect.succeed(ParseResult.);
-//   //     },
-//   //     encode: (toI) => {
-//   //       return Effect.die("encode not implemented");
-//   //       // return Effect.succeed(Object.fromEntries(toI.entries()));
-//   //     },
-//   //     strict: false,
-//   //   },
-//   // );
-// };
 
 const AccessListFix = Schema.Struct({
   address: AddressFromHex,
@@ -351,7 +242,6 @@ const PostByForkFix = Schema.Struct({
  * Fork-specific fields are marked optional
  */
 const FixtureHeader = Schema.Struct({
-  // Required fields (all forks)
   parentHash: BytesFromHex,
   uncleHash: BytesFromHex,
   coinbase: AddressFromHex,
@@ -368,7 +258,6 @@ const FixtureHeader = Schema.Struct({
   mixHash: BytesFromHex,
   nonce: BytesFromHex,
   hash: BytesFromHex,
-  // Fork-specific optional fields
   baseFeePerGas: UintFromHex.pipe(Schema.optional), // London+
   withdrawalsRoot: BytesFromHex.pipe(Schema.optional), // Shanghai+
   blobGasUsed: UintFromHex.pipe(Schema.optional), // Cancun+
@@ -385,16 +274,16 @@ const FixtureTransaction = Schema.Struct({
   type: UintFromHex.pipe(Schema.optional),
   chainId: UintFromHex.pipe(Schema.optional),
   nonce: UintFromHex,
-  gasPrice: UintFromHex.pipe(Schema.optional), // Type 0 & 1
-  maxPriorityFeePerGas: UintFromHex.pipe(Schema.optional), // Type 2 & 3
-  maxFeePerGas: UintFromHex.pipe(Schema.optional), // Type 2 & 3
+  gasPrice: UintFromHex.pipe(Schema.optional),
+  maxPriorityFeePerGas: UintFromHex.pipe(Schema.optional),
+  maxFeePerGas: UintFromHex.pipe(Schema.optional),
   gasLimit: UintFromHex,
-  to: Schema.NullOr(AddressFromHex), // null for contract creation
+  to: Schema.NullOr(AddressFromHex),
   value: UintFromHex,
   data: BytesFromHex,
-  accessList: Schema.Array(AccessListFix).pipe(Schema.optional), // Berlin+
-  maxFeePerBlobGas: UintFromHex.pipe(Schema.optional), // Type 3
-  blobVersionedHashes: Schema.Array(BytesFromHex).pipe(Schema.optional), // Type 3
+  accessList: Schema.Array(AccessListFix).pipe(Schema.optional),
+  maxFeePerBlobGas: UintFromHex.pipe(Schema.optional),
+  blobVersionedHashes: Schema.Array(BytesFromHex).pipe(Schema.optional),
   v: UintFromHex,
   r: UintFromHex,
   s: UintFromHex,
@@ -489,14 +378,13 @@ const Info = Schema.Struct({
   "filling-transition-tool": Schema.String,
   description: Schema.String,
   url: Schema.String,
-  // "fixture-format": Schema.String,
   "reference-spec": Schema.String.pipe(Schema.optional),
   "reference-spec-version": Schema.String.pipe(Schema.optional),
   "eels-resolution": Schema.Struct({
     "git-url": Schema.String,
     branch: Schema.String,
     commit: Schema.String,
-  }),
+  }).pipe(Schema.optional),
 });
 
 const EnvironmentFix = Schema.Struct({
@@ -534,25 +422,15 @@ export const StateTestFix = Schema.Struct({
  * Per blockchain_test.md Fixture section
  */
 export const BlockchainTest = Schema.Struct({
-  // Fork configuration (to be deprecated, use config.network)
   network: ForkFix,
-  // Starting account allocation
   pre: AllocFix,
-  // RLP serialized genesis block
   genesisRLP: BytesFromHex,
-  // Genesis block header for comparison
   genesisBlockHeader: FixtureHeader,
-  // List of blocks to process
   blocks: Schema.Array(FixtureBlockOrInvalid),
-  // Expected final state (note: JSON uses "postState")
   postState: AllocFix,
-  // Hash of last valid block
   lastblockhash: BytesFromHex,
-  // Chain configuration
   config: BlockchainTestConfig,
-  // Deprecated seal engine field
   sealEngine: Schema.String.pipe(Schema.optional),
-  // Test metadata
   _info: Schema.Struct({
     "fixture-format": Schema.Literal("blockchain_test"),
     ...Info.fields,
@@ -562,21 +440,18 @@ export const BlockchainTest = Schema.Struct({
 const BlockchainTestEngine = Schema.Struct({
   _info: Schema.Struct({
     "fixture-format": Schema.Literal("blockchain_test_engine"),
-    // ...Info.fields,
   }),
 }).pipe(Schema.attachPropertySignature("_tag", "blockchain_test_engine"));
 
 const TransactionTest = Schema.Struct({
   _info: Schema.Struct({
     "fixture-format": Schema.Literal("transaction_test"),
-    // ...Info.fields,
   }),
 }).pipe(Schema.attachPropertySignature("_tag", "transaction_test"));
 
 const BlockchainTestEngineX = Schema.Struct({
   _info: Schema.Struct({
     "fixture-format": Schema.Literal("blockchain_test_engine_x"),
-    // ...Info.fields,
   }),
 }).pipe(Schema.attachPropertySignature("_tag", "blockchain_test_engine_x"));
 
@@ -601,7 +476,6 @@ export function* flattenStateTestFixtures(
       const { transaction, ...rest } = fixture;
       return {
         ...rest,
-        // id,
         fork,
         hash: fixture._info.hash.value.toHex().slice(0, 8),
         transaction: {
@@ -610,9 +484,6 @@ export function* flattenStateTestFixtures(
           value: transaction.value[index],
           data: transaction.data[index],
           accessList: transaction.accessLists?.[index],
-
-          // authorizationList: transaction.authorizationList?.[index],
-          // blobVersionedHashes: transaction.blobVersionedHashes?.[index],
         },
         post: post,
       };

@@ -39,7 +39,7 @@ export class BlockEnvironment extends Schema.TaggedClass<BlockEnvironment>(
   baseFeePerGas: Uint,
   time: U256,
   prevRandao: Bytes32,
-  difficulty: Uint, // For pre-Paris forks (DIFFICULTY opcode)
+  difficulty: Uint,
   excessBlobGas: U64,
   parentBeaconBlockRoot: Bytes32,
 }) {}
@@ -56,7 +56,7 @@ export class TransactionEnvironment extends Schema.TaggedClass<TransactionEnviro
   gasPrice: Uint,
   gas: Uint,
   accessListAddresses: HashSetFromSelf(Address),
-  accessListStorageKeys: HashSetFromSelf(Schema.instanceOf(StorageKey)), // ReadonlySet<readonly [Address, Bytes32]> - not directly serializable
+  accessListStorageKeys: HashSetFromSelf(Schema.instanceOf(StorageKey)),
   transientStorage: Schema.instanceOf(State.TransientStorage),
   blobVersionedHashes: Schema.Array(Bytes32),
   authorizations: Schema.Array(Authorization),
@@ -71,11 +71,9 @@ export type test = typeof SuspendedEvm extends Schema.suspend<
 >
   ? T
   : never;
-// type test2 = EvmEncoded satisfies test ? true : false;
 const SuspendedEvm = Schema.suspend(
   (): Schema.Schema<Evm, Evm> => Schema.instanceOf(Evm),
 );
-// const SuspendedEvm = Schema.suspend(():typeof Evm => Evm);
 /**
  * Items that are used by contract creation or message call (call-level).
  *
@@ -115,7 +113,6 @@ export const prepareMessage: (
   ) {
     const fork = yield* Fork;
 
-    // Start with addresses from the access list
     const accessedAddresses = txEnv.accessListAddresses.clone();
     accessedAddresses.add(txEnv.origin);
 
@@ -130,7 +127,7 @@ export const prepareMessage: (
 
     if (!tx.to) {
       const nonce =
-        State.getAccount(blockEnv.state, txEnv.origin).nonce.value - 1n; // nonce has been incremented by this point so we need to subtract 1 - 1n; // nonce has been incremented by this point so we need to subtract 1;
+        State.getAccount(blockEnv.state, txEnv.origin).nonce.value - 1n;
       currentTarget = computeContractAddress(
         txEnv.origin,
         new Uint({ value: nonce }),

@@ -44,7 +44,6 @@ function extractExtendedFromTuple(
   }
 
   const elements = input.slice(0, elementsTypes.length);
-  // const [rest, ...additional] = input.slice(elementsTypes.length);
   const rest = input.slice(
     elementsTypes.length,
     input.length - additionalTypes.length,
@@ -99,15 +98,6 @@ function extractLiteral(ast: AST.Literal): Extended {
   throw new Error(`Unsupported literal value: ${ast.literal}`);
 }
 function extractExtendedFromAst(ast: AST.AST, input: unknown): Extended {
-  // if (AST.isTransformation(ast) && Option.isOption(input)) {
-  //   if (Option.isNone(input)) {
-  //     return new Bytes({ value: new Uint8Array(0) });
-  //   }
-  //   if (!AST.isDeclaration(ast.to) || !ast.to.typeParameters[0])
-  //     throw new Error("Don't know how to handle this transformation");
-  //   return extractExtendedFromAst(ast.to.typeParameters[0], input.value);
-  // }
-
   ast = normalize(ast);
   switch (ast._tag) {
     case "StringKeyword":

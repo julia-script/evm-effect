@@ -28,7 +28,6 @@ export const bls12G2Add = Effect.gen(function* () {
   const evm = yield* Evm;
   const data = evm.message.data.value;
 
-  // Validate input length
   if (data.length !== 512) {
     return yield* Effect.fail(
       new InvalidParameterError({
@@ -37,23 +36,19 @@ export const bls12G2Add = Effect.gen(function* () {
     );
   }
 
-  // GAS - charge before operation
+  // GAS
   yield* Gas.chargeGas(new Uint({ value: Gas.GAS_BLS_G2_ADD.value }));
 
   // OPERATION
   try {
-    // Extract the two G2 points
     const p1Data = data.slice(0, G2_POINT_BYTE_LENGTH);
     const p2Data = data.slice(G2_POINT_BYTE_LENGTH, 512);
 
-    // Convert to G2 points (without subgroup check for addition)
     const p1 = bytesToG2Point(p1Data, false);
     const p2 = bytesToG2Point(p2Data, false);
 
-    // Add the points
     const result = p1.add(p2);
 
-    // Convert result to bytes
     const output = g2PointToBytes(result.toAffine());
 
     yield* Ref.set(evm.output, new Bytes({ value: output }));

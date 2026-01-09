@@ -48,13 +48,11 @@ export function nibbleListToCompact(nibbles: Bytes, isLeaf: boolean): Bytes {
   const nibbleArray = Array.from(nibbles.value);
 
   if (nibbleArray.length % 2 === 0) {
-    // Even length: add flag byte, then pack nibbles
     compact.push(16 * (2 * (isLeaf ? 1 : 0)));
     for (let i = 0; i < nibbleArray.length; i += 2) {
       compact.push(16 * nibbleArray[i] + nibbleArray[i + 1]);
     }
   } else {
-    // Odd length: flag + first nibble in first byte
     compact.push(16 * (2 * (isLeaf ? 1 : 0) + 1) + nibbleArray[0]);
     for (let i = 1; i < nibbleArray.length; i += 2) {
       compact.push(16 * nibbleArray[i] + nibbleArray[i + 1]);

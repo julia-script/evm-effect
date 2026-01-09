@@ -1,0 +1,25 @@
+{
+  "name": "@evm-effect/examples",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "dev": "tsc -b tsconfig.build.json --watch",
+    "check": "tsc -b tsconfig.json",
+    "hello-world": "bun run src/hello-world.ts",
+    "blockchain-transaction": "bun run src/blockchain-transaction.ts",
+    "deploy-contract": "bun run src/deploy-contract.ts"
+  },
+  "dependencies": {
+    "@evm-effect/crypto": "workspace:*",
+    "@evm-effect/evm": "workspace:*",
+    "@evm-effect/ethereum-types": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/node": "^24.10.0",
+    "typescript": "catalog:"
+  }
+}

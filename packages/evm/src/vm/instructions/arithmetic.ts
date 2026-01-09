@@ -386,33 +386,24 @@ export const signextend: Effect.Effect<void, EthereumException, Evm> =
     // OPERATION
     let result: U256;
     if (byteNum.value > 31n) {
-      // Can't extend any further
       result = value;
     } else {
-      // Convert to bytes
       const valueBytes = value.toBeBytes32().value;
 
-      // Consider only N least significant bytes, where N is byte_num + 1
       const byteNumInt = Number(byteNum.value);
       const significantBytes = valueBytes.slice(31 - byteNumInt);
-
-      // Check sign bit
       const signBit = significantBytes[0] >> 7;
 
       if (signBit === 0) {
-        // Positive number - just convert back
         result = U256.fromBeBytes(significantBytes);
       } else {
-        // Negative number - prepend 0xFF bytes
         const numBytesPrepend = 32 - (byteNumInt + 1);
         const extendedBytes = new Uint8Array(32);
 
-        // Fill with 0xFF
         for (let i = 0; i < numBytesPrepend; i++) {
           extendedBytes[i] = 0xff;
         }
 
-        // Copy significant bytes
         extendedBytes.set(significantBytes, numBytesPrepend);
 
         result = U256.fromBeBytes(extendedBytes);

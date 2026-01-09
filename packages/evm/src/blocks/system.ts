@@ -10,7 +10,11 @@ import { type Address, Bytes, U256, Uint } from "@evm-effect/ethereum-types";
 import { HashSet } from "@evm-effect/shared/hashset";
 import { Data, Effect, Option, Ref } from "effect";
 import { SYSTEM_ADDRESS, SYSTEM_TRANSACTION_GAS } from "../constants.js";
-import { type EthereumException, InvalidBlock } from "../exceptions.js";
+import {
+  type EthereumException,
+  SystemContractCallFailedError,
+  SystemContractEmptyError,
+} from "../exceptions.js";
 import * as State from "../state.js";
 import { TransientStorage } from "../state.js";
 import type { Log } from "../types/index.js";
@@ -73,7 +77,6 @@ const processSystemTransaction = (
   data: Bytes,
 ): Effect.Effect<MessageCallOutput, never, Fork> =>
   Effect.gen(function* () {
-    // Create transaction environment for system transaction
     const systemTxEnv = new TransactionEnvironment({
       origin: SYSTEM_ADDRESS,
       gasPrice: new Uint({ value: 0n }),
@@ -87,7 +90,6 @@ const processSystemTransaction = (
       txHash: Option.none(),
     });
 
-    // Create message for system transaction
     const systemMessage = Message({
       blockEnv: blockEnv,
       txEnv: systemTxEnv,
@@ -108,11 +110,9 @@ const processSystemTransaction = (
       parentEvm: Option.none(),
     });
 
-    // Execute the system transaction - catch any errors and convert to MessageCallOutput
     const evmResult = yield* processMessage(systemMessage).pipe(Effect.either);
 
     if (evmResult._tag === "Left") {
-      // Execution failed - return output with error
       return new MessageCallOutput({
         gasLeft: new Uint({ value: 0n }),
         refundCounter: new U256({ value: 0n }),
@@ -171,7 +171,11 @@ export const processCheckedSystemTransaction = (
   blockEnv: BlockEnvironment,
   targetAddress: Address,
   data: Bytes,
-): Effect.Effect<MessageCallOutput, InvalidBlock, Fork> =>
+): Effect.Effect<
+  MessageCallOutput,
+  SystemContractEmptyError | SystemContractCallFailedError,
+  Fork
+> =>
   Effect.gen(function* () {
     const systemContractCode = State.getAccount(
       blockEnv.state,
@@ -180,7 +184,7 @@ export const processCheckedSystemTransaction = (
 
     if (systemContractCode.value.length === 0) {
       return yield* Effect.fail(
-        new InvalidBlock({
+        new SystemContractEmptyError({
           message: `System contract address ${targetAddress.toString()} does not contain code`,
         }),
       );
@@ -195,8 +199,10 @@ export const processCheckedSystemTransaction = (
 
     if (Option.isSome(systemTxOutput.error)) {
       return yield* Effect.fail(
-        new InvalidBlock({
-          message: `System contract (${targetAddress.toString()}) call failed: ${systemTxOutput.error.value}`,
+        new SystemContractCallFailedError({
+          message: `System contract (${targetAddress.toString()}) call failed: ${
+            systemTxOutput.error.value
+          }`,
         }),
       );
     }

@@ -9,8 +9,6 @@ import { Bytes, type U256 } from "@evm-effect/ethereum-types";
 /**
  * Read bytes from memory.
  *
- * Ported from Python: memory_read_bytes
- *
  * @param memory - Memory contents of the EVM
  * @param startPosition - Starting pointer to the memory
  * @param size - Size of the data that needs to be read from startPosition
@@ -29,8 +27,6 @@ export function memoryReadBytes(
 
 /**
  * Write bytes to memory.
- *
- * Ported from Python: memory_write
  *
  * @param memory - Memory contents of the EVM
  * @param startPosition - Starting pointer to the memory

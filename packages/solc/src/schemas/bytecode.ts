@@ -4,7 +4,6 @@
 import { Schema } from "effect";
 import { HexString } from "./types.js";
 
-// Link reference position
 export const LinkReferencePosition = Schema.Struct({
   start: Schema.Number,
   length: Schema.Number,
@@ -12,7 +11,6 @@ export const LinkReferencePosition = Schema.Struct({
 
 export type LinkReferencePosition = typeof LinkReferencePosition.Type;
 
-// Link references: libraryFile -> library -> array of positions
 export const LinkReferences = Schema.Record({
   key: Schema.String,
   value: Schema.Record({
@@ -23,7 +21,6 @@ export const LinkReferences = Schema.Record({
 
 export type LinkReferences = typeof LinkReferences.Type;
 
-// Immutable references: AST ID -> array of positions
 export const ImmutableReferences = Schema.Record({
   key: Schema.String,
   value: Schema.Array(LinkReferencePosition),
@@ -31,7 +28,6 @@ export const ImmutableReferences = Schema.Record({
 
 export type ImmutableReferences = typeof ImmutableReferences.Type;
 
-// Generated source
 export const GeneratedSource = Schema.Struct({
   ast: Schema.optional(Schema.Unknown),
   contents: Schema.String,
@@ -42,7 +38,6 @@ export const GeneratedSource = Schema.Struct({
 
 export type GeneratedSource = typeof GeneratedSource.Type;
 
-// Function debug data
 export const FunctionDebugData = Schema.Struct({
   entryPoint: Schema.NullishOr(Schema.Number),
   id: Schema.NullishOr(Schema.Number),
@@ -52,7 +47,6 @@ export const FunctionDebugData = Schema.Struct({
 
 export type FunctionDebugData = typeof FunctionDebugData.Type;
 
-// Bytecode object
 export const Bytecode = Schema.Struct({
   object: Schema.optional(HexString),
   opcodes: Schema.optional(Schema.String),
@@ -71,7 +65,6 @@ export const Bytecode = Schema.Struct({
 
 export type Bytecode = typeof Bytecode.Type;
 
-// Gas estimates
 export const GasEstimates = Schema.Struct({
   creation: Schema.optional(
     Schema.Struct({
@@ -90,7 +83,6 @@ export const GasEstimates = Schema.Struct({
 
 export type GasEstimates = typeof GasEstimates.Type;
 
-// Method identifiers
 export const MethodIdentifiers = Schema.Record({
   key: Schema.String,
   value: Schema.String,
@@ -98,7 +90,6 @@ export const MethodIdentifiers = Schema.Record({
 
 export type MethodIdentifiers = typeof MethodIdentifiers.Type;
 
-// EVM output
 export const EVMOutput = Schema.Struct({
   assembly: Schema.optional(Schema.String),
   legacyAssembly: Schema.optional(Schema.Unknown),

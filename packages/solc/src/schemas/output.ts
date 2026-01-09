@@ -7,7 +7,6 @@ import { EVMOutput } from "./bytecode.js";
 import { DevDoc, UserDoc } from "./documentation.js";
 import { ErrorType, Severity } from "./types.js";
 
-// Source location
 export const SourceLocation = Schema.Struct({
   file: Schema.String,
   start: Schema.Number,
@@ -16,7 +15,6 @@ export const SourceLocation = Schema.Struct({
 
 export type SourceLocation = typeof SourceLocation.Type;
 
-// Secondary source location
 export const SecondarySourceLocation = Schema.Struct({
   file: Schema.String,
   start: Schema.Number,
@@ -26,7 +24,6 @@ export const SecondarySourceLocation = Schema.Struct({
 
 export type SecondarySourceLocation = typeof SecondarySourceLocation.Type;
 
-// Compiler error/warning
 export const CompilerError = Schema.Struct({
   sourceLocation: Schema.optional(SourceLocation),
   secondarySourceLocations: Schema.optional(
@@ -42,7 +39,6 @@ export const CompilerError = Schema.Struct({
 
 export type CompilerError = typeof CompilerError.Type;
 
-// Auxiliary input requested (SMT queries)
 export const AuxiliaryInputRequested = Schema.Struct({
   smtlib2queries: Schema.optional(
     Schema.Record({
@@ -54,7 +50,6 @@ export const AuxiliaryInputRequested = Schema.Struct({
 
 export type AuxiliaryInputRequested = typeof AuxiliaryInputRequested.Type;
 
-// Source output
 export const SourceOutput = Schema.Struct({
   id: Schema.Number,
   ast: Schema.optional(Schema.Unknown),
@@ -62,7 +57,6 @@ export const SourceOutput = Schema.Struct({
 
 export type SourceOutput = typeof SourceOutput.Type;
 
-// Storage layout entry
 export const StorageLayoutEntry = Schema.Struct({
   astId: Schema.Number,
   contract: Schema.String,
@@ -74,7 +68,6 @@ export const StorageLayoutEntry = Schema.Struct({
 
 export type StorageLayoutEntry = typeof StorageLayoutEntry.Type;
 
-// Storage layout type (recursive definition for struct members)
 const StorageLayoutTypeBase = Schema.Struct({
   encoding: Schema.String,
   label: Schema.String,
@@ -96,7 +89,6 @@ export const StorageLayoutType = Schema.Struct({
   ),
 });
 
-// Storage layout
 export const StorageLayout = Schema.Struct({
   storage: Schema.Array(StorageLayoutEntry),
   types: Schema.NullOr(
@@ -109,17 +101,16 @@ export const StorageLayout = Schema.Struct({
 
 export type StorageLayout = typeof StorageLayout.Type;
 
-// Contract output
 export const ContractOutput = Schema.Struct({
   abi: Schema.optional(ABI),
   metadata: Schema.optional(Schema.String),
   userdoc: Schema.optional(UserDoc),
   devdoc: Schema.optional(DevDoc),
   ir: Schema.optional(Schema.String),
-  irAst: Schema.optional(Schema.Unknown), // Complex Yul AST structure
+  irAst: Schema.optional(Schema.Unknown),
   irOptimized: Schema.optional(Schema.String),
-  irOptimizedAst: Schema.optional(Schema.Unknown), // Complex Yul AST structure
-  yulCFGJson: Schema.optional(Schema.Unknown), // Control Flow Graph JSON
+  irOptimizedAst: Schema.optional(Schema.Unknown),
+  yulCFGJson: Schema.optional(Schema.Unknown),
   storageLayout: Schema.optional(StorageLayout),
   transientStorageLayout: Schema.optional(StorageLayout),
   evm: Schema.optional(EVMOutput),
@@ -127,7 +118,6 @@ export const ContractOutput = Schema.Struct({
 
 export type ContractOutput = typeof ContractOutput.Type;
 
-// Contracts output: source file -> contract name -> contract data
 export const ContractsOutput = Schema.Record({
   key: Schema.String,
   value: Schema.Record({
@@ -138,7 +128,6 @@ export const ContractsOutput = Schema.Record({
 
 export type ContractsOutput = typeof ContractsOutput.Type;
 
-// Sources output: source name -> source data
 export const SourcesOutput = Schema.Record({
   key: Schema.String,
   value: SourceOutput,
@@ -146,7 +135,6 @@ export const SourcesOutput = Schema.Record({
 
 export type SourcesOutput = typeof SourcesOutput.Type;
 
-// Complete compiler output
 export const CompilerOutput = Schema.Struct({
   errors: Schema.optional(Schema.Array(CompilerError)),
   auxiliaryInputRequested: Schema.optional(AuxiliaryInputRequested),

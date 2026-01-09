@@ -1,7 +1,3 @@
-// enesisConfiguration:
-//     """
-//     Configuration for the first block of an Ethereum chain.
-
 import {
   Address,
   Bytes,

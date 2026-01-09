@@ -17,13 +17,11 @@ import { Fork } from "./Fork.js";
 // Gas Constants
 // ============================================================================
 
-// Gas constants use the constructor directly since we know they're valid
 export const GAS_JUMPDEST = new Uint({ value: 1n });
 export const GAS_BASE = new Uint({ value: 2n });
 export const GAS_VERY_LOW = new Uint({ value: 3n });
 export const GAS_STORAGE_SET = new Uint({ value: 20000n });
 export const GAS_STORAGE_UPDATE = new Uint({ value: 5000n });
-// const _GAS_STORAGE_CLEAR_REFUND = new Uint({ value: 4800n });
 // EIP-1283 (Constantinople) gas constants
 export const GAS_SSTORE_NOOP = new Uint({ value: 200n }); // When current == new
 export const GAS_SSTORE_INIT = new Uint({ value: 20000n }); // When original == 0 and current != new
@@ -34,13 +32,12 @@ export const GAS_MID = new Uint({ value: 8n });
 export const GAS_HIGH = new Uint({ value: 10n });
 export const GAS_EXPONENTIATION = new Uint({ value: 10n });
 
-// Fork-dependent: EIP-160 (Spurious Dragon) increased from 10 to 50
 export const GAS_EXPONENTIATION_PER_BYTE = Effect.gen(function* () {
   const fork = yield* Fork;
   if (fork.eip(160)) {
-    return new Uint({ value: 50n }); // EIP-160 (Spurious Dragon+)
+    return new Uint({ value: 50n });
   }
-  return new Uint({ value: 10n }); // Frontier/Homestead/Tangerine Whistle
+  return new Uint({ value: 10n });
 });
 
 const GAS_MEMORY = new Uint({ value: 3n });
@@ -61,59 +58,54 @@ export const GAS_NEW_ACCOUNT = new Uint({ value: 25000n });
 export const GAS_CALL_VALUE = new Uint({ value: 9000n });
 export const GAS_CALL_STIPEND = new Uint({ value: 2300n });
 
-// Fork-dependent gas costs (EIP-150 introduced many gas cost changes in Tangerine Whistle)
 export const GAS_CALL = Effect.gen(function* () {
   const fork = yield* Fork;
   if (fork.eip(150)) {
-    return new Uint({ value: 700n }); // EIP-150 (Tangerine Whistle+)
+    return new Uint({ value: 700n });
   }
-  return new Uint({ value: 40n }); // Frontier/Homestead
+  return new Uint({ value: 40n });
 });
 
 export const GAS_BALANCE = Effect.gen(function* () {
   const fork = yield* Fork;
   if (fork.eip(1884)) {
-    return new Uint({ value: 700n }); // EIP-1884 (Istanbul+)
+    return new Uint({ value: 700n });
   }
   if (fork.eip(150)) {
-    return new Uint({ value: 400n }); // EIP-150 (Tangerine Whistle+)
+    return new Uint({ value: 400n });
   }
-  return new Uint({ value: 20n }); // Frontier/Homestead
+  return new Uint({ value: 20n });
 });
 
 export const GAS_EXTERNAL = Effect.gen(function* () {
   const fork = yield* Fork;
   if (fork.eip(150)) {
-    return new Uint({ value: 700n }); // EIP-150 (Tangerine Whistle+)
+    return new Uint({ value: 700n });
   }
-  return new Uint({ value: 20n }); // Frontier/Homestead
+  return new Uint({ value: 20n });
 });
 
-// Fork-dependent: EIP-1679 (Istanbul) increased EXTCODEHASH from 400 to 700
 export const GAS_CODE_HASH = Effect.gen(function* () {
   const fork = yield* Fork;
   if (fork.eip(1884)) {
-    // EIP-1884 is part of EIP-1679 (Istanbul HF meta EIP)
-    return new Uint({ value: 700n }); // Istanbul+
+    return new Uint({ value: 700n });
   }
-  return new Uint({ value: 400n }); // Constantinople/Petersburg (EIP-1052)
+  return new Uint({ value: 400n });
 });
 
 export const GAS_SELF_DESTRUCT = Effect.gen(function* () {
   const fork = yield* Fork;
   if (fork.eip(150)) {
-    return new Uint({ value: 5000n }); // EIP-150 (Tangerine Whistle+)
+    return new Uint({ value: 5000n });
   }
-  return new Uint({ value: 0n }); // Frontier/Homestead (GAS_ZERO)
+  return new Uint({ value: 0n });
 });
 
 export const GAS_SELF_DESTRUCT_NEW_ACCOUNT = new Uint({ value: 25000n });
 
-// Gas refund for SELFDESTRUCT (removed in EIP-3529 / London)
 export const GAS_SELF_DESTRUCT_REFUND = new Uint({ value: 24000n });
 
 export const GAS_ECRECOVER = new Uint({ value: 3000n });
-// const _GAS_P256VERIFY = new Uint({ value: 6900n });
 
 export const GAS_SHA256 = new Uint({ value: 60n });
 export const GAS_SHA256_WORD = new Uint({ value: 12n });
@@ -129,7 +121,6 @@ export const GAS_FAST_STEP = new Uint({ value: 5n });
 export const GAS_BLAKE2_PER_ROUND = new Uint({ value: 1n });
 
 export const GAS_COLD_SLOAD = new Uint({ value: 2100n });
-// Pre-EIP-2929 SLOAD cost (before Berlin fork)
 export const GAS_SLOAD = Effect.gen(function* () {
   const fork = yield* Fork;
   if (fork.eip(1884)) {
@@ -149,7 +140,6 @@ export const GAS_BLOBHASH_OPCODE = new Uint({ value: 3n });
 
 export const GAS_POINT_EVALUATION = new Uint({ value: 50000n });
 
-// BLS gas constants
 export const GAS_BLS_G1_ADD = new Uint({ value: 375n });
 export const GAS_BLS_G1_MUL = new Uint({ value: 12000n });
 
@@ -157,10 +147,6 @@ export const GAS_BLS_G1_MAP = new Uint({ value: 5500n });
 export const GAS_BLS_G2_ADD = new Uint({ value: 600n });
 export const GAS_BLS_G2_MUL = new Uint({ value: 22500n });
 export const GAS_BLS_G2_MAP = new Uint({ value: 23800n });
-
-// ============================================================================
-// Gas Calculation Types
-// ============================================================================
 
 /**
  * Define the parameters for memory extension in opcodes.
@@ -174,10 +160,6 @@ class MessageCallGas extends Data.Class<{
   readonly cost: UintType;
   readonly subCall: UintType;
 }> {}
-
-// ============================================================================
-// Gas Operations
-// ============================================================================
 
 /**
  * Charge gas from the EVM. Fails with OutOfGasError if insufficient gas.
@@ -202,17 +184,12 @@ export const chargeGas = (amount: UintType) =>
  * Calculate the gas cost for memory of a given size.
  */
 const calculateMemoryGasCost = (sizeInBytes: Uint): Uint => {
-  // Calculate size in words (ceiling division by 32)
-
   const sizeInWords = Numeric.ceil32(sizeInBytes).value / 32n;
 
-  // Linear cost: sizeInWords * GAS_MEMORY
   const linearCost = sizeInWords * GAS_MEMORY.value;
 
-  // Quadratic cost: (sizeInWords * sizeInWords) / 512
   const quadraticCost = (sizeInWords * sizeInWords) / 512n;
 
-  // Total cost
   return new Uint({
     value: linearCost + quadraticCost,
   });
@@ -264,9 +241,6 @@ export const calculateMessageCallGas = (
   const actualStipend =
     value.value === 0n ? new Uint({ value: 0n }) : callStipend;
 
-  // Pre-EIP-150 (Frontier/Homestead): Simple calculation
-  // cost = gas + extraGas (memory cost added by caller)
-  // sub_call = gas + stipend
   if (!applyEip150) {
     return new MessageCallGas({
       cost: new Uint({ value: gas.value + extraGas.value }),
@@ -274,7 +248,6 @@ export const calculateMessageCallGas = (
     });
   }
 
-  // EIP-150+ (Tangerine Whistle and later): 63/64 rule
   if (gasLeft.value < extraGas.value + memoryCost.value) {
     return new MessageCallGas({
       cost: new Uint({ value: gas.value + extraGas.value }),
@@ -282,7 +255,6 @@ export const calculateMessageCallGas = (
     });
   }
 
-  // Cap gas to 63/64 of available gas
   gas = Numeric.min(
     gas,
     maxMessageCallGas(

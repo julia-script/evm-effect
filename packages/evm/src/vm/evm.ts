@@ -33,7 +33,6 @@ export interface EvmEncoded {
   output: (typeof Bytes)["Encoded"];
   accountsToDelete: Schema.Set$<typeof Address>["Encoded"];
   returnData: (typeof Bytes)["Encoded"];
-  // error: Option.Option<EthereumException>;
   accessedAddresses: Schema.Set$<typeof Address>["Encoded"];
   accessedStorageKeys: Schema.Set$<
     Schema.Tuple2<typeof Address, typeof Bytes32>
@@ -59,10 +58,9 @@ export class Stack extends Data.Class<{
     return Effect.gen(function* () {
       const stack = yield* Ref.get(self.value);
       if (stack.length === 0) {
-        yield* Effect.fail(new StackUnderflowError({}));
+        return yield* Effect.fail(new StackUnderflowError({}));
       }
       const popped = stack.pop() as U256;
-      // yield* self.dump(`POP(${popped.value.toString()})`);
       return popped;
     });
   }
@@ -81,7 +79,6 @@ export class Stack extends Data.Class<{
         });
       }.bind(this),
     );
-    // .pipe(Effect.tap(() => this.dump(`PUSH(${value.value.toString()})`)));
   }
   swap(itemNumber: number) {
     const self = this;
@@ -130,12 +127,10 @@ export class Evm extends Context.Tag("Evm")<
 >() {
   static make(partial: {
     message: Message;
-    // code: Parameters<typeof Code.from>[0];
     validJumpDestinations?: ReadonlySet<number>;
   }) {
     return Effect.gen(function* () {
       const code = partial.message.code;
-      // const validJumpDestinations = yield*  (Effect.succeed(partial.validJumpDestinations) || code.validJumpDestinations)
       let validJumpDestinations = partial.validJumpDestinations;
       if (!validJumpDestinations) {
         validJumpDestinations = yield* code.validJumpDestinations;

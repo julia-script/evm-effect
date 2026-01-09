@@ -11,7 +11,6 @@
  * @module
  */
 
-// Re-export transaction types from crypto package to maintain compatibility
 export {
   AccessListTransaction,
   BlobTransaction,

@@ -12,7 +12,6 @@ export const BLS_FIELD_MODULUS = BigInt(
   "0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
 );
 
-// BLS12-381 curve order (scalar field modulus)
 export const BLS_CURVE_ORDER = bls12_381.fields.Fr.ORDER;
 
 export const G1_ZERO = bls12_381.G1.Point.ZERO;
@@ -28,17 +27,14 @@ export function bytesToG1Point(
   data: Uint8Array,
   verifyOrder: boolean = false,
 ): typeof G1_ZERO {
-  // Check for point at infinity (all zeros)
   const isZero = data.every((b) => b === 0);
   if (isZero) {
     return G1_ZERO;
   }
 
-  // Extract coordinates - each is 64 bytes in big-endian format
   const x = Uint.fromBeBytes(data.slice(0, 64)).value;
   const y = Uint.fromBeBytes(data.slice(64, 128)).value;
 
-  // Check field modulus
   if (x >= BLS_FIELD_MODULUS) {
     throw new Error("x coordinate >= field modulus");
   }
@@ -46,11 +42,8 @@ export function bytesToG1Point(
     throw new Error("y coordinate >= field modulus");
   }
 
-  // Create point
   const point = bls12_381.G1.Point.fromAffine({ x, y });
 
-  // Manual curve check: y² = x³ + 4 (mod p)
-  // We do this manually instead of assertValidity() because assertValidity() also checks subgroup
   const Fp = bls12_381.fields.Fp;
   const x_fp = Fp.create(x);
   const y_fp = Fp.create(y);
@@ -62,7 +55,6 @@ export function bytesToG1Point(
     throw new Error("Point is not on curve");
   }
 
-  // If subgroup check is required, verify the point is in the prime-order subgroup
   if (verifyOrder && !point.isTorsionFree()) {
     throw new Error("Subgroup check failed for G1 point");
   }
@@ -78,14 +70,11 @@ export function bytesToG1Point(
 export function g1PointToBytes(affine: AffinePoint<bigint>): Uint8Array {
   const output = new Uint8Array(128);
 
-  // Convert coordinates to 64-byte big-endian format
   const xBytes = numeric.toBeBytes64(new Uint({ value: affine.x }));
   const yBytes = numeric.toBeBytes64(new Uint({ value: affine.y }));
 
-  // Set x coordinate (64 bytes)
   output.set(xBytes.value, 0);
 
-  // Set y coordinate (64 bytes)
   output.set(yBytes.value, 64);
 
   return output;
@@ -101,11 +90,9 @@ function bytesToFp2(data: Uint8Array) {
     throw new Error("Fp2 input should be 128 bytes");
   }
 
-  // Extract c0 and c1 - each is 64 bytes in big-endian format
   const c0 = Uint.fromBeBytes(data.slice(0, 64)).value;
   const c1 = Uint.fromBeBytes(data.slice(64, 128)).value;
 
-  // Check field modulus
   if (c0 >= BLS_FIELD_MODULUS) {
     throw new Error("c0 >= field modulus");
   }
@@ -113,7 +100,6 @@ function bytesToFp2(data: Uint8Array) {
     throw new Error("c1 >= field modulus");
   }
 
-  // Convert to Fp elements and create Fp2
   const fp_c0 = bls12_381.fields.Fp.create(c0);
   const fp_c1 = bls12_381.fields.Fp.create(c1);
 
@@ -128,14 +114,11 @@ function bytesToFp2(data: Uint8Array) {
 function fp2ToBytes(fp2: Fp2): Uint8Array {
   const output = new Uint8Array(128);
 
-  // Convert c0 and c1 to 64-byte big-endian format
   const c0Bytes = numeric.toBeBytes64(new Uint({ value: fp2.c0 }));
   const c1Bytes = numeric.toBeBytes64(new Uint({ value: fp2.c1 }));
 
-  // Set c0 (64 bytes)
   output.set(c0Bytes.value, 0);
 
-  // Set c1 (64 bytes)
   output.set(c1Bytes.value, 64);
 
   return output;
@@ -155,25 +138,19 @@ export function bytesToG2Point(
     throw new Error("G2 point should be 256 bytes");
   }
 
-  // Check for point at infinity (all zeros)
   const isZero = data.every((b) => b === 0);
   if (isZero) {
     return G2_ZERO;
   }
 
-  // Extract x and y coordinates (each is Fp2, 128 bytes)
   const x = bytesToFp2(data.slice(0, 128));
   const y = bytesToFp2(data.slice(128, 256));
 
-  // Create point
   const point = bls12_381.G2.Point.fromAffine({ x, y });
 
-  // Manual curve check: y² = x³ + 4(1 + i) (mod p) in Fp2
-  // We do this manually instead of assertValidity() because assertValidity() also checks subgroup
   const Fp2 = bls12_381.fields.Fp2;
   const y_squared = Fp2.mul(y, y);
   const x_cubed = Fp2.mul(Fp2.mul(x, x), x);
-  // 4(1 + i) = 4 + 4i in Fp2 representation
   const b = Fp2.fromBigTuple([4n, 4n]);
   const x_cubed_plus_b = Fp2.add(x_cubed, b);
 
@@ -181,7 +158,6 @@ export function bytesToG2Point(
     throw new Error("Point is not on curve");
   }
 
-  // If subgroup check is required, verify the point is in the prime-order subgroup
   if (verifyOrder && !point.isTorsionFree()) {
     throw new Error("Subgroup check failed for G2 point");
   }
@@ -197,11 +173,9 @@ export function bytesToG2Point(
 export function g2PointToBytes(point: AffinePoint<Fp2>): Uint8Array {
   const output = new Uint8Array(256);
 
-  // Set x coordinate (Fp2, 128 bytes)
   const xBytes = fp2ToBytes(point.x);
   output.set(xBytes, 0);
 
-  // Set y coordinate (Fp2, 128 bytes)
   const yBytes = fp2ToBytes(point.y);
   output.set(yBytes, 128);
 
@@ -218,10 +192,8 @@ export function decodeG1ScalarPair(data: Uint8Array): [typeof G1_ZERO, bigint] {
     throw new Error("Input should be 160 bytes long");
   }
 
-  // Decode G1 point with subgroup check
   const point = bytesToG1Point(data.slice(0, 128), true);
 
-  // Decode scalar (32 bytes)
   const scalar = Uint.fromBeBytes(data.slice(128, 160)).value;
 
   return [point, scalar];
@@ -237,10 +209,8 @@ export function decodeG2ScalarPair(data: Uint8Array): [typeof G2_ZERO, bigint] {
     throw new Error("Input should be 288 bytes long");
   }
 
-  // Decode G2 point with subgroup check
   const point = bytesToG2Point(data.slice(0, 256), true);
 
-  // Decode scalar (32 bytes)
   const scalar = Uint.fromBeBytes(data.slice(256, 288)).value;
 
   return [point, scalar];

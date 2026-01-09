@@ -6,5 +6,4 @@
  * @module
  */
 
-// Re-export Authorization from crypto package to maintain compatibility
 export { Authorization } from "@evm-effect/crypto";

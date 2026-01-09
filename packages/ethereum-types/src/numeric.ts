@@ -4,7 +4,6 @@ import { EvmTypeError } from "./exceptions.js";
 const wrap = (value: bigint, byteLength: bigint) => {
   return (value % 2n ** (byteLength * 8n)) & (2n ** (byteLength * 8n) - 1n);
 };
-// }
 export class U8 extends Schema.TaggedClass<U8>("U8")(
   "U8",
   {
@@ -29,6 +28,9 @@ export class U8 extends Schema.TaggedClass<U8>("U8")(
     return Either.flatMap(Uint.from(input), (value) =>
       U8.fromBigInt(value.value),
     );
+  }
+  static constant(input: Uintish): U8 {
+    return Either.getOrThrow(U8.from(input));
   }
   static fromEffect<E, R>(input: Effect.Effect<Uintish, E, R>) {
     return input.pipe(Effect.flatMap(U8.from));
@@ -84,6 +86,9 @@ export class U64 extends Schema.TaggedClass<U64>("U64")(
     return Either.flatMap(Uint.from(input), (value) =>
       U64.fromBigInt(value.value),
     );
+  }
+  static constant(input: Uintish): U64 {
+    return Either.getOrThrow(U64.from(input));
   }
   static fromEffect<E, R>(input: Effect.Effect<Uintish, E, R>) {
     return input.pipe(Effect.flatMap(U64.from));
@@ -150,6 +155,9 @@ export class U256 extends Schema.TaggedClass<U256>("U256")(
     return Either.flatMap(Uint.from(input), (value) =>
       U256.fromBigInt(value.value),
     );
+  }
+  static constant(input: Uintish): U256 {
+    return Either.getOrThrow(U256.from(input));
   }
   static fromEffect<E, R>(input: Effect.Effect<Uintish, E, R>) {
     return input.pipe(Effect.flatMap(U256.from));
@@ -219,10 +227,8 @@ export class U256 extends Schema.TaggedClass<U256>("U256")(
   toSigned(): bigint {
     const bits = 256;
     if (this.value.toString(2).length < bits) {
-      // Sign bit is 0, positive number
       return this.value;
     }
-    // Negative number: -1 * (2's complement of value)
     return this.value - (U256.MAX_VALUE + 1n);
   }
 
@@ -379,6 +385,9 @@ export class Uint extends Schema.TaggedClass<Uint>("Uint")(
     );
   }
 
+  static constant(input: Uintish): Uint {
+    return Either.getOrThrow(Uint.from(input));
+  }
   static fromEffect<E, R>(input: Effect.Effect<Uintish, E, R>) {
     return input.pipe(Effect.flatMap(Uint.from));
   }
@@ -565,11 +574,10 @@ export function _pow<T extends FixedUnsigned>(a: T, b: T): T {
   const MOD = CLASS.MAX_VALUE + 1n;
 
   if (b.value === 0n) {
-    // x^0 = 1, but must apply modulo: 1 % MOD
     return new CLASS({ value: 1n % MOD }) as T;
   }
 
-  // Use modular exponentiation to avoid overflow
+  // use modular exponentiation to avoid overflow
   let base = a.value;
   let exp = b.value;
   let result = 1n;
@@ -607,7 +615,6 @@ export function wrappingPow(a: Uint, b: Uint, modulo: Uint): Uint;
 export function wrappingPow<T extends AnyUint>(a: T, b: T, modulo?: T): T {
   const CLASS = CLASS_BY_TAG[a._tag];
 
-  // For Uint (arbitrary precision), modulo is required
   if (a._tag === "Uint" && !modulo) {
     throw new Error(
       "wrappingPow: modulo is required for Uint (arbitrary precision)",
@@ -618,16 +625,14 @@ export function wrappingPow<T extends AnyUint>(a: T, b: T, modulo?: T): T {
   if (modulo) {
     MOD = modulo.value;
   } else if (a._tag === "Uint") {
-    // This should never happen due to check above, but TypeScript needs it
-    throw new Error("wrappingPow: modulo is required for Uint");
+    throw new Error("Unreachable: wrappingPow - modulo is required for Uint");
   } else {
-    // For fixed-size types, use their MAX_VALUE
+    // for fixed-size types, use their MAX_VALUE
     const FixedClass = CLASS as typeof U256 | typeof U64 | typeof U8;
     MOD = FixedClass.MAX_VALUE + 1n;
   }
 
   if (b.value === 0n) {
-    // x^0 = 1, but must apply modulo: 1 % MOD
     return new CLASS({ value: 1n % MOD }) as T;
   }
 
@@ -794,7 +799,6 @@ export function toNumber<T extends AnyUint>(
 // NUMERIC <-> BYTES CONVERSIONS
 // ============================================================================
 
-// Re-export from conversions.ts to avoid circular dependencies
 export {
   toBeBytes,
   toBeBytes4,
@@ -820,7 +824,6 @@ export function fromBeBytes<T extends AnyUintClass>(
   }
 
   if ("MAX_VALUE" in targetClass) {
-    // Validate against target class MAX_VALUE
     const maxValue = targetClass.MAX_VALUE;
     if (maxValue !== undefined && result > maxValue) {
       return Either.left(
@@ -873,18 +876,7 @@ export class Int extends Schema.TaggedClass<Int>("Int")(
       (self: Int): string =>
         `${self._tag}(${self.value})`,
   },
-) {
-  // static fromBytes(bytes: AnyBytes, littleEndian: boolean = false): Int {
-  //   let step = littleEndian ? -1 : 1;
-  //   let index = littleEndian ? bytes.value.length - 1 : 0;
-  //   let result = 0n;
-  //   while (index >= 0 && index < bytes.value.length) {
-  //     result = (result << 8n) | BigInt(bytes.value[index]);
-  //     index += step;
-  //   }
-  //   return new Int({ value: result });
-  // }
-}
+) {}
 
 const BIT_LENGTH_BY_TAG = {
   U256: 256,
@@ -908,7 +900,6 @@ export function toSigned<T extends FixedUnsigned>(a: T): bigint {
   const signBit = 1n << BigInt(bitLen - 1);
 
   if (a.value >= signBit) {
-    // Negative in two's complement
     return a.value - (1n << BigInt(bitLen));
   }
 

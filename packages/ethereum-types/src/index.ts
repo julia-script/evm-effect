@@ -21,9 +21,7 @@ import {
 import { Address } from "./domain.js";
 import { isUnsignedInt, U8, U64, U256, Uint } from "./numeric.js";
 
-// Re-export types
 export type { AnyBytes } from "./bytes.js";
-// Bytes types
 export {
   Bytes,
   Bytes0,
@@ -35,7 +33,6 @@ export {
   Bytes64,
   Bytes256,
   cloneBytes,
-  // Bytes operations
   concat,
   equals,
   extractAndPad,
@@ -46,7 +43,6 @@ export {
   toHex,
 } from "./bytes.js";
 
-// Domain types
 export {
   Address,
   type Bloom,
@@ -54,10 +50,8 @@ export {
   type Root,
   type VersionedHash,
 } from "./domain.js";
-// Exceptions
 export { EvmTypeError } from "./exceptions.js";
 
-// Numeric types
 export {
   type AnyUint,
   // Arithmetic operations
@@ -151,8 +145,5 @@ export const isAddress = (val: unknown): val is Address => {
   return val instanceof Address;
 };
 export const isEvmType = (val: unknown) => {
-  // if (!('fields' in val)) return false
   return isBytes(val) || isUnsignedInt(val) || isAddress(val);
-
-  // return Match.instanceOf()
 };

@@ -1,10 +1,3 @@
-/**
- * Fork Constants and System Addresses
- *
- * Direct port of constants from ethereum/forks/osaka/fork.py and related files.
- * All numeric values must match the Python implementation exactly.
- */
-
 import { keccak256 } from "@evm-effect/crypto";
 import { Address, Bytes, Bytes32, U64, Uint } from "@evm-effect/ethereum-types";
 import { encode } from "@evm-effect/rlp";
@@ -40,7 +33,7 @@ export const BLOCK_REWARD_CONSTANTINOPLE = new Uint({
 }); // 2 ETH
 
 // ============================================================================
-// Base Fee and Gas Constants (from fork.py)
+// Base Fee and Gas Constants
 // ============================================================================
 
 /**
@@ -79,7 +72,7 @@ export const SYSTEM_TRANSACTION_GAS = Either.getOrThrow(
 );
 
 // ============================================================================
-// Block Size and RLP Constants (from fork.py)
+// Block Size and RLP Constants
 // ============================================================================
 
 /**
@@ -99,7 +92,7 @@ const SAFETY_MARGIN = 2_097_152;
 export const MAX_RLP_BLOCK_SIZE = MAX_BLOCK_SIZE - SAFETY_MARGIN;
 
 // ============================================================================
-// Blob Gas Constants (from fork.py and vm/gas.py)
+// Blob Gas Constants
 // ============================================================================
 
 /**
@@ -109,8 +102,6 @@ export const MAX_RLP_BLOCK_SIZE = MAX_BLOCK_SIZE - SAFETY_MARGIN;
  */
 export const MAX_BLOB_GAS_PER_BLOCK = Effect.gen(function* () {
   const fork = yield* Fork;
-  // EIP-7691 (Prague): Blob throughput increase from 6 to 9 blobs
-  // EIP-7825 (Osaka): Transaction Gas Limit Cap (also maintains 9 blobs)
   return new U64({ value: fork.eipSelect(7691, 1179648n, 786432n) });
 });
 
@@ -121,7 +112,6 @@ export const MAX_BLOB_GAS_PER_BLOCK = Effect.gen(function* () {
  */
 export const BLOB_COUNT_LIMIT = Effect.gen(function* () {
   const fork = yield* Fork;
-  // EIP-7691 (Prague): Blob throughput increase from 6 to 9 blobs
   return fork.eipSelect(7691, 9, 6);
 });
 
@@ -147,8 +137,6 @@ export const BLOB_SCHEDULE_TARGET = Either.getOrThrow(U64.fromNumber(6));
  */
 export const TARGET_BLOB_GAS_PER_BLOCK = Effect.gen(function* () {
   const fork = yield* Fork;
-  // EIP-7691 (Prague): Blob throughput increase - target increased to 786432
-  // EIP-4844 (Cancun): Original blob implementation - target was 393216
   return new U64({ value: fork.eipSelect(7691, 786432n, 393216n) });
 });
 
@@ -174,8 +162,6 @@ export const MIN_BLOB_GASPRICE = Either.getOrThrow(Uint.fromNumber(1));
  */
 export const BLOB_BASE_FEE_UPDATE_FRACTION = Effect.gen(function* () {
   const fork = yield* Fork;
-  // EIP-7691 (Prague): Blob throughput increase - update fraction changed to 5007716
-  // EIP-4844 (Cancun): Original blob implementation - update fraction was 3338477
   return new Uint({ value: fork.eipSelect(7691, 5007716n, 3338477n) });
 });
 

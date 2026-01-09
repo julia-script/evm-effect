@@ -10,13 +10,11 @@ import {
   ModelCheckerTarget,
 } from "./types.js";
 
-// Model checker contracts selection
 export const ModelCheckerContracts = Schema.Record({
   key: Schema.String,
   value: Schema.Array(Schema.String),
 });
 
-// Model checker settings
 export const ModelCheckerSettings = Schema.Struct({
   contracts: Schema.optional(ModelCheckerContracts),
   divModNoSlacks: Schema.optional(Schema.Boolean),

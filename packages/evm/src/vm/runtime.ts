@@ -8,7 +8,6 @@ import { Ops } from "./opcodes.js";
 
 export class Code extends Data.TaggedClass("Code")<{
   value: Uint8Array;
-  // validJumpDestinations: Effect<ReadonlySet<Uint>>;
 }> {
   static from(value: Uint8Array | AnyBytes | Code) {
     if (value instanceof Code) {
@@ -37,18 +36,12 @@ export class Code extends Data.TaggedClass("Code")<{
       while (pc < code.length) {
         const currentOpcode = code[pc];
         if (!Ops[currentOpcode]) {
-          // Skip invalid opcodes, as they don't affect the jumpdest
-          // analysis. Nevertheless, such invalid opcodes would be caught
-          // and raised when the interpreter runs.
           pc += 1;
           continue;
         }
         if (currentOpcode === Ops.JUMPDEST) {
           validJumpDestinations.add(pc);
         } else if (currentOpcode >= Ops.PUSH1 && currentOpcode <= Ops.PUSH32) {
-          // If PUSH-N opcodes are encountered, skip the current opcode along
-          // with the trailing data segment corresponding to the PUSH-N
-          // opcodes.
           const pushDataSize = currentOpcode - Ops.PUSH1 + 1;
           pc += pushDataSize;
         }

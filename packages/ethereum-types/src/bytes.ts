@@ -1,12 +1,3 @@
-/**
- * Bytes types for Ethereum
- *
- * Implements variable-length Bytes and fixed-length BytesN types
- * matching the Python ethereum_types.bytes module.
- *
- * @module
- */
-
 import { Either, Equal, Hash, Schema } from "effect";
 import { EvmTypeError } from "./exceptions.js";
 import {
@@ -18,7 +9,6 @@ import {
   uint8ArrayEquals,
 } from "./utils.js";
 
-// const hashing = {}
 /**
  * Variable-length byte array
  */
@@ -132,6 +122,10 @@ export class Bytes1 extends Schema.TaggedClass<Bytes1>("Bytes1")("Bytes1", {
     super({ value: padBuffer(value, 1) });
   }
 
+  static zero(): Bytes1 {
+    return new Bytes1({ value: new Uint8Array(1) });
+  }
+
   clone(): Bytes1 {
     return new Bytes1({ value: new Uint8Array(this.value) });
   }
@@ -172,6 +166,10 @@ export class Bytes4 extends Schema.TaggedClass<Bytes4>("Bytes4")("Bytes4", {
     super({ value: padBuffer(value, 4) });
   }
 
+  static zero(): Bytes4 {
+    return new Bytes4({ value: new Uint8Array(4) });
+  }
+
   clone(): Bytes4 {
     return new Bytes4({ value: new Uint8Array(this.value) });
   }
@@ -209,6 +207,10 @@ export class Bytes8 extends Schema.TaggedClass<Bytes8>("Bytes8")("Bytes8", {
 
   constructor({ value }: { value: Uint8Array }) {
     super({ value: padBuffer(value, 8) });
+  }
+
+  static zero(): Bytes8 {
+    return new Bytes8({ value: new Uint8Array(8) });
   }
 
   clone(): Bytes8 {
@@ -251,6 +253,10 @@ export class Bytes20 extends Schema.TaggedClass<Bytes20>("Bytes20")("Bytes20", {
     super({ value: padBuffer(value, 20) });
   }
 
+  static zero(): Bytes20 {
+    return new Bytes20({ value: new Uint8Array(20) });
+  }
+
   clone(): Bytes20 {
     return new Bytes20({ value: new Uint8Array(this.value) });
   }
@@ -282,10 +288,6 @@ const padBuffer = (value: Uint8Array | undefined, length: number) => {
   return value.slice(-length);
 };
 
-// interface Uint8Array<TArrayBuffer extends ArrayBufferLike = ArrayBuffer> {
-//   toHex(): string;
-//   value: TArrayBuffer;
-// }
 /**
  * Fixed-size byte array of exactly 32 bytes (hashes, storage keys)
  */
@@ -296,6 +298,10 @@ export class Bytes32 extends Schema.TaggedClass<Bytes32>("Bytes32")("Bytes32", {
 
   constructor({ value }: { value: Uint8Array }) {
     super({ value: padBuffer(value, 32) });
+  }
+
+  static zero(): Bytes32 {
+    return new Bytes32({ value: new Uint8Array(32) });
   }
 
   clone(): Bytes32 {
@@ -336,19 +342,10 @@ export class Bytes64 extends Schema.TaggedClass<Bytes64>("Bytes64")("Bytes64", {
 
   constructor({ value }: { value: Uint8Array }) {
     super({ value: padBuffer(value, 64) });
-    // if (value.length !== 64) {
-    // 	const padded = new Uint8Array(64);
-    // 	if (value.length < 64) {
-    // 		// Left-pad with zeros
-    // 		padded.set(value, 64 - value.length);
-    // 	} else {
-    // 		// Take the last 64 bytes
-    // 		padded.set(value.slice(-64), 0);
-    // 	}
-    // 	super({ value: padded });
-    // } else {
-    // 	super({ value });
-    // }
+  }
+
+  static zero(): Bytes64 {
+    return new Bytes64({ value: new Uint8Array(64) });
   }
 
   clone(): Bytes64 {
@@ -391,6 +388,10 @@ export class Bytes256 extends Schema.TaggedClass<Bytes256>("Bytes256")(
 
   constructor({ value }: { value: Uint8Array }) {
     super({ value: padBuffer(value, 256) });
+  }
+
+  static zero(): Bytes256 {
+    return new Bytes256({ value: new Uint8Array(256) });
   }
 
   clone(): Bytes256 {
@@ -598,7 +599,6 @@ export function extractAndPad(
   if (toCopy > 0) {
     result.set(data.subarray(start, start + toCopy), 0);
   }
-  // Rest is already zero-filled by Uint8Array constructor
   return result;
 }
 

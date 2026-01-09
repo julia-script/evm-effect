@@ -32,58 +32,16 @@ import { keccak256 } from "./keccak256.js";
 
 secp256k1.hashes.hmacSha256 = (key, msg) => hmac(sha256, key, msg);
 secp256k1.hashes.sha256 = sha256;
-// import { signingHash4844, signingHash7702 } from "./signature-recovery.js";
-
-// TX_BASE_COST = Uint(21000)
-// """
-// Base cost of a transaction in gas units. This is the minimum amount of gas
-// required to execute a transaction.
-// """
 export const TX_BASE_COST = new Uint({ value: 21000n });
 
-// FLOOR_CALLDATA_COST = Uint(10)
 export const FLOOR_CALLDATA_COST = new Uint({ value: 10n });
-// """
-// Minimum gas cost per byte of calldata as per [EIP-7623]. Used to calculate
-// the minimum gas cost for transactions that include calldata.
-
-// [EIP-7623]: https://eips.ethereum.org/EIPS/eip-7623
-// """
-
 export const STANDARD_CALLDATA_TOKEN_COST = new Uint({ value: 4n });
-// STANDARD_CALLDATA_TOKEN_COST = Uint(4)
-// """
-// Gas cost per byte of calldata as per [EIP-7623]. Used to calculate the
-// gas cost for transactions that include calldata.
 
-// [EIP-7623]: https://eips.ethereum.org/EIPS/eip-7623
-// """
-
-// TX_CREATE_COST = Uint(32000)
 export const TX_CREATE_COST = new Uint({ value: 32000n });
-// """
-// Additional gas cost for creating a new contract.
-// """
-
-// TX_ACCESS_LIST_ADDRESS_COST = Uint(2400)
 export const TX_ACCESS_LIST_ADDRESS_COST = new Uint({ value: 2400n });
-// """
-// Gas cost for including an address in the access list of a transaction.
-// """
-
-// TX_ACCESS_LIST_STORAGE_KEY_COST = Uint(1900)
 export const TX_ACCESS_LIST_STORAGE_KEY_COST = new Uint({ value: 1900n });
-// """
-// Gas cost for including a storage key in the access list of a transaction.
-// """
-
-// TX_MAX_GAS_LIMIT = Uint(16_777_216)
 export const TX_MAX_GAS_LIMIT = new Uint({ value: 16_777_216n });
-/**
- * Authorization for EIP-7702 set code transactions.
- *
- * Allows EOAs to temporarily set contract code on their account.
- */
+
 export class Authorization extends Schema.TaggedClass<Authorization>(
   "Authorization",
 )("Authorization", {
@@ -98,7 +56,6 @@ export class Authorization extends Schema.TaggedClass<Authorization>(
 /**
  * Access list entry specifying an account and its storage slots.
  *
- * Used in EIP-2930 and later transactions to pre-warm storage access.
  */
 export const Access = Schema.TaggedStruct("Access", {
   account: Address,
@@ -109,8 +66,6 @@ export type Access = (typeof Access)["Type"];
 /**
  * Legacy transaction (pre-EIP-2718).
  *
- * The original Ethereum transaction format with simple gas pricing.
- * Used before EIP-1559, EIP-2930, EIP-4844, and EIP-7702.
  */
 export const LegacyTransaction = Schema.TaggedStruct("LegacyTransaction", {
   nonce: U256,
@@ -119,9 +74,9 @@ export const LegacyTransaction = Schema.TaggedStruct("LegacyTransaction", {
   to: Schema.optional(Address),
   value: U256,
   data: Bytes,
-  v: U256,
-  r: U256,
-  s: U256,
+  v: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
+  r: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
+  s: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
 });
 export type LegacyTransaction = (typeof LegacyTransaction)["Type"];
 /**
@@ -142,19 +97,14 @@ export const AccessListTransaction = Schema.TaggedStruct(
     value: U256,
     data: Bytes,
     accessList: Schema.Array(Access),
-    yParity: U8,
-    r: U256,
-    s: U256,
+    yParity: Schema.optionalWith(U8, { default: () => U8.constant(0n) }),
+    r: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
+    s: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
   },
 );
 export type AccessListTransaction = (typeof AccessListTransaction)["Type"];
 /**
  * Fee market transaction (EIP-1559).
- *
- * Introduces a new fee market with:
- * - maxPriorityFeePerGas: tip to miner
- * - maxFeePerGas: maximum total fee per gas
- * - Base fee is burned
  */
 export const FeeMarketTransaction = Schema.TaggedStruct(
   "FeeMarketTransaction",
@@ -168,19 +118,14 @@ export const FeeMarketTransaction = Schema.TaggedStruct(
     value: U256,
     data: Bytes,
     accessList: Schema.Array(Access),
-    yParity: U8,
-    r: U256,
-    s: U256,
+    yParity: Schema.optionalWith(U8, { default: () => U8.constant(0n) }),
+    r: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
+    s: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
   },
 );
 export type FeeMarketTransaction = (typeof FeeMarketTransaction)["Type"];
 /**
  * Blob transaction (EIP-4844).
- *
- * Extends fee market transactions to support blob-carrying transactions
- * for data availability.
- *
- * Note: `to` cannot be empty (no contract creation with blob txs).
  */
 export const BlobTransaction = Schema.TaggedStruct("BlobTransaction", {
   chainId: U64,
@@ -188,27 +133,24 @@ export const BlobTransaction = Schema.TaggedStruct("BlobTransaction", {
   maxPriorityFeePerGas: Uint,
   maxFeePerGas: Uint,
   gas: Uint,
-  to: Schema.optional(Address), // Cannot be empty - no contract creation
+  to: Schema.optional(Address),
   value: U256,
   data: Bytes,
   accessList: Schema.Array(Access),
   maxFeePerBlobGas: U256,
-  blobVersionedHashes: Schema.Array(Bytes32), // VersionedHash[]
-  yParity: U8,
-  r: U256,
-  s: U256,
+  blobVersionedHashes: Schema.Array(Bytes32),
+  yParity: Schema.optionalWith(U8, { default: () => U8.constant(0n) }),
+  r: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
+  s: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
 });
 export type BlobTransaction = (typeof BlobTransaction)["Type"];
 
 /**
  * Set code transaction (EIP-7702).
- *
- * Allows EOAs to temporarily set contract code on their account,
- * enabling them to act as smart contracts.
  */
 export const SetCodeTransaction = Schema.TaggedStruct("SetCodeTransaction", {
   chainId: U64,
-  nonce: U64, // Note: U64, not U256
+  nonce: U64,
   maxPriorityFeePerGas: Uint,
   maxFeePerGas: Uint,
   gas: Uint,
@@ -217,9 +159,9 @@ export const SetCodeTransaction = Schema.TaggedStruct("SetCodeTransaction", {
   data: Bytes,
   accessList: Schema.Array(Access),
   authorizations: Schema.Array(Authorization),
-  yParity: U8,
-  r: U256,
-  s: U256,
+  yParity: Schema.optionalWith(U8, { default: () => U8.constant(0n) }),
+  r: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
+  s: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
 });
 export type SetCodeTransaction = (typeof SetCodeTransaction)["Type"];
 
@@ -232,16 +174,6 @@ export const Transaction = Schema.Union(
 );
 
 export type Transaction = (typeof Transaction)["Type"];
-
-/**
- * Union type representing any valid transaction type in the Osaka fork.
- */
-// export type Transaction =
-//   | LegacyTransaction
-//   | AccessListTransaction
-//   | FeeMarketTransaction
-//   | BlobTransaction
-//   | SetCodeTransaction;
 
 export const encodeTransaction = (
   transaction: Transaction,
@@ -342,53 +274,6 @@ export const signingHashPre155 = (tx: LegacyTransaction): Hash32 => {
     ]),
   );
 };
-// def signing_hash_pre155(tx: LegacyTransaction) -> Hash32:
-//     """
-//     Compute the hash of a transaction used in a legacy (pre [EIP-155])
-//     signature.
-
-//     This function takes a legacy transaction as a parameter and returns the
-//     signing hash of the transaction.
-
-//     [EIP-155]: https://eips.ethereum.org/EIPS/eip-155
-//     """
-//     return keccak256(
-//         rlp.encode(
-//             (
-//                 tx.nonce,
-//                 tx.gas_price,
-//                 tx.gas,
-//                 tx.to,
-//                 tx.value,
-//                 tx.data,
-//             )
-//         )
-//     )
-
-// def signing_hash_155(tx: LegacyTransaction, chain_id: U64) -> Hash32:
-//     """
-//     Compute the hash of a transaction used in a [EIP-155] signature.
-
-//     This function takes a legacy transaction and a chain ID as parameters
-//     and returns the hash of the transaction used in an [EIP-155] signature.
-
-//     [EIP-155]: https://eips.ethereum.org/EIPS/eip-155
-//     """
-//     return keccak256(
-//         rlp.encode(
-//             (
-//                 tx.nonce,
-//                 tx.gas_price,
-//                 tx.gas,
-//                 tx.to,
-//                 tx.value,
-//                 tx.data,
-//                 chain_id,
-//                 Uint(0),
-//                 Uint(0),
-//             )
-//         )
-//     )
 
 export const signingHash155 = (tx: LegacyTransaction, chainId: U64): Hash32 => {
   return keccak256(
@@ -423,34 +308,6 @@ export const signingHash2930 = (tx: AccessListTransaction): Hash32 => {
     ]),
   );
 };
-
-// def signing_hash_4844(tx: BlobTransaction) -> Hash32:
-//     """
-//     Compute the hash of a transaction used in an [EIP-4844] signature.
-
-//     This function takes a transaction as a parameter and returns the
-//     signing hash of the transaction used in an [EIP-4844] signature.
-
-//     [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
-//     """
-//     return keccak256(
-//         b"\x03"
-//         + rlp.encode(
-//             (
-//                 tx.chain_id,
-//                 tx.nonce,
-//                 tx.max_priority_fee_per_gas,
-//                 tx.max_fee_per_gas,
-//                 tx.gas,
-//                 tx.to,
-//                 tx.value,
-//                 tx.data,
-//                 tx.access_list,
-//                 tx.max_fee_per_blob_gas,
-//                 tx.blob_versioned_hashes,
-//             )
-//         )
-//     )
 
 export const signingHash1559 = (tx: FeeMarketTransaction): Hash32 => {
   return keccak256(
@@ -566,11 +423,8 @@ export const recoverPublicKey = (
       if (tx._tag === "LegacyTransaction") {
         const v = tx.v.value;
         if (v >= 35n) {
-          // EIP-155: v = chainId * 2 + 35 + recovery (0 or 1)
-          // recovery = (v - 35) % 2
           recoveryBit = Number((v - 35n) % 2n);
         } else {
-          // Pre-EIP-155: v = 27 or 28
           recoveryBit = Number(v - 27n);
         }
       } else {
@@ -597,83 +451,6 @@ export const recoverPublicKey = (
       });
     },
   });
-
-  // const recoveryBit = getRecoveryBit(tx);
-
-  // const signature = new secp256k1.Signature(
-  //   tx.r.value,
-  //   tx.s.value,
-  // ).addRecoveryBit(recoveryBit);
-  // const compressedPublicKey = secp256k1.recoverPublicKey(
-  //   signature.toBytes("recovered"),
-  //   getSigningHash(tx).value,
-  //   {
-  //     prehash: false,
-  //   },
-  // );
-  // const point = secp256k1.Point.fromBytes(compressedPublicKey);
-
-  // return Either.right(new Bytes({ value: point.toBytes(false) }));
-  // console.log("point", point.toHex(false));
-  // console.log("publicKey", publicKey);
-  // // return Either.right(new Bytes({ value: new Uint8Array(publicKey.buffer) }));
-
-  // return Match.value(tx).pipe(
-  //   Match.tags({
-  //     LegacyTransaction: (tx) => {
-  //       const v = tx.v;
-  //       if (v.value === 27n || v.value === 28n)
-  //         return secp256k1Recover(
-  //           r,
-  //           s,
-  //           new U256({ value: v.value - 27n }),
-  //           signingHashPre155(tx),
-  //         );
-
-  //       const chainIdX2 = new U256({ value: chainId.value * 2n });
-  //       if (
-  //         v.value !== 35n + chainIdX2.value &&
-  //         v.value !== 36n + chainIdX2.value
-  //       )
-  //         return Either.left(new InvalidSignatureError({ message: "bad v" }));
-  //       return secp256k1Recover(
-  //         r,
-  //         s,
-  //         new U256({ value: v.value - 35n - chainIdX2.value }),
-  //         signingHash155(tx, chainId),
-  //       );
-  //     },
-  //     AccessListTransaction: (tx) => {
-  //       if (tx.yParity.value !== 0n && tx.yParity.value !== 1n)
-  //         return Either.left(
-  //           new InvalidSignatureError({ message: "bad y_parity" }),
-  //         );
-  //       return secp256k1Recover(r, s, tx.yParity, signingHash2930(tx));
-  //     },
-  //     FeeMarketTransaction: (tx) => {
-  //       if (tx.yParity.value !== 0n && tx.yParity.value !== 1n)
-  //         return Either.left(
-  //           new InvalidSignatureError({ message: "bad y_parity" }),
-  //         );
-  //       return secp256k1Recover(r, s, tx.yParity, signingHash1559(tx));
-  //     },
-  //     BlobTransaction: (tx) => {
-  //       if (tx.yParity.value !== 0n && tx.yParity.value !== 1n)
-  //         return Either.left(
-  //           new InvalidSignatureError({ message: "bad y_parity" }),
-  //         );
-  //       return secp256k1Recover(r, s, tx.yParity, signingHash4844(tx));
-  //     },
-  //     SetCodeTransaction: (tx) => {
-  //       if (tx.yParity.value !== 0n && tx.yParity.value !== 1n)
-  //         return Either.left(
-  //           new InvalidSignatureError({ message: "bad y_parity" }),
-  //         );
-  //       return secp256k1Recover(r, s, tx.yParity, signingHash7702(tx));
-  //     },
-  //   }),
-  //   Match.exhaustive,
-  // );
 };
 export const getSigningHash = (transaction: Transaction) => {
   return Match.value(transaction).pipe(
@@ -681,13 +458,9 @@ export const getSigningHash = (transaction: Transaction) => {
       LegacyTransaction: (tx) => {
         const v = tx.v.value;
         if (v >= 35n) {
-          // EIP-155: derive chainId from v
-          // v = chainId * 2 + 35 + recovery (0 or 1)
-          // chainId = (v - 35) / 2  (integer division)
           const chainId = new U64({ value: (v - 35n) / 2n });
           return signingHash155(tx, chainId);
         }
-        // Pre-EIP-155
         return signingHashPre155(tx);
       },
       AccessListTransaction: (tx) => signingHash2930(tx),
@@ -737,7 +510,6 @@ export const signHash = ({
     s: new U256({ value: signature.s }),
     v: new U256({ value: signature.recovery ? 28n : 27n }),
     yParity: new U8({ value: BigInt(signature.recovery ?? 0) }),
-    // signature: new Bytes({ value: bytes }),
   };
 };
 
@@ -770,7 +542,6 @@ export const recoverAuthority = (authorization: Authorization) => {
   const address = authorization.address;
   const nonce = authorization.nonce;
 
-  // Validate y_parity
   const recoveryBit = Number(yParity.value);
   if (recoveryBit !== 0 && recoveryBit !== 1) {
     return Effect.fail(
@@ -780,7 +551,6 @@ export const recoverAuthority = (authorization: Authorization) => {
     );
   }
 
-  // Validate r: 0 < r < SECP256K1N
   if (r.value <= 0n || r.value >= SECP256K1N) {
     return Either.left(
       new FailedToRecoverPublicKeyError({
@@ -789,7 +559,6 @@ export const recoverAuthority = (authorization: Authorization) => {
     );
   }
 
-  // Validate s: 0 < s <= SECP256K1N / 2 (EIP-2: reject high s values)
   if (s.value <= 0n || s.value > SECP256K1N / 2n) {
     return Either.left(
       new FailedToRecoverPublicKeyError({

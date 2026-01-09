@@ -148,10 +148,8 @@ export const getByte: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     if (byteIndex.value >= 32n) {
       result = new U256({ value: 0n });
     } else {
-      // Remove the extra bytes to the right
       const extraBytesToRight = 31n - byteIndex.value;
       const shifted = word.rightShift(extraBytesToRight * 8n);
-      // Remove the extra bytes to the left (keep only lowest byte)
       result = shifted.bitwiseAnd(new U256({ value: 0xffn }));
     }
     yield* evm.stack.push(result);

@@ -7,6 +7,18 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./vm/interpreter": {
+      "import": "./dist/vm/interpreter.js",
+      "types": "./dist/vm/interpreter.d.ts"
+    },
+    "./vm/runtime": {
+      "import": "./dist/vm/runtime.js",
+      "types": "./dist/vm/runtime.d.ts"
+    },
+    "./vm/StorageKey": {
+      "import": "./dist/vm/StorageKey.js",
+      "types": "./dist/vm/StorageKey.d.ts"
     }
   },
   "scripts": {
@@ -14,10 +26,10 @@
     "dev": "tsc -b tsconfig.build.json --watch",
     "check": "tsc -b tsconfig.json",
     "test": "bun test",
-    "fixtures:stable": "uvx --from git+https://github.com/ethereum/execution-spec-tests consume cache --input=stable@latest --extract-to ./test-fixtures",
-    "fixtures:develop": "uvx --from git+https://github.com/ethereum/execution-spec-tests consume cache --input=develop@latest --extract-to ./test-fixtures",
-    "test:direct": "uvx --from git+https://github.com/ethereum/execution-spec-tests consume direct --input=test-fixtures/fixtures -m state_test --bin=./test/statetest.ts",
-    "test:direct:modexp": "uvx --from git+https://github.com/ethereum/execution-spec-tests consume direct --input=test-fixtures/fixtures -m state_test --bin=./test/statetest.ts -k modexp",
+    "fixtures:stable": "uvx --from git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing consume cache --input=stable@latest --extract-to ./test-fixtures",
+    "fixtures:develop": "uvx --from git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing consume cache --input=develop@latest --extract-to ./test-fixtures",
+    "test:direct": "uvx --from git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing consume direct --input=test-fixtures/fixtures -m state_test --bin=./test/statetest.ts",
+    "test:direct:modexp": "uvx --from git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing consume direct --input=test-fixtures/fixtures -m state_test --bin=./test/statetest.ts -k modexp",
     "test:downloaded": "FIXTURES_PATH=test-fixtures/fixtures TEST_FILTER=eip7883_modexp bun test test/fixtures.test.ts",
     "test:downloaded:all": "FIXTURES_PATH=test-fixtures/fixtures TEST_FILTER= bun test test/fixtures.test.ts"
   },

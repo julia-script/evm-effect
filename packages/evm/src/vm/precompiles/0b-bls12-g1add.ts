@@ -28,7 +28,6 @@ export const bls12G1Add = Effect.gen(function* () {
   const evm = yield* Evm;
   const data = evm.message.data.value;
 
-  // Validate input length
   if (data.length !== 256) {
     return yield* Effect.fail(
       new InvalidParameterError({

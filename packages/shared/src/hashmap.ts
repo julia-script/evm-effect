@@ -1,8 +1,5 @@
 import { Data, Effect, Hash, ParseResult, Schema } from "effect";
 
-// export class HashMap<K, V> {
-//   private readonly _map: Map<number, [K, V]>;
-// }()
 export class Entry<K, V> {
   constructor(
     readonly key: K,
@@ -103,45 +100,6 @@ export type HashMapFromSelf<
   K extends Schema.Schema.All,
   V extends Schema.Schema.All,
 > = Schema.Schema<HashMap<K["Encoded"], V["Encoded"]>>;
-// Schema.HashMap
-// export interface HashMapFromRecord<
-//   K extends Schema.Schema.All,
-//   V extends Schema.Schema.All,
-// > extends Schema.transformOrFail<
-//     Schema.Record$<Schema.Schema.Type<K>, Schema.Schema.Type<V>>,
-//     HashMapFromSelf<Schema.Schema.Encoded<K>, Schema.Schema.Encoded<V>>
-//   > {}
-
-// export const HashMapFromRecord = <
-//   K extends Schema.Schema.All,
-//   V extends Schema.Schema.All,
-// >(
-//   key: K,
-//   value: V,
-// )=>
-// {
-//   return Schema.declare(
-//     [key, value],
-//     {
-//       decode: (fromA) => {
-//         return ParseResult.decodeUnknown(
-//           Schema.Record({
-//             key:Schema.String,
-//             value:Schema.Unknown,
-//           }).pipe(
-//             Schema.transform(
-//               Schema.Array(Schema.Tuple(key, value)),
-//               HashMapFromSelf(key, value),
-//             )
-//           )
-//         )
-//       },
-//       encode: (toI) => {
-//         return HashMapFromSelf(key, value)(toI);
-//       },
-//     },
-//   );
-// }
 export const HashMapFromRecord = <KType, KEncoded, VType, VEncoded>(
   key: Schema.Schema<KType, KEncoded>,
   value: Schema.Schema<VType, VEncoded>,

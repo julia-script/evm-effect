@@ -30,7 +30,12 @@ import {
   WITHDRAWAL_REQUEST_PREDEPLOY_ADDRESS,
   WITHDRAWAL_REQUEST_TYPE,
 } from "../constants.js";
-import { InvalidBlock } from "../exceptions.js";
+import {
+  InvalidBlock,
+  InvalidDepositEventLayoutError,
+  type SystemContractCallFailedError,
+  type SystemContractEmptyError,
+} from "../exceptions.js";
 import * as State from "../state.js";
 import { processTransaction } from "../transactions/processor.js";
 import type { Header, Withdrawal } from "../types/Block.js";
@@ -81,13 +86,10 @@ export const applyBody = (
   ommers: readonly Header[] = [],
 ) =>
   Effect.gen(function* () {
-    // Initialize empty BlockOutput structure
     const blockOutput = emptyBlockOutput();
 
-    // Get fork to check which EIPs are enabled
     const fork = yield* Fork;
 
-    // Execute beacon roots system transaction (unchecked) - EIP-4788 (Cancun+)
     if (fork.eip(4788)) {
       yield* processUncheckedSystemTransaction(
         blockEnv,
@@ -96,7 +98,6 @@ export const applyBody = (
       );
     }
 
-    // Execute history storage system transaction (unchecked) - EIP-2935 (Prague+)
     if (fork.eip(2935)) {
       const parentHash =
         blockEnv.blockHashes.length > 0
@@ -104,7 +105,7 @@ export const applyBody = (
               value:
                 blockEnv.blockHashes[blockEnv.blockHashes.length - 1].value,
             })
-          : new Bytes({ value: new Uint8Array(32) }); // Default to zero hash if no parent
+          : new Bytes({ value: new Uint8Array(32) });
 
       yield* processUncheckedSystemTransaction(
         blockEnv,
@@ -113,35 +114,21 @@ export const applyBody = (
       );
     }
 
-    // Process all transactions in sequence with proper indexing
     for (let i = 0; i < transactions.length; i++) {
       const tx = transactions[i];
       const index = new Uint({ value: BigInt(i) });
 
-      // Decode transaction if it's raw bytes
       const decodedTx = yield* decodeTransaction(tx);
 
-      // Process the transaction
-      yield* processTransaction(blockEnv, blockOutput, decodedTx, index).pipe(
-        Effect.mapError(
-          (error) =>
-            new InvalidBlock({
-              message: `Transaction processing failed: ${error}`,
-            }),
-        ),
-      );
+      yield* processTransaction(blockEnv, blockOutput, decodedTx, index);
     }
 
-    // Process withdrawals and update withdrawals trie
     yield* processWithdrawals(blockEnv, blockOutput, withdrawals);
 
-    // Execute general purpose requests (deposits, withdrawals, consolidations)
-    // Only for Prague+ (EIP-6110, EIP-7002, EIP-7251)
     if (fork.eip(6110)) {
       yield* processGeneralPurposeRequests(blockEnv, blockOutput);
     }
 
-    // Pay block rewards for pre-merge (pre-EIP-3675) forks
     if (!fork.eip(3675)) {
       yield* payRewards(
         blockEnv.state,
@@ -164,14 +151,11 @@ export const applyBody = (
  */
 const getBlockReward = (fork: Fork["Type"]): Uint => {
   if (fork.eip(1234)) {
-    // Constantinople and later: 2 ETH
     return BLOCK_REWARD_CONSTANTINOPLE;
   }
   if (fork.eip(649)) {
-    // Byzantium: 3 ETH
     return BLOCK_REWARD_BYZANTIUM;
   }
-  // Frontier, Homestead, etc.: 5 ETH
   return BLOCK_REWARD_FRONTIER;
 };
 
@@ -203,7 +187,6 @@ const payRewards = Effect.fn("payRewards")(function* (
   const blockReward = getBlockReward(fork);
 
   const ommerCount = BigInt(ommers.length);
-  // Miner reward = BLOCK_REWARD + (ommer_count * (BLOCK_REWARD / 32))
   const minerReward = new U256({
     value: blockReward.value + (ommerCount * blockReward.value) / 32n,
   });
@@ -213,11 +196,8 @@ const payRewards = Effect.fn("payRewards")(function* (
     (balance) => new U256({ value: balance.value + minerReward.value }),
   );
 
-  // Pay each ommer miner
   for (const ommer of ommers) {
-    // Ommer age with respect to the current block
     const ommerAge = blockNumber.value - ommer.number.value;
-    // Ommer miner reward = ((8 - ommer_age) * BLOCK_REWARD) / 8
     const ommerMinerReward = new U256({
       value: ((8n - ommerAge) * blockReward.value) / 8n,
     });
@@ -260,13 +240,10 @@ const processWithdrawals = (
       const withdrawal = withdrawals[i];
       const index = new Uint({ value: BigInt(i) });
 
-      // Add withdrawal to withdrawals trie
       const encodedIndex = rlp.encode(index);
 
       updatedWithdrawalsTrie.set(encodedIndex, withdrawal);
 
-      // Increase recipient balance
-      // Withdrawal amount is in Gwei, convert to Wei by multiplying by 10^9
       yield* increaseRecipientBalance(
         blockEnv,
         withdrawal.address,
@@ -295,10 +272,14 @@ const processWithdrawals = (
 const processGeneralPurposeRequests = (
   blockEnv: BlockEnvironment,
   blockOutput: BlockOutput,
-): Effect.Effect<void, InvalidBlock, Fork> =>
+): Effect.Effect<
+  void,
+  | InvalidDepositEventLayoutError
+  | SystemContractEmptyError
+  | SystemContractCallFailedError,
+  Fork
+> =>
   Effect.gen(function* () {
-    // Requests are to be in ascending order of request type
-    // Parse deposit requests from block output
     const depositRequests = yield* parseDepositRequests(blockOutput);
     if (depositRequests.value.length > 0) {
       const depositRequestData = new Bytes({
@@ -310,7 +291,6 @@ const processGeneralPurposeRequests = (
       blockOutput.requests = [...blockOutput.requests, depositRequestData];
     }
 
-    // Process withdrawal requests
     const systemWithdrawalTxOutput = yield* processCheckedSystemTransaction(
       blockEnv,
       WITHDRAWAL_REQUEST_PREDEPLOY_ADDRESS,
@@ -327,7 +307,6 @@ const processGeneralPurposeRequests = (
       blockOutput.requests = [...blockOutput.requests, withdrawalRequestData];
     }
 
-    // Process consolidation requests
     const systemConsolidationTxOutput = yield* processCheckedSystemTransaction(
       blockEnv,
       CONSOLIDATION_REQUEST_PREDEPLOY_ADDRESS,
@@ -358,7 +337,6 @@ const decodeTransaction = (
   tx: Transaction | Bytes,
 ): Effect.Effect<Transaction, InvalidBlock, never> =>
   Effect.gen(function* () {
-    // Use tagged union pattern matching
     switch (tx._tag) {
       case "LegacyTransaction":
       case "AccessListTransaction":
@@ -374,7 +352,6 @@ const decodeTransaction = (
           );
         }
 
-        // Check first byte to determine transaction type
         const txType = tx.value[0];
 
         if (txType === 1) {
@@ -422,7 +399,6 @@ const decodeTransaction = (
           }
           return decoded.right;
         } else {
-          // Legacy transaction (no type prefix)
           const decoded = rlp.decodeTo(LegacyTransaction, tx);
           if (Either.isLeft(decoded)) {
             return yield* Effect.fail(
@@ -451,7 +427,6 @@ const increaseRecipientBalance = (
   amount: U256,
 ): Effect.Effect<void, InvalidBlock, Fork> =>
   Effect.gen(function* () {
-    // Convert Gwei to Wei by multiplying by 10^9
     const amountInWei = new U256({
       value: amount.value * 1000000000n,
     });
@@ -474,19 +449,16 @@ const increaseRecipientBalance = (
  */
 const parseDepositRequests = (
   blockOutput: BlockOutput,
-): Effect.Effect<Bytes, InvalidBlock, never> =>
+): Effect.Effect<Bytes, InvalidDepositEventLayoutError, never> =>
   Effect.gen(function* () {
     const depositRequestsArray: Uint8Array[] = [];
 
-    // Iterate through all receipt keys
     for (const key of blockOutput.receiptKeys) {
-      // Get the receipt from the receipts trie
       const receipt = blockOutput.receiptsTrie.get(key);
       if (receipt === null) {
         continue;
       }
 
-      // Decode the receipt using tagged union pattern matching
       let decodedReceipt: Receipt;
       switch (receipt._tag) {
         case "Receipt":
@@ -498,42 +470,40 @@ const parseDepositRequests = (
             continue;
           }
 
-          // Check first byte to determine receipt type
           const receiptType = receipt.value[0];
 
           if (receiptType === 1) {
             const payload = new Bytes({ value: receipt.value.slice(1) });
             const decoded = rlp.decodeTo(Receipt, payload);
             if (Either.isLeft(decoded)) {
-              continue; // Skip invalid receipts
+              continue;
             }
             decodedReceipt = decoded.right;
           } else if (receiptType === 2) {
             const payload = new Bytes({ value: receipt.value.slice(1) });
             const decoded = rlp.decodeTo(Receipt, payload);
             if (Either.isLeft(decoded)) {
-              continue; // Skip invalid receipts
+              continue;
             }
             decodedReceipt = decoded.right;
           } else if (receiptType === 3) {
             const payload = new Bytes({ value: receipt.value.slice(1) });
             const decoded = rlp.decodeTo(Receipt, payload);
             if (Either.isLeft(decoded)) {
-              continue; // Skip invalid receipts
+              continue;
             }
             decodedReceipt = decoded.right;
           } else if (receiptType === 4) {
             const payload = new Bytes({ value: receipt.value.slice(1) });
             const decoded = rlp.decodeTo(Receipt, payload);
             if (Either.isLeft(decoded)) {
-              continue; // Skip invalid receipts
+              continue;
             }
             decodedReceipt = decoded.right;
           } else {
-            // Legacy transaction receipt (no type prefix)
             const decoded = rlp.decodeTo(Receipt, receipt);
             if (Either.isLeft(decoded)) {
-              continue; // Skip invalid receipts
+              continue;
             }
             decodedReceipt = decoded.right;
           }
@@ -541,19 +511,15 @@ const parseDepositRequests = (
         }
 
         default:
-          continue; // Skip unknown receipt types
+          continue;
       }
 
-      // Extract logs from the decoded receipt
       for (const log of decodedReceipt.logs) {
-        // Check if log is from deposit contract
         if (Equal.equals(log.address, DEPOSIT_CONTRACT_ADDRESS)) {
-          // Check if log has the deposit event signature
           if (
             log.topics.length > 0 &&
             Equal.equals(log.topics[0], DEPOSIT_EVENT_SIGNATURE_HASH)
           ) {
-            // Extract deposit data
             const depositData = yield* extractDepositData(log.data);
             depositRequestsArray.push(depositData.value);
           }
@@ -561,7 +527,6 @@ const parseDepositRequests = (
       }
     }
 
-    // Concatenate all deposit requests
     const totalLength = depositRequestsArray.reduce(
       (sum, arr) => sum + arr.length,
       0,
@@ -593,17 +558,14 @@ export const computeRequestsHash = (
   requests: readonly Bytes[],
 ): Effect.Effect<Bytes32, InvalidBlock, never> =>
   Effect.gen(function* () {
-    // Use Node.js crypto for the main hasher
     const { createHash } = yield* Effect.promise(() => import("node:crypto"));
     const mainHasher = createHash("sha256");
 
-    // For each request, hash it with SHA256 and update the main hasher
     for (const request of requests) {
       const requestHash = sha256(request);
       mainHasher.update(requestHash.value);
     }
 
-    // Return the final digest as Bytes32
     const finalDigest = mainHasher.digest();
     return new Bytes32({ value: finalDigest });
   });
@@ -616,33 +578,139 @@ export const computeRequestsHash = (
  */
 const extractDepositData = (
   data: Bytes,
-): Effect.Effect<Bytes, InvalidBlock, never> =>
+): Effect.Effect<Bytes, InvalidDepositEventLayoutError, never> =>
   Effect.gen(function* () {
-    // Validate deposit event data length (576 bytes)
     const DEPOSIT_EVENT_LENGTH = 576;
     if (data.value.length !== DEPOSIT_EVENT_LENGTH) {
       return yield* Effect.fail(
-        new InvalidBlock({
+        new InvalidDepositEventLayoutError({
           message: "Invalid deposit event data length",
         }),
       );
     }
 
-    // Extract offsets and validate them
-    const PUBKEY_OFFSET = 160;
-    const WITHDRAWAL_CREDENTIALS_OFFSET = 256;
-    const AMOUNT_OFFSET = 320;
-    const SIGNATURE_OFFSET = 384;
-    const INDEX_OFFSET = 512;
+    const readUint256 = (offset: number): bigint => {
+      const slice = data.value.slice(offset, offset + 32);
+      return BigInt(
+        "0x" +
+          Array.from(slice)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join(""),
+      );
+    };
 
-    // Extract sizes
-    const PUBKEY_SIZE = 48;
-    const WITHDRAWAL_CREDENTIALS_SIZE = 32;
-    const AMOUNT_SIZE = 8;
-    const SIGNATURE_SIZE = 96;
-    const INDEX_SIZE = 8;
+    const EXPECTED_PUBKEY_OFFSET = 160n;
+    const EXPECTED_WITHDRAWAL_CREDENTIALS_OFFSET = 256n;
+    const EXPECTED_AMOUNT_OFFSET = 320n;
+    const EXPECTED_SIGNATURE_OFFSET = 384n;
+    const EXPECTED_INDEX_OFFSET = 512n;
 
-    // Extract the actual data fields
+    const EXPECTED_PUBKEY_SIZE = 48n;
+    const EXPECTED_WITHDRAWAL_CREDENTIALS_SIZE = 32n;
+    const EXPECTED_AMOUNT_SIZE = 8n;
+    const EXPECTED_SIGNATURE_SIZE = 96n;
+    const EXPECTED_INDEX_SIZE = 8n;
+
+    const pubkeyOffset = readUint256(0);
+    const wcOffset = readUint256(32);
+    const amountOffset = readUint256(64);
+    const signatureOffset = readUint256(96);
+    const indexOffset = readUint256(128);
+
+    if (pubkeyOffset !== EXPECTED_PUBKEY_OFFSET) {
+      return yield* Effect.fail(
+        new InvalidDepositEventLayoutError({
+          message: `Invalid pubkey offset: expected ${EXPECTED_PUBKEY_OFFSET}, got ${pubkeyOffset}`,
+        }),
+      );
+    }
+    if (wcOffset !== EXPECTED_WITHDRAWAL_CREDENTIALS_OFFSET) {
+      return yield* Effect.fail(
+        new InvalidDepositEventLayoutError({
+          message: `Invalid withdrawal credentials offset: expected ${EXPECTED_WITHDRAWAL_CREDENTIALS_OFFSET}, got ${wcOffset}`,
+        }),
+      );
+    }
+    if (amountOffset !== EXPECTED_AMOUNT_OFFSET) {
+      return yield* Effect.fail(
+        new InvalidDepositEventLayoutError({
+          message: `Invalid amount offset: expected ${EXPECTED_AMOUNT_OFFSET}, got ${amountOffset}`,
+        }),
+      );
+    }
+    if (signatureOffset !== EXPECTED_SIGNATURE_OFFSET) {
+      return yield* Effect.fail(
+        new InvalidDepositEventLayoutError({
+          message: `Invalid signature offset: expected ${EXPECTED_SIGNATURE_OFFSET}, got ${signatureOffset}`,
+        }),
+      );
+    }
+    if (indexOffset !== EXPECTED_INDEX_OFFSET) {
+      return yield* Effect.fail(
+        new InvalidDepositEventLayoutError({
+          message: `Invalid index offset: expected ${EXPECTED_INDEX_OFFSET}, got ${indexOffset}`,
+        }),
+      );
+    }
+
+    const pubkeySize = readUint256(Number(EXPECTED_PUBKEY_OFFSET));
+    const wcSize = readUint256(Number(EXPECTED_WITHDRAWAL_CREDENTIALS_OFFSET));
+    const amountSize = readUint256(Number(EXPECTED_AMOUNT_OFFSET));
+    const signatureSize = readUint256(Number(EXPECTED_SIGNATURE_OFFSET));
+    const indexSize = readUint256(Number(EXPECTED_INDEX_OFFSET));
+
+    if (pubkeySize !== EXPECTED_PUBKEY_SIZE) {
+      return yield* Effect.fail(
+        new InvalidDepositEventLayoutError({
+          message: `Invalid pubkey size: expected ${EXPECTED_PUBKEY_SIZE}, got ${pubkeySize}`,
+        }),
+      );
+    }
+    if (wcSize !== EXPECTED_WITHDRAWAL_CREDENTIALS_SIZE) {
+      return yield* Effect.fail(
+        new InvalidDepositEventLayoutError({
+          message: `Invalid withdrawal credentials size: expected ${EXPECTED_WITHDRAWAL_CREDENTIALS_SIZE}, got ${wcSize}`,
+        }),
+      );
+    }
+    if (amountSize !== EXPECTED_AMOUNT_SIZE) {
+      return yield* Effect.fail(
+        new InvalidDepositEventLayoutError({
+          message: `Invalid amount size: expected ${EXPECTED_AMOUNT_SIZE}, got ${amountSize}`,
+        }),
+      );
+    }
+    if (signatureSize !== EXPECTED_SIGNATURE_SIZE) {
+      return yield* Effect.fail(
+        new InvalidDepositEventLayoutError({
+          message: `Invalid signature size: expected ${EXPECTED_SIGNATURE_SIZE}, got ${signatureSize}`,
+        }),
+      );
+    }
+    if (indexSize !== EXPECTED_INDEX_SIZE) {
+      return yield* Effect.fail(
+        new InvalidDepositEventLayoutError({
+          message: `Invalid index size: expected ${EXPECTED_INDEX_SIZE}, got ${indexSize}`,
+        }),
+      );
+    }
+
+    const PUBKEY_SIZE = Number(EXPECTED_PUBKEY_SIZE);
+    const WITHDRAWAL_CREDENTIALS_SIZE = Number(
+      EXPECTED_WITHDRAWAL_CREDENTIALS_SIZE,
+    );
+    const AMOUNT_SIZE = Number(EXPECTED_AMOUNT_SIZE);
+    const SIGNATURE_SIZE = Number(EXPECTED_SIGNATURE_SIZE);
+    const INDEX_SIZE = Number(EXPECTED_INDEX_SIZE);
+
+    const PUBKEY_OFFSET = Number(EXPECTED_PUBKEY_OFFSET);
+    const WITHDRAWAL_CREDENTIALS_OFFSET = Number(
+      EXPECTED_WITHDRAWAL_CREDENTIALS_OFFSET,
+    );
+    const AMOUNT_OFFSET = Number(EXPECTED_AMOUNT_OFFSET);
+    const SIGNATURE_OFFSET = Number(EXPECTED_SIGNATURE_OFFSET);
+    const INDEX_OFFSET = Number(EXPECTED_INDEX_OFFSET);
+
     const pubkey = data.value.slice(
       PUBKEY_OFFSET + 32,
       PUBKEY_OFFSET + 32 + PUBKEY_SIZE,
@@ -664,7 +732,6 @@ const extractDepositData = (
       INDEX_OFFSET + 32 + INDEX_SIZE,
     );
 
-    // Concatenate all fields to create deposit request
     const result = new Uint8Array(
       PUBKEY_SIZE +
         WITHDRAWAL_CREDENTIALS_SIZE +

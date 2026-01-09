@@ -25,9 +25,8 @@ import {
   g2PointToBytes,
 } from "./bls12-utils.js";
 
-const LENGTH_PER_PAIR = 288; // 256 bytes for G2 point + 32 bytes for scalar
+const LENGTH_PER_PAIR = 288;
 
-// Discount table for k (number of pairs) from 1 to 128
 const G2_K_DISCOUNT = [
   1000, 1000, 923, 884, 855, 832, 812, 796, 782, 770, 759, 749, 740, 732, 724,
   717, 711, 704, 699, 693, 688, 683, 679, 674, 670, 666, 663, 659, 655, 652,
@@ -57,7 +56,6 @@ export const bls12G2Msm = Effect.gen(function* () {
   const evm = yield* Evm;
   const data = evm.message.data.value;
 
-  // Validate input length
   if (data.length === 0 || data.length % LENGTH_PER_PAIR !== 0) {
     return yield* Effect.fail(
       new InvalidParameterError({
@@ -66,10 +64,8 @@ export const bls12G2Msm = Effect.gen(function* () {
     );
   }
 
-  // Calculate number of pairs
   const k = data.length / LENGTH_PER_PAIR;
 
-  // Calculate gas cost with discount
   let discount: bigint;
   if (k <= 128) {
     discount = BigInt(G2_K_DISCOUNT[k - 1]);
@@ -80,10 +76,10 @@ export const bls12G2Msm = Effect.gen(function* () {
   const gasCost =
     (BigInt(k) * Gas.GAS_BLS_G2_MUL.value * discount) / MULTIPLIER;
 
-  // GAS - charge before operation
+  // GAS
   yield* Gas.chargeGas(new Uint({ value: gasCost }));
 
-  // OPERATION - naive implementation
+  // OPERATION
   try {
     let result = G2_ZERO;
 
@@ -92,14 +88,10 @@ export const bls12G2Msm = Effect.gen(function* () {
       const endIndex = startIndex + LENGTH_PER_PAIR;
       const pairData = data.slice(startIndex, endIndex);
 
-      // Decode point and scalar
       const [point, scalar] = decodeG2ScalarPair(pairData);
 
-      // Normalize scalar to be within valid range [0, curve_order)
       const normalizedScalar = scalar % BLS_CURVE_ORDER;
 
-      // Multiply point by scalar
-      // Special case: scalar of 0 results in point at infinity
       let product: WeierstrassPoint<Fp2>;
       if (normalizedScalar === 0n) {
         product = G2_ZERO;
@@ -107,11 +99,9 @@ export const bls12G2Msm = Effect.gen(function* () {
         product = point.multiply(normalizedScalar);
       }
 
-      // Add to accumulator
       result = result.add(product);
     }
 
-    // Convert result to bytes
     const output = g2PointToBytes(result.toAffine());
 
     yield* Ref.set(evm.output, new Bytes({ value: output }));

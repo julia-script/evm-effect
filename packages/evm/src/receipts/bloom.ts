@@ -31,10 +31,6 @@ export const addToBloom = (bloom: Uint8Array, bloomEntry: Bytes): void => {
   const hashed = keccak256(bloomEntry);
 
   for (const idx of [0, 2, 4]) {
-    // Obtain the least significant 11 bits from the pair of bytes
-    // (16 bits), and set this bit in bloom bytearray.
-    // The obtained bit is 0-indexed in the bloom filter from the least
-    // significant bit to the most significant bit.
     const bitToSet =
       Either.getOrThrow(
         fromBeBytes(
@@ -43,8 +39,6 @@ export const addToBloom = (bloom: Uint8Array, bloomEntry: Bytes): void => {
         ),
       ).value & 0x07ffn;
 
-    // Below is the index of the bit in the bytearray (where 0-indexed
-    // byte is the most significant byte)
     const bitIndex = 0x07ff - Number(bitToSet);
 
     const byteIndex = Math.floor(bitIndex / 8);
@@ -73,10 +67,8 @@ export const logsBloom = (logs: readonly Log[]): Bytes256 => {
   const bloom = new Uint8Array(256); // Initialize with zeros
 
   for (const log of logs) {
-    // Add the log address to the bloom filter
     addToBloom(bloom, new Bytes({ value: log.address.value.value }));
 
-    // Add each topic to the bloom filter
     for (const topic of log.topics) {
       addToBloom(bloom, new Bytes({ value: topic.value }));
     }

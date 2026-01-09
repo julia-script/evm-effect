@@ -1,27 +1,22 @@
-import { mkdir } from "node:fs/promises";
+import { appendFile, mkdir } from "node:fs/promises";
 import * as path from "node:path";
 import * as Bun from "bun";
 import { Effect, type Layer, Logger, Match } from "effect";
 import { Fork } from "../src/vm/Fork.js";
 
-// Environment configuration
 export const SKIP_CACHE = process.env.SKIP_CACHE !== "false";
-export const VERBOSE = process.env.VERBOSE !== "false";
+export const VERBOSE = process.env.VERBOSE === "true";
 export const SKIP = process.env.SKIP ? Number(process.env.SKIP) : 0;
 export const LIMIT = process.env.LIMIT ? Number(process.env.LIMIT) : undefined;
 
-// Test timeout configuration
 export const TEST_CONFIG = {
-  timeout: 1000 * 60 * 5,
-  retry: 0,
-  repeats: 0,
+  timeout: 1000 * 60 * 20,
+  retry: 2,
 } as const;
 
-// Cache directory setup
 const dirname = path.dirname(new URL(import.meta.url).pathname);
-const cachedTestStatusDir = path.join(dirname, ".temp-cached-test-status");
+const cachedTestStatusDir = path.join(dirname, ".tmp-cached-test-status");
 
-// Initialize cache directory
 try {
   await mkdir(cachedTestStatusDir, { recursive: true });
 } catch (error) {
@@ -29,38 +24,116 @@ try {
 }
 
 /**
- * Check if a test has already passed (cached)
+ * Metadata for a single test run, serialized as JSON per line
+ */
+type TestRunMetadata = {
+  timestamp: string;
+  passed: boolean;
+  durationMs?: number;
+  error?: string;
+  errorStack?: string;
+};
+
+/**
+ * Check if a test has already passed (cached).
+ * Reads the last line of the test file and returns true only if:
+ * - SKIP_CACHE is false
+ * - The file exists
+ * - The last run was a pass
  */
 export const checkTestCache = async (shortHash: string): Promise<boolean> => {
   if (SKIP_CACHE) return false;
-  const testFileCheck = path.join(cachedTestStatusDir, shortHash);
-  return Bun.file(testFileCheck).exists();
-};
 
-/**
- * Mark a test as passed in the cache
- */
-export const markTestPassed = async (shortHash: string): Promise<void> => {
-  const testFileCheck = path.join(cachedTestStatusDir, shortHash);
-  await Bun.file(testFileCheck).write("true");
-};
+  const testFilePath = path.join(cachedTestStatusDir, shortHash);
+  const file = Bun.file(testFilePath);
 
-/**
- * Unmark a test as passed (remove from cache when test fails)
- */
-export const unmarkTestPassed = async (shortHash: string): Promise<void> => {
-  const testFileCheck = path.join(cachedTestStatusDir, shortHash);
+  if (!(await file.exists())) {
+    return false;
+  }
+
   try {
-    await Bun.file(testFileCheck).delete();
+    const content = await file.text();
+    const lines = content.trim().split("\n");
+    const lastLine = lines[lines.length - 1];
+
+    if (!lastLine) return false;
+
+    const metadata: TestRunMetadata = JSON.parse(lastLine);
+    return metadata.passed === true;
   } catch {
-    // Ignore errors if file doesn't exist
+    return false;
   }
 };
 
-// Transition fork timestamp threshold (15k = 15000)
+/**
+ * Record a test result by appending a JSON line to the test's history file.
+ *
+ * @param shortHash - The test identifier
+ * @param passed - Whether the test passed
+ * @param error - Error object if the test failed (optional)
+ * @param durationMs - Test duration in milliseconds (optional)
+ */
+export const recordTestResult = async (
+  shortHash: string,
+  passed: boolean,
+  error?: unknown,
+  durationMs?: number,
+): Promise<void> => {
+  const testFilePath = path.join(cachedTestStatusDir, shortHash);
+
+  const metadata: TestRunMetadata = {
+    timestamp: new Date().toISOString(),
+    passed,
+  };
+
+  if (durationMs !== undefined) {
+    metadata.durationMs = durationMs;
+  }
+
+  if (!passed && error !== undefined) {
+    if (error instanceof Error) {
+      metadata.error = error.message;
+      if (error.stack !== undefined) {
+        metadata.errorStack = error.stack;
+      }
+    } else if (typeof error === "string") {
+      metadata.error = error;
+    } else {
+      try {
+        metadata.error = JSON.stringify(error);
+      } catch {
+        metadata.error = String(error);
+      }
+    }
+  }
+
+  const line = `${JSON.stringify(metadata)}\n`;
+  await appendFile(testFilePath, line);
+};
+
+/**
+ * Mark a test as passed in the cache (convenience wrapper)
+ */
+export const markTestPassed = async (
+  shortHash: string,
+  durationMs?: number,
+): Promise<void> => {
+  await recordTestResult(shortHash, true, undefined, durationMs);
+};
+
+/**
+ * Mark a test as failed in the cache (convenience wrapper)
+ */
+export const markTestFailed = async (
+  shortHash: string,
+  error?: unknown,
+  durationMs?: number,
+): Promise<void> => {
+  await recordTestResult(shortHash, false, error, durationMs);
+};
+
 const TRANSITION_TIMESTAMP = 15000n;
 
-// Transition fork configurations: [sourceFork, targetFork]
 const TRANSITION_FORKS: Record<string, [string, string]> = {
   ParisToShanghaiAtTime15k: ["Paris", "Shanghai"],
   ShanghaiToCancunAtTime15k: ["Shanghai", "Cancun"],
@@ -109,10 +182,7 @@ export const isTransitionFork = (forkName: string): boolean =>
 export const resolveFork = (
   forkName: string,
 ): Effect.Effect<Layer.Layer<Fork>, UnsupportedForkError> => {
-  // Check if it's a transition fork
   if (forkName in TRANSITION_FORKS) {
-    // For transition forks, return the target fork by default
-    // (use resolveForkForTimestamp for per-block resolution)
     const [, targetFork] = TRANSITION_FORKS[forkName];
     return resolveSimpleFork(targetFork);
   }

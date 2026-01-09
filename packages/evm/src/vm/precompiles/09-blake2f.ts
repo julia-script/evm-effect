@@ -5,19 +5,6 @@ import { InvalidParameterError } from "../../exceptions.js";
 import { Evm } from "../evm.js";
 import * as Gas from "../gas.js";
 
-// The following blake2 code has been taken from (license: Creative Commons CC0):
-// https://github.com/dcposch/blakejs/blob/410c640d0f08d3b26904c6d1ab3d81df3619d282/blake2b.js
-// The modifications include:
-//  - Avoiding the use of context in F
-//  - F accepts number of rounds as parameter
-//  - Expect 2 64-byte t values, xor them both
-//  - Take modulo 10 for indices of SIGMA
-//  - Added type annotations
-//  - Moved previously global `v` and `m` variables inside the F function
-
-// 64-bit unsigned addition
-// Sets v[a,a+1] += v[b,b+1]
-// v should be a Uint32Array
 function ADD64AA(v: Uint32Array, a: number, b: number) {
   const o0 = v[a] + v[b];
   let o1 = v[a + 1] + v[b + 1];
@@ -28,9 +15,6 @@ function ADD64AA(v: Uint32Array, a: number, b: number) {
   v[a + 1] = o1;
 }
 
-// 64-bit unsigned addition
-// Sets v[a,a+1] += b
-// b0 is the low 32 bits of b, b1 represents the high 32 bits
 function ADD64AC(v: Uint32Array, a: number, b0: number, b1: number) {
   let o0 = v[a] + b0;
   if (b0 < 0) {
@@ -44,8 +28,6 @@ function ADD64AC(v: Uint32Array, a: number, b0: number, b1: number) {
   v[a + 1] = o1;
 }
 
-// G Mixing function
-// The ROTRs are inlined for speed
 function B2B_G(
   v: Uint32Array,
   mw: Uint32Array,
@@ -61,10 +43,9 @@ function B2B_G(
   const y0 = mw[iy];
   const y1 = mw[iy + 1];
 
-  ADD64AA(v, a, b); // v[a,a+1] += v[b,b+1] ... in JS we must store a uint64 as two uint32s
-  ADD64AC(v, a, x0, x1); // v[a, a+1] += x ... x0 is the low 32 bits of x, x1 is the high 32 bits
+  ADD64AA(v, a, b);
+  ADD64AC(v, a, x0, x1);
 
-  // v[d,d+1] = (v[d,d+1] xor v[a,a+1]) rotated to the right by 32 bits
   let xor0 = v[d] ^ v[a];
   let xor1 = v[d + 1] ^ v[a + 1];
   v[d] = xor1;
@@ -72,7 +53,6 @@ function B2B_G(
 
   ADD64AA(v, c, d);
 
-  // v[b,b+1] = (v[b,b+1] xor v[c,c+1]) rotated right by 24 bits
   xor0 = v[b] ^ v[c];
   xor1 = v[b + 1] ^ v[c + 1];
   v[b] = (xor0 >>> 24) ^ (xor1 << 8);
@@ -81,7 +61,6 @@ function B2B_G(
   ADD64AA(v, a, b);
   ADD64AC(v, a, y0, y1);
 
-  // v[d,d+1] = (v[d,d+1] xor v[a,a+1]) rotated right by 16 bits
   xor0 = v[d] ^ v[a];
   xor1 = v[d + 1] ^ v[a + 1];
   v[d] = (xor0 >>> 16) ^ (xor1 << 16);
@@ -89,22 +68,18 @@ function B2B_G(
 
   ADD64AA(v, c, d);
 
-  // v[b,b+1] = (v[b,b+1] xor v[c,c+1]) rotated right by 63 bits
   xor0 = v[b] ^ v[c];
   xor1 = v[b + 1] ^ v[c + 1];
   v[b] = (xor1 >>> 31) ^ (xor0 << 1);
   v[b + 1] = (xor0 >>> 31) ^ (xor1 << 1);
 }
 
-// Initialization Vector
-// prettier-ignore
 const BLAKE2B_IV32 = new Uint32Array([
   0xf3bcc908, 0x6a09e667, 0x84caa73b, 0xbb67ae85, 0xfe94f82b, 0x3c6ef372,
   0x5f1d36f1, 0xa54ff53a, 0xade682d1, 0x510e527f, 0x2b3e6c1f, 0x9b05688c,
   0xfb41bd6b, 0x1f83d9ab, 0x137e2179, 0x5be0cd19,
 ]);
 
-// prettier-ignore
 const SIGMA8 = [
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 14, 10, 4, 8, 9, 15, 13,
   6, 1, 12, 0, 2, 11, 7, 5, 3, 11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1,
@@ -117,9 +92,6 @@ const SIGMA8 = [
   1, 12, 0, 2, 11, 7, 5, 3,
 ];
 
-// These are offsets into a uint64 buffer.
-// Multiply them all by 2 to make them offsets into a uint32 buffer,
-// because this is Javascript and we don't have uint64s
 const SIGMA82 = new Uint8Array(
   SIGMA8.map(function (x) {
     return x * 2;
@@ -136,13 +108,11 @@ function F(
   const v = new Uint32Array(32);
   let i = 0;
 
-  // init work variables
   for (i = 0; i < 16; i++) {
     v[i] = h[i];
     v[i + 16] = BLAKE2B_IV32[i];
   }
 
-  // 128 bits of offset
   v[24] = v[24] ^ t[0];
   v[25] = v[25] ^ t[1];
   v[26] = v[26] ^ t[2];
@@ -154,12 +124,7 @@ function F(
     v[29] = ~v[29];
   }
 
-  // twelve rounds of mixing
-  // uncomment the DebugPrint calls to log the computation
-  // and match the RFC sample documentation
-  // util.debugPrint('          m[16]', m, 64)
   for (i = 0; i < rounds; i++) {
-    // util.debugPrint('   (i=' + (i < 10 ? ' ' : '') + i + ') v[16]', v, 64)
     const ri = (i % 10) * 16;
     B2B_G(v, m, 0, 8, 16, 24, SIGMA82[ri + 0], SIGMA82[ri + 1]);
     B2B_G(v, m, 2, 10, 18, 26, SIGMA82[ri + 2], SIGMA82[ri + 3]);
@@ -229,26 +194,5 @@ export const blake2f = Effect.gen(function* () {
     outputView.setUint32(i * 4, h[i], true);
   }
 
-  // if (opts._debug !== undefined) {
-  //   opts._debug(`${pName} return hash=${bytesToHex(output)}`)
-  // }
-
   yield* Ref.set(evm.output, new Bytes({ value: output }));
 });
-//   return {
-//     executionGasUsed: gasUsed,
-//     returnValue: output,
-//   }
-// }
-
-// export const blake2f = Effect.gen(function* () {
-//   const evm = yield* Evm;
-
-//   const data = evm.message.data.value;
-
-//   const rounds = blake2b.create()
-//   yield* Gas.chargeGas(new Uint({ value: Gas.GAS_BLAKE2_PER_ROUND }));
-//   const hash = blake2b(data, { dkLen: 32 });
-
-//   yield* Ref.set(evm.output, new Bytes({ value: hash }));
-// });

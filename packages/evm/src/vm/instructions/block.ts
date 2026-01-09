@@ -49,15 +49,8 @@ export const blockhash: Effect.Effect<void, EthereumException, Evm> =
       currentBlockNumber.value <= blockNumberUint.value ||
       currentBlockNumber.value > maxBlockNumber.value
     ) {
-      // Default hash to 0 if:
-      // - Block of interest is not yet on the chain (including current block)
-      // - Block's age is more than 256
       currentBlockHash = new U256({ value: 0n });
     } else {
-      // Get block hash from the list
-      // blockHashes is ordered by increasing block number
-      // Index calculation: convert negative Python-style index to positive
-      // The array has hashes for blocks from (currentBlock - blockHashes.length) to (currentBlock - 1)
       const offset = Number(currentBlockNumber.value - blockNumberUint.value);
       const index = blockHashes.length - offset;
 
@@ -245,26 +238,6 @@ export const chainid: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
  * Gas: 5 (GAS_LOW)
  * Stack: [...] -> [balance, ...]
  *
- * TODO: Integrate with State service to actually read account balance
- */
-// const _selfbalance: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
-//   function* () {
-//     const evm = yield* Evm;
-
-//     // GAS
-//     yield* Gas.chargeGas(Gas.GAS_LOW);
-
-//     // OPERATION
-//     // TODO: Get balance from state
-//     // const balance = yield* State.getBalance(evm.message.currentTarget);
-//     const balance = new U256({ value: 0n });
-//     yield* evm.stack.push(balance);
-
-//     // PROGRAM COUNTER
-//     yield* evm.incrementPC(1);
-//   },
-// );
-
 /**
  * BASEFEE: Get base fee
  *

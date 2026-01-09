@@ -3,15 +3,12 @@
  */
 import { Schema } from "effect";
 
-// Yul optimizer details
 export const YulDetails = Schema.Struct({
   stackAllocation: Schema.optional(Schema.Boolean),
   optimizerSteps: Schema.optional(Schema.String),
 });
 
 export type YulDetails = typeof YulDetails.Type;
-
-// Optimizer details
 export const OptimizerDetails = Schema.Struct({
   peephole: Schema.optional(Schema.Boolean),
   inliner: Schema.optional(Schema.Boolean),
@@ -27,7 +24,6 @@ export const OptimizerDetails = Schema.Struct({
 
 export type OptimizerDetails = typeof OptimizerDetails.Type;
 
-// Main optimizer settings
 export const OptimizerSettings = Schema.Struct({
   enabled: Schema.optional(Schema.Boolean),
   runs: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.nonNegative())),

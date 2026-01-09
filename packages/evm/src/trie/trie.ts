@@ -47,14 +47,6 @@ export const EMPTY_TRIE_ROOT = new Bytes32({
     0x01, 0x62, 0x2f, 0xb5, 0xe3, 0x63, 0xb4, 0x21,
   ]),
 });
-// Trie[Address, Optional[Account]
-// Trie[Bytes32, U256]
-// Trie[Bytes, Optional[Bytes | LegacyTransaction]
-// Trie[Bytes, Optional[Bytes | Receipt]
-// Trie[Bytes, Optional[Transaction]
-// Trie[Bytes, Optional[Receipt]
-// Trie[Bytes, Optional[Bytes | Withdrawal]
-// Trie[Bytes20, Optional[FrontierAccount]
 export type TrieKey = AnyBytes | Address;
 export type TrieValue =
   | Account
@@ -90,7 +82,6 @@ type LeafNode = {
   restOfKey: Bytes;
   value: Extended;
 };
-// const _LeafNode = Data.tagged<LeafNode>("LeafNode");
 export type ExtensionNode = {
   _tag: "ExtensionNode";
   keySegment: Bytes;
@@ -103,7 +94,6 @@ type BranchNode = {
   subnodes: BranchSubnodes;
   value: Extended;
 };
-// const _BranchNode = Data.tagged<BranchNode>("BranchNode");
 
 export type InternalNode = LeafNode | ExtensionNode | BranchNode;
 
@@ -227,8 +217,6 @@ function encodeNode(
   );
 }
 
-// const test = new Trie<Bytes, Bytes, null>(false, null, MutableHashMap.empty());
-// type TrieType = Trie<Bytes, Bytes, Option.Option<Bytes>>;
 export class Trie<
   K extends TrieKey,
   V extends TrieValue,
@@ -312,7 +300,6 @@ function prepareTrie<
       return Either.left(new TrieError({ message: "Encoded value is empty" }));
     }
 
-    // const key = trie.secured ? keccak256({ value: preimage.value }) : preimage;
     const keyAsBytes = new Bytes({
       value: isTagged(preimage, Address._tag)
         ? preimage.value.value
@@ -358,7 +345,6 @@ const patricialize = (
         new Bytes({ value: key.value.slice(level) }),
       ),
     );
-    // prefixLength = Math.min(prefixLength, commonPrefixLength(substring, key.value.slice(level)));
     if (prefixLength === 0) {
       break;
     }

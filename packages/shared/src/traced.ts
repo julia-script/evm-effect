@@ -4,7 +4,6 @@ import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import {
   BatchSpanProcessor,
   ConsoleSpanExporter,
-  // SimpleSpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
 import { Effect, Match, Predicate } from "effect";
 import { stringify } from "./stringify.js";
@@ -16,15 +15,10 @@ export const consoleSpanExporter = new ConsoleSpanExporter();
 export const traced = ({ serviceName }: { serviceName: string }) =>
   NodeSdk.layer(() => ({
     resource: { serviceName: serviceName },
-    spanProcessor: [
-      new BatchSpanProcessor(otlpExporter),
-      // new SimpleSpanProcessor(consoleSpanExporter),
-    ],
-    // spanProcessor: new SimpleSpanProcessor(zipkinExporter),
+    spanProcessor: [new BatchSpanProcessor(otlpExporter)],
   }));
 
 export const annotateSafe = (values: Record<string, unknown>) => {
-  // const { json, meta } = superjson.serialize(values);
   const safeValues = Object.fromEntries(
     Object.entries(values).map(([key, value]) => [
       key,

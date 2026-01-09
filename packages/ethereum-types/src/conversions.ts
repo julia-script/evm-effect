@@ -7,7 +7,7 @@ import { Bytes, Bytes1, Bytes4, Bytes8, Bytes32, Bytes64 } from "./bytes.js";
 import type { AnyUint } from "./numeric.js";
 
 /**
- * Convert to 1 byte (little-endian per Python spec)
+ * Convert to 1 byte
  */
 export function toBytes1<T extends AnyUint>(a: T): Bytes1 {
   const bytes = new Uint8Array(1);
@@ -107,14 +107,10 @@ export function toBeBytes64<T extends AnyUint>(a: T): Bytes64 {
  * Returns empty Bytes for zero.
  */
 export function toBeBytes<T extends AnyUint>(a: T): Bytes {
-  // Special case: zero returns empty bytes
   if (a.value === 0n) {
     return new Bytes({ value: new Uint8Array(0) });
   }
 
-  // Calculate the minimum number of bytes needed
-  // bit_length = number of bits needed to represent the number
-  // byte_length = ceiling(bit_length / 8)
   const bitLength = a.value.toString(2).length;
   const byteLength = Math.ceil(bitLength / 8);
 

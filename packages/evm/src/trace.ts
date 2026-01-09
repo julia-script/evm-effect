@@ -65,11 +65,6 @@ export const evmTrace = Effect.fn("evmTrace")(function* (event: EvmTraceEvent) {
 export const evmTraceWith = (evm: Evm["Type"], event: EvmTraceEvent) =>
   evmTrace(event).pipe(Effect.provideService(Evm, evm));
 
-// const NumbefFromHex = Schema.transformOrFail(Schema.Number, Schema.String, {
-//   decode: (value) => Effect.succeed(`0x${value.toString(16)}`),
-//   encode: (value) => Effect.succeed(Number.parseInt(value, 16)),
-// });
-
 class NumberFromHex extends Schema.transformOrFail(
   Schema.String.annotations({
     description: "a Hex string to be decoded into a number",
@@ -160,7 +155,10 @@ class Uint8ArrayFromHex extends Schema.transformOrFail(
           new ParseResult.Type(
             ast,
             value,
-            `Unable to decode ${JSON.stringify(value).slice(0, 10)}... into a Uint8Array`,
+            `Unable to decode ${JSON.stringify(value).slice(
+              0,
+              10,
+            )}... into a Uint8Array`,
           ),
       }),
     encode: (value) => ParseResult.succeed(`0x${bufferToHex(value)}`),
@@ -238,7 +236,6 @@ const Eip3155Tracer = Effect.fn("Eip3155Tracer")(function* ({
     ]
   > = [];
 
-  // return EvmTracer.of({
   const trace = (event: EvmTraceEvent): Effect.Effect<void, never, Evm> =>
     Effect.gen(function* () {
       const evm = yield* Evm;

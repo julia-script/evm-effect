@@ -5,9 +5,6 @@ import { Schema } from "effect";
 
 /**
  * State associated with an Ethereum address
- *
- * Note: storage_root is NOT part of the Account dataclass in the Python specs.
- * It's passed separately when encoding accounts for the state trie.
  */
 export class Account extends Schema.TaggedClass<Account>("Account")("Account", {
   nonce: Uint,

@@ -31,25 +31,19 @@ export class Authorization extends Schema.TaggedClass<Authorization>(
   yParity: U8,
   r: U256,
   s: U256,
-  // a:Account
-}) {
-  // Add any custom methods here if needed
-}
+}) {}
 class Account extends Schema.TaggedClass<Account>("Account")("Account", {
   nonce: Uint,
   balance: U256,
   code: Bytes,
   authorization: Authorization,
-}) {
-  // Add any custom methods here if needed
-}
+}) {}
 
 type OrderedKey = string | [string, OrderedKey[]];
 function collectOrderedKeys(
   schema: Schema.Schema.All | Schema.Struct<Schema.Struct.Fields>,
   seen: Set<Schema.Schema.All> = new Set(),
 ) {
-  // const stack: (Multiple | Field)[] = []
   const keys: OrderedKey[] = [];
   if ("fields" in schema && !isEvmTypeClass(schema) && !seen.has(schema)) {
     if (seen.has(schema)) {
@@ -57,10 +51,7 @@ function collectOrderedKeys(
     }
     seen.add(schema);
 
-    // const keys:Multiple['keys'] = []
     for (const [key, value] of Object.entries(schema.fields)) {
-      // keys.push(key)
-
       if ("fields" in value && !isEvmTypeClass(value)) {
         keys.push([
           key,
@@ -77,23 +68,6 @@ function collectOrderedKeys(
 
   return keys;
 }
-// const collectOrderedKeys = (schema: Schema.Schema.All | Schema.Struct<Schema.Struct.Fields>): OrderedKey => {
-//   if ('fields' in schema) {
-//     const fieldKeys: OrderedKey[] = []
-//     for (const [key, value] of Object.entries(schema.fields)) {
-//       fieldKeys.push({field: key, keys: collectOrderedKeys(value)})
-//       // keys.push(fieldKeys)
-//     }
-//     return fieldKeys
-//   }
-//   return {
-//     field: "noop"
-//     keys: fieldKeys
-//   }
-// }
-// const isRlpInput = (val: unknown): val is RlpInput => {
-//   return val instanceof RlpInput
-// }
 type RlpInputRecord = {
   [key: string]: RlpInput | Address | RlpInputRecord;
 };
@@ -103,7 +77,6 @@ const makeEncoder = <
 >(
   schema: S,
 ) => {
-  // const keys: OrderedKey[] = [
   const keys = collectOrderedKeys(schema);
   console.log(inspect(keys, { depth: null }));
   const encodeOrderedKeysInner = (
@@ -117,14 +90,8 @@ const makeEncoder = <
     for (const entry of keys) {
       if (typeof entry === "string") {
         if (entry === "_tag") continue;
-        // rlpInputs.push(encodeOrderedKeysInner(input[key], []))
         const value = input[entry] as unknown;
         if (isEvmType(value)) {
-          // const encoded = encodeOrderedKeysInner(value, [])
-
-          // if (Either.isLeft(encoded)) {
-          //   return encoded
-          // }
           if (isAddress(value)) {
             rlpInputs.push(value.value);
           } else {
@@ -175,15 +142,5 @@ const account = Account.make({
   code: new Bytes({ value: new Uint8Array([1, 2, 3]) }),
   authorization: authorization,
 });
-// const authorizationEncoder = makeEncoder(Authorization)
 const accounteEncoder = makeEncoder(Account);
-const encodedAccount = accounteEncoder(account);
-// const encodedAuthorization = authorizationEncoder(authorization)
-// console.log(inspect(encodedAuthorization, { depth: null, colors: true }))
-console.log(inspect(encodedAccount, { depth: null, colors: true }));
-// const byteEncoder = makeEncoder(Bytes)
-
-// Bytes.fields.value
-// const jsonSchema = JSONSchema.make(Person)
-
-// console.log(JSON.stringify(jsonSchema, null, 2))
+const _encodedAccount = accounteEncoder(account);

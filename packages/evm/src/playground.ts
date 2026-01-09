@@ -80,7 +80,6 @@ const program = Effect.gen(function* () {
     parentBeaconBlockRoot: new Bytes32({ value: new Uint8Array(32) }),
   });
 
-  // Set the contract deployer account
   const deployerAddressResult = new Address(
     "0x4e59b44847b379578588920ca78fbf26c0b4956c",
   );
@@ -131,7 +130,6 @@ const program = Effect.gen(function* () {
   yield* Effect.log("=== Contract Deployment ===");
   yield* Effect.log(stringify(blockOutput));
 
-  // Compute the deployed contract address
   const contractAddress = computeContractAddress(
     address,
     new Uint({ value: 0n }),
@@ -140,7 +138,6 @@ const program = Effect.gen(function* () {
     `\n=== Deployed contract at: ${contractAddress.toHex()} ===\n`,
   );
 
-  // Helper function to encode function selector
   const encodeFunctionCall = (
     signature: string,
     params: Uint8Array = new Uint8Array(),
@@ -153,7 +150,6 @@ const program = Effect.gen(function* () {
     return new Bytes({ value: data });
   };
 
-  // Helper function to create and execute a transaction
   const executeTransaction = function* (
     nonce: bigint,
     to: Address,
@@ -196,21 +192,17 @@ const program = Effect.gen(function* () {
     return callTx;
   };
 
-  // Call inc() function
   yield* Effect.log("=== Calling inc() ===");
   const incData = encodeFunctionCall("inc()");
   yield* executeTransaction(1n, contractAddress, incData, 1n);
 
-  // Call inc() again
   yield* Effect.log("\n=== Calling inc() again ===");
   yield* executeTransaction(2n, contractAddress, incData, 2n);
 
-  // Call get() function to read the count
   yield* Effect.log("\n=== Calling get() to read count ===");
   const getData = encodeFunctionCall("get()");
   yield* executeTransaction(3n, contractAddress, getData, 3n);
 
-  // Read the return data from the last transaction
   const getReceipt = blockOutput.receiptsTrie.get(
     fromHex("0x03").pipe(Either.getOrThrow),
   );
@@ -218,12 +210,10 @@ const program = Effect.gen(function* () {
     yield* Effect.log(`get() returned: ${stringify(getReceipt)}`);
   }
 
-  // Call dec() function
   yield* Effect.log("\n=== Calling dec() ===");
   const decData = encodeFunctionCall("dec()");
   yield* executeTransaction(4n, contractAddress, decData, 4n);
 
-  // Call get() again to see the decremented value
   yield* Effect.log("\n=== Calling get() again after dec() ===");
   yield* executeTransaction(5n, contractAddress, getData, 5n);
 
@@ -237,7 +227,6 @@ const program = Effect.gen(function* () {
   yield* Effect.log("\n=== Final Block Output ===");
   yield* Effect.log(stringify(blockOutput));
 
-  // Read the contract storage directly to verify
   const storageSlot0 = State.getStorage(
     blockEnv.state,
     contractAddress,
@@ -248,7 +237,6 @@ const program = Effect.gen(function* () {
 });
 
 await program.pipe(
-  // Effect.provide(DevTools.layer()),
   Effect.provide(Fork.prague()),
   Effect.provide(
     EvmTracer.eip3155({

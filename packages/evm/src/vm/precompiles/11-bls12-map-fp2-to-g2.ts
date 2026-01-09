@@ -37,11 +37,9 @@ export const bls12MapFp2ToG2 = Effect.gen(function* () {
 
   yield* Gas.chargeGas(new Uint({ value: Gas.GAS_BLS_G2_MAP.value }));
 
-  // Extract Fp2 components (each 64 bytes)
   const fp2_c0_bytes = data.slice(0, 64);
   const fp2_c1_bytes = data.slice(64, 128);
 
-  // Convert to bigints and check field modulus
   const fp2_c0_bn = Uint.fromBeBytes(fp2_c0_bytes);
   const fp2_c1_bn = Uint.fromBeBytes(fp2_c1_bytes);
 
@@ -61,10 +59,8 @@ export const bls12MapFp2ToG2 = Effect.gen(function* () {
     );
   }
 
-  // Map to G2 curve using the hash-to-curve algorithm (mapToCurve expects bigints)
   const g2 = bls12_381.G2.mapToCurve([fp2_c0_bn.value, fp2_c1_bn.value]);
 
-  // Convert G2 point to 256 bytes
   const output = g2PointToBytes(g2);
 
   yield* Ref.set(evm.output, new Bytes({ value: output }));

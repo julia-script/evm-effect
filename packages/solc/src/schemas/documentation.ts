@@ -3,28 +3,24 @@
  */
 import { Schema } from "effect";
 
-// User documentation for a method
 export const UserDocMethod = Schema.Struct({
   notice: Schema.String,
 });
 
 export type UserDocMethod = typeof UserDocMethod.Type;
 
-// User documentation for an event
 export const UserDocEvent = Schema.Struct({
   notice: Schema.String,
 });
 
 export type UserDocEvent = typeof UserDocEvent.Type;
 
-// User documentation for an error
 export const UserDocError = Schema.Struct({
   notice: Schema.String,
 });
 
 export type UserDocError = typeof UserDocError.Type;
 
-// Complete user documentation
 export const UserDoc = Schema.Struct({
   version: Schema.optional(Schema.Number),
   kind: Schema.optional(Schema.Literal("user")),
@@ -51,7 +47,6 @@ export const UserDoc = Schema.Struct({
 
 export type UserDoc = typeof UserDoc.Type;
 
-// Developer documentation for a method
 export const DevDocMethod = Schema.Struct({
   details: Schema.optional(Schema.String),
   params: Schema.optional(
@@ -76,7 +71,6 @@ export const DevDocMethod = Schema.Struct({
 
 export type DevDocMethod = typeof DevDocMethod.Type;
 
-// Developer documentation for an event
 export const DevDocEvent = Schema.Struct({
   details: Schema.optional(Schema.String),
   params: Schema.optional(
@@ -95,7 +89,6 @@ export const DevDocEvent = Schema.Struct({
 
 export type DevDocEvent = typeof DevDocEvent.Type;
 
-// Developer documentation for an error
 export const DevDocError = Schema.Struct({
   details: Schema.optional(Schema.String),
   params: Schema.optional(
@@ -114,7 +107,6 @@ export const DevDocError = Schema.Struct({
 
 export type DevDocError = typeof DevDocError.Type;
 
-// State variable documentation
 export const DevDocStateVariable = Schema.Struct({
   details: Schema.optional(Schema.String),
   returns: Schema.optional(Schema.String),
@@ -128,7 +120,6 @@ export const DevDocStateVariable = Schema.Struct({
 
 export type DevDocStateVariable = typeof DevDocStateVariable.Type;
 
-// Complete developer documentation
 export const DevDoc = Schema.Struct({
   version: Schema.optional(Schema.Number),
   kind: Schema.optional(Schema.Literal("dev")),

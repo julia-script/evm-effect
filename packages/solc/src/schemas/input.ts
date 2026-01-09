@@ -12,7 +12,6 @@ import {
   RevertStrings,
 } from "./types.js";
 
-// Source file for Solidity/Yul - must have content or urls
 export const SourceFile = Schema.Struct({
   keccak256: Schema.optional(Schema.String),
   content: Schema.optional(Schema.String),
@@ -28,7 +27,6 @@ export const SourceFile = Schema.Struct({
 
 export type SourceFile = typeof SourceFile.Type;
 
-// Sources for Solidity/Yul (must be non-empty, source names must not be empty)
 export const SolidityYulSources = Schema.Record({
   key: Schema.String.pipe(Schema.minLength(1)),
   value: SourceFile,
@@ -38,14 +36,12 @@ export const SolidityYulSources = Schema.Record({
   }),
 );
 
-// Source file for SolidityAST - only has ast field
 export const SourceFileAST = Schema.Struct({
   ast: Schema.Unknown,
 });
 
 export type SourceFileAST = typeof SourceFileAST.Type;
 
-// Sources for SolidityAST (must be non-empty, source names must not be empty)
 export const SolidityASTSources = Schema.Record({
   key: Schema.String.pipe(Schema.minLength(1)),
   value: SourceFileAST,
@@ -55,14 +51,12 @@ export const SolidityASTSources = Schema.Record({
   }),
 );
 
-// Source file for EVMAssembly - only has assemblyJson
 export const SourceFileEVMAssembly = Schema.Struct({
   assemblyJson: Schema.Unknown,
 });
 
 export type SourceFileEVMAssembly = typeof SourceFileEVMAssembly.Type;
 
-// Sources for EVMAssembly (exactly one source required, source name must not be empty)
 export const EVMAssemblySources = Schema.Record({
   key: Schema.String.pipe(Schema.minLength(1)),
   value: SourceFileEVMAssembly,
@@ -72,7 +66,6 @@ export const EVMAssemblySources = Schema.Record({
   }),
 );
 
-// Auxiliary input for SMT
 export const AuxiliaryInput = Schema.Struct({
   smtlib2responses: Schema.optional(
     Schema.Record({
@@ -84,7 +77,6 @@ export const AuxiliaryInput = Schema.Struct({
 
 export type AuxiliaryInput = typeof AuxiliaryInput.Type;
 
-// Debug settings
 export const DebugSettings = Schema.Struct({
   revertStrings: Schema.optional(RevertStrings),
   debugInfo: Schema.optional(Schema.Array(DebugInfoComponent)),
@@ -92,7 +84,6 @@ export const DebugSettings = Schema.Struct({
 
 export type DebugSettings = typeof DebugSettings.Type;
 
-// Metadata settings
 export const MetadataSettings = Schema.Struct({
   appendCBOR: Schema.optional(Schema.Boolean),
   useLiteralContent: Schema.optional(Schema.Boolean),
@@ -101,7 +92,6 @@ export const MetadataSettings = Schema.Struct({
 
 export type MetadataSettings = typeof MetadataSettings.Type;
 
-// Libraries map: source file -> library name -> address
 export const Libraries = Schema.Record({
   key: Schema.String,
   value: Schema.Record({
@@ -112,7 +102,6 @@ export const Libraries = Schema.Record({
 
 export type Libraries = typeof Libraries.Type;
 
-// Output selection: file -> contract -> outputs
 export const OutputSelection = Schema.Record({
   key: Schema.String,
   value: Schema.Record({
@@ -123,7 +112,6 @@ export const OutputSelection = Schema.Record({
 
 export type OutputSelection = typeof OutputSelection.Type;
 
-// Remapping string (must be non-empty and contain "=")
 const Remapping = Schema.String.pipe(
   Schema.minLength(1),
   Schema.filter((s) => s.includes("="), {
@@ -131,13 +119,12 @@ const Remapping = Schema.String.pipe(
   }),
 );
 
-// Compiler settings
 export const Settings = Schema.Struct({
   stopAfter: Schema.optional(Schema.Literal("parsing")),
   remappings: Schema.optional(Schema.Array(Remapping)),
   optimizer: Schema.optional(OptimizerSettings),
   evmVersion: Schema.optional(EVMVersion),
-  eofVersion: Schema.optional(Schema.Literal(1)), // Currently only version 1 is valid
+  eofVersion: Schema.optional(Schema.Literal(1)),
   viaIR: Schema.optional(Schema.Boolean),
   debug: Schema.optional(DebugSettings),
   metadata: Schema.optional(MetadataSettings),
@@ -148,7 +135,6 @@ export const Settings = Schema.Struct({
 
 export type Settings = typeof Settings.Type;
 
-// Yul sources (exactly one source required, same validation as EVMAssembly)
 const YulSources = Schema.Record({
   key: Schema.String.pipe(Schema.minLength(1)),
   value: SourceFile,
@@ -158,7 +144,6 @@ const YulSources = Schema.Record({
   }),
 );
 
-// Compiler input for Solidity
 const CompilerInputSolidity = Schema.Struct({
   language: Schema.Literal("Solidity"),
   sources: SolidityYulSources,
@@ -166,7 +151,6 @@ const CompilerInputSolidity = Schema.Struct({
   settings: Schema.optional(Settings),
 });
 
-// Compiler input for Yul (requires exactly one source)
 const CompilerInputYul = Schema.Struct({
   language: Schema.Literal("Yul"),
   sources: YulSources,
@@ -174,7 +158,6 @@ const CompilerInputYul = Schema.Struct({
   settings: Schema.optional(Settings),
 });
 
-// Compiler input for SolidityAST
 const CompilerInputSolidityAST = Schema.Struct({
   language: Schema.Literal("SolidityAST"),
   sources: SolidityASTSources,
@@ -182,7 +165,6 @@ const CompilerInputSolidityAST = Schema.Struct({
   settings: Schema.optional(Settings),
 });
 
-// Compiler input for EVMAssembly
 const CompilerInputEVMAssembly = Schema.Struct({
   language: Schema.Literal("EVMAssembly"),
   sources: EVMAssemblySources,
@@ -190,7 +172,6 @@ const CompilerInputEVMAssembly = Schema.Struct({
   settings: Schema.optional(Settings),
 });
 
-// Complete compiler input (discriminated union by language)
 export const CompilerInput = Schema.Union(
   CompilerInputSolidity,
   CompilerInputYul,

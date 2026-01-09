@@ -55,8 +55,6 @@ const arbExtended = Arbitrary.make(
   Schema.Union(extendedUnion, extendedUnionList),
 );
 
-// const arbUint = fc.oneof(fc.string(Uint._tag), fc.string(U8._tag), fc.string(U64._tag), fc.string(U256._tag))
-// const arbitrary = Arbitrary
 const ellipsis = (str: string) =>
   str.length > 6 ? `${str.slice(0, 6)}…${str.length}+` : str;
 const formatTestTitle = (extended: Extended): string => {

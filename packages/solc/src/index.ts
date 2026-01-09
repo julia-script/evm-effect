@@ -3,31 +3,6 @@ import { Data, type Effect, Either, Option, Schema } from "effect";
 import solc from "solc";
 import type { CompilerInput } from "./schemas/input.js";
 import * as output from "./schemas/output.js";
-
-// export class CompilationResult extends Data.TaggedClass("CompilationResult")<{
-//   readonly _raw: CompilerOutput;
-//   readonly errors: readonly CompilerError[];
-// }> {
-//   get errors(): readonly CompilerError[] {
-//     return this._raw.errors ?? [];
-//   }
-//   get contracts(): ContractsOutput {
-//     return this._raw.contracts ?? {};
-//   }
-//    contractByName(name: string, file?: string): Option.Option<ContractOutput> {
-//     if (file) {
-//       return Option.fromNullable(this.contracts[file]?.[name]);
-//     }
-//     for (const fileContracts of Object.values(this.contracts)) {
-//       for (const [key, value] of Object.entries(fileContracts)) {
-//         if (key === name) {
-//           return Option.fromNullable(value);
-//         }
-//       }
-//     }
-//     return Option.none();
-//    }
-// }
 export namespace CompilerOutput {
   export type CompilerOutput = output.CompilerOutput;
   export type CompilerError = output.CompilerError;
@@ -60,7 +35,7 @@ export namespace CompilerOutput {
         _getContract(self, arguments[0], arguments[1]);
     }
     return _getContract(arguments[0], arguments[1], arguments[2]);
-  } as never; // export function getContract(
+  } as never;
 
   export const _findContractByName = (
     self: CompilerOutput,
@@ -166,7 +141,9 @@ export class Solc extends Data.TaggedClass("Solc")<{
         if (filteredErrors.length > 0) {
           return Either.left(
             new SolcCompilationError({
-              message: `Compiler errors found:\n${filteredErrors.map((error) => `- ${error.message}`).join("\n")}`,
+              message: `Compiler errors found:\n${filteredErrors
+                .map((error) => `- ${error.message}`)
+                .join("\n")}`,
               compilerErrors: filteredErrors,
             }),
           );

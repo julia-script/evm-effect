@@ -1,12 +1,6 @@
 import { Effect } from "effect";
 import { CompilerOutput, Contract, Solc } from "./index.js";
 
-// console.log(solc);
-// https://binaries.soliditylang.org/emscripten-wasm32/list.json
-
-// const _wasmIndex =
-//   "https://binaries.soliditylang.org/emscripten-wasm32/list.json";
-
 var output = Solc.compile({
   language: "Solidity",
   sources: {
@@ -64,25 +58,7 @@ const program = Effect.gen(function* () {
     "test2.sol",
     "Counter2",
   );
-  // console.log("contract", contract);
   const bytes = yield* Contract.getBytes(contract);
   yield* Effect.log(bytes);
-  // Effect.log(bytes);
 });
 Effect.runPromise(program);
-// output.pipe(Either.map(CompilerOutput.getContract("test.sol", "Counter2")));
-// if (Either.isRight(output)) {
-//   console.log(output.right.contractByName("Counter2").pipe(Option.map(contract => contract.evm?.bytecode)));
-// } else {
-//   // console.log(output.left?.message);
-// }
-// // console.log(inspect(output.output.contracts['test.sol'], { depth: Infinity , colors: true }));
-
-// // `output` here contains the JSON output as specified in the documentation
-// for (var contractName in output.contracts['test.sol']) {
-//   console.log(
-//     contractName +
-//       ': ' +
-//       output.contracts['test.sol'][contractName].evm.bytecode.object
-//   );
-// }

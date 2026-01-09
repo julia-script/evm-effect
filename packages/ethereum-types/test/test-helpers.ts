@@ -6,7 +6,6 @@
 
 import * as fc from "fast-check";
 
-// Re-export generic test utilities from shared package
 export {
   createComparisonTest,
   fc,

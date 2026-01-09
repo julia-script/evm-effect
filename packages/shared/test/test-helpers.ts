@@ -14,7 +14,6 @@ import { Chunk, Data, Effect, Either, Stream } from "effect";
 import * as fc from "fast-check";
 import { dedent } from "ts-dedent";
 
-// Configure fast-check defaults
 fc.configureGlobal({ numRuns: 20, timeout: 1000 });
 
 /**
@@ -37,11 +36,8 @@ export interface PythonResult {
   ok: boolean;
 }
 
-// Find the monorepo root by walking up from this file
-// This works regardless of which package imports this module
 const findMonorepoRoot = (): string => {
   let current = path.dirname(fileURLToPath(import.meta.url));
-  // Walk up until we find package.json with workspaces
   while (current !== path.dirname(current)) {
     try {
       const pkgPath = path.join(current, "package.json");
@@ -132,10 +128,8 @@ export async function testAgainstPython<TInput, TOutput>(
   await fc.assert(
     fc.asyncProperty(config.arbitrary, async (input) => {
       const program = Effect.gen(function* () {
-        // Run Python
         const pyResult = yield* pythonEval(config.pyCode(input), false);
 
-        // Run TypeScript
         let tsResult: TOutput | "error";
         let tsError: unknown;
         try {
@@ -155,9 +149,7 @@ export async function testAgainstPython<TInput, TOutput>(
           tsError = e;
         }
 
-        // Compare results
         if (pyResult.ok) {
-          // Python succeeded - TS should too
           if (tsResult === "error") {
             console.error("Python succeeded but TS failed:");
             console.error("Input:", input);
@@ -171,7 +163,6 @@ export async function testAgainstPython<TInput, TOutput>(
           const expected = config.parseOutput(pyResult.stdout);
           expect(tsResult).toEqual(expected);
         } else {
-          // Python threw - TS should too
           if (tsResult !== "error") {
             console.error("Python failed but TS succeeded:");
             console.error("Input:", input);
@@ -181,8 +172,6 @@ export async function testAgainstPython<TInput, TOutput>(
               `Python failed but TypeScript succeeded. Python stderr: ${pyResult.stderr}`,
             );
           }
-          // Both errored - this is correct
-          // Optionally verify error messages match
         }
       });
 

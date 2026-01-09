@@ -89,7 +89,6 @@ export const beginTransaction = Effect.fn("beginTransaction")(function* (
   transientStorage: TransientStorage,
 ) {
   const mainTrieCopy = state._mainTrie.copy();
-  // Deep copy storage tries - each Trie must be copied, not just the HashMap
   const storageTriesCopy = HashMap.empty<Address, Trie<Bytes32, U256, U256>>();
   for (const entry of state._storageTries) {
     storageTriesCopy.set(entry.key, entry.value.copy());
@@ -115,7 +114,6 @@ export const beginTransaction = Effect.fn("beginTransaction")(function* (
  * "original" storage value for SSTORE gas calculations.
  */
 export function markTransactionSnapshot(state: State): void {
-  // The transaction snapshot is the one we just pushed
   (
     state as { _transactionSnapshotIndex: number | null }
   )._transactionSnapshotIndex = state._snapshots.length - 1;
@@ -132,10 +130,6 @@ export function commitTransaction(
   transientStorage: TransientStorage,
 ): void {
   state._snapshots.pop();
-
-  // Clear transaction snapshot index if we popped below it
-  // Also clear createdAccounts when the transaction ends, not just when all snapshots are gone.
-  // createdAccounts is per-transaction, so it should be cleared when a transaction commits.
   if (
     state._transactionSnapshotIndex !== null &&
     state._snapshots.length <= state._transactionSnapshotIndex
@@ -146,7 +140,6 @@ export function commitTransaction(
     state.createdAccounts.clear();
   }
 
-  // Also clear if no snapshots remain (for backward compatibility with non-block-level usage)
   if (state._snapshots.length === 0) {
     state.createdAccounts.clear();
   }
@@ -177,8 +170,6 @@ export function rollbackTransaction(
     state._storageTries.set(entry.key, entry.value);
   }
 
-  // Clear transaction snapshot index if we popped below it
-  // Also clear createdAccounts when the transaction ends.
   if (
     state._transactionSnapshotIndex !== null &&
     state._snapshots.length <= state._transactionSnapshotIndex
@@ -189,7 +180,6 @@ export function rollbackTransaction(
     state.createdAccounts.clear();
   }
 
-  // Also clear if no snapshots remain (for backward compatibility)
   if (state._snapshots.length === 0) {
     state.createdAccounts.clear();
   }
@@ -358,7 +348,6 @@ export const setStorage = Effect.fn("setStorage")(function* (
 
   actualTrie.set(key, value);
 
-  // If the trie is now empty, remove it
   if (actualTrie._data.size === 0) {
     state._storageTries.remove(address);
   }
@@ -372,9 +361,6 @@ export const setStorage = Effect.fn("setStorage")(function* (
  * @returns Storage root of the account.
  */
 function storageRoot(state: State, address: Address): Root {
-  // Note: We allow calculating storage root during a transaction because
-  // block-level validation needs to calculate state root before knowing
-  // if the block should be committed or rolled back.
   const trie = state._storageTries.get(address);
   if (!trie) {
     return EMPTY_TRIE_ROOT;
@@ -396,10 +382,6 @@ function storageRoot(state: State, address: Address): Root {
  * @returns The state root.
  */
 export function stateRoot(state: State): Root {
-  // if (state._snapshots.length > 0) {
-  //   throw new Error("Cannot calculate state root during a transaction");
-  // }
-
   const rootResult = trieRoot(
     state._mainTrie,
     Option.some((address: Address) => storageRoot(state, address)),
@@ -513,8 +495,6 @@ const modifyState = Effect.fn("modifyState")(function* <E, R>(
   const modifiedAccount = yield* f(account);
   yield* setAccount(state, address, modifiedAccount);
 
-  // EIP-161: Empty account cleanup (Spurious Dragon and later)
-  // Import Fork dynamically to avoid circular dependency
   const { Fork } = yield* Effect.promise(() => import("./vm/Fork.js"));
   const fork = yield* Fork;
   if (fork.eip(161)) {
@@ -650,8 +630,6 @@ export const setCode = Effect.fn("setCode")(function* (
 export const getStorageOriginal = Effect.fn("getStorageOriginal", {
   captureStackTrace: true,
 })(function* (state: State, address: Address, key: Bytes32) {
-  // In the transaction where an account is created, its preexisting storage
-  // is ignored.
   if (state.createdAccounts.has(address)) {
     return new U256({ value: 0n });
   }
@@ -662,18 +640,6 @@ export const getStorageOriginal = Effect.fn("getStorageOriginal", {
     );
   }
 
-  // Use the transaction snapshot index if set, otherwise fall back to index 0.
-  // The transaction snapshot is the one taken at the start of the transaction
-  // (after beginTransaction in processMessage), which contains the "original"
-  // storage values for SSTORE gas calculations.
-  //
-  // Snapshot structure with block-level transaction:
-  //   [block_snapshot, tx_snapshot, nested_call_snapshot, ...]
-  // We want tx_snapshot (marked by _transactionSnapshotIndex), not block_snapshot.
-  //
-  // Without block-level transaction (e.g., direct processMessage call):
-  //   [tx_snapshot, nested_call_snapshot, ...]
-  // We want tx_snapshot (index 0).
   const snapshotIndex = state._transactionSnapshotIndex ?? 0;
   const [, originalTrie] = state._snapshots[snapshotIndex];
   const originalAccountTrie = originalTrie.get(address);
@@ -741,7 +707,6 @@ export function setTransientStorage(
 
   actualTrie.set(key, value);
 
-  // If the trie is now empty, remove it
   if (actualTrie._data.size === 0) {
     transientStorage._tries.remove(address);
   }

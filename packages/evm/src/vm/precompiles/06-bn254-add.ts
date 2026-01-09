@@ -12,11 +12,10 @@ export const bn254Add = Effect.gen(function* () {
   const fork = yield* Fork;
   const data = evm.message.data.value;
 
-  // GAS - Istanbul (EIP-1108) reduced from 500 to 150
+  // GAS
   yield* Gas.chargeGas(new Uint({ value: fork.eipSelect(1108, 150n, 500n) }));
 
   // OPERATION
-  // Pad input to 128 bytes (two points, 64 bytes each)
   const paddedData = new Uint8Array(128);
   paddedData.set(data.slice(0, Math.min(data.length, 128)));
 

@@ -172,7 +172,6 @@ const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
       }
     }
 
-    // Fallback: try the first concrete type
     return hydrateAst(concretes[0], input);
   }
 
@@ -188,8 +187,6 @@ const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
     assertBytes(input);
 
     if (input.value.length === 0) {
-      // For 0-length bytes, we need to check if the concrete type is numeric
-      // Numeric types (Uint, U64, etc.) should be decoded as 0, not undefined
       const concreteNormalized = normalize(concretes[0]);
       if (
         (AST.isDeclaration(concreteNormalized) ||
@@ -208,7 +205,6 @@ const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
         }
       }
 
-      // For non-numeric types, return undefined/null based on the schema
       const notConcrete = ast.types.find(
         (type) => type !== concretes[0],
       ) as AST.AST;
@@ -229,7 +225,6 @@ const hydrateTuple = (ast: AST.TupleType, input: Simple): unknown => {
   const [restType, ...additionalTypes] = ast.rest;
   const elements = input.slice(0, elementsTypes.length);
   const fields: unknown[] = [];
-  // const [rest, ...additional] = input.slice(elementsTypes.length);
   const rest = input.slice(
     elementsTypes.length,
     input.length - additionalTypes.length,

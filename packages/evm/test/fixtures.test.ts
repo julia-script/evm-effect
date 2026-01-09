@@ -1,18 +1,16 @@
-// import { BunContext } from "@effect/platform-bun/BunContext";
-
 import * as path from "node:path";
 import * as Bun from "bun";
 import {
   checkTestCache,
   isTransitionFork,
   LIMIT,
+  markTestFailed,
   markTestPassed,
   resolveFork,
   resolveForkForTimestamp,
   runWithTestLogger,
   SKIP,
   TEST_CONFIG,
-  unmarkTestPassed,
 } from "./fixtures-helpers.js";
 import {
   BlockchainTest,
@@ -61,7 +59,7 @@ const casesByFormat: CasesByFormat = {
 
 for (let i = 0; i < loaded.test_cases.length; i++) {
   const testCase = loaded.test_cases[i] as IndexCaseWithHash;
-  testCase.shortHash = testCase.fixture_hash.slice(0, 10);
+  testCase.shortHash = testCase.fixture_hash.slice(0, 18);
 
   casesByFormat[testCase.format].set(testCase.shortHash, testCase);
 }
@@ -87,6 +85,7 @@ import { U8, U64, U256, Uint } from "@evm-effect/ethereum-types/numeric";
 import rlp from "@evm-effect/rlp";
 import { Console, Effect, Either, Match, Schema } from "effect";
 import { BlockChain, emptyBlockOutput } from "../src/blockchain.js";
+import { computeBlockHash } from "../src/blocks/validator.js";
 import { stateTransition } from "../src/fork.js";
 import State from "../src/state.js";
 import { processTransaction } from "../src/transactions/processor.js";
@@ -96,40 +95,180 @@ import { Fork } from "../src/vm/Fork.js";
 import { BlockEnvironment } from "../src/vm/message.js";
 import { Account } from "../src/vm/types.js";
 
+/**
+ * Maps internal error tags to Ethereum test fixture exception format.
+ *
+ * Fixture format: "ExceptionType.EXCEPTION_NAME" (e.g., "TransactionException.INTRINSIC_GAS_TOO_LOW")
+ * Multiple exceptions can be separated by "|" character.
+ *
+ * @see https://ethereum.github.io/execution-spec-tests/main/consuming_tests/exceptions/
+ */
+const errorTagToFixtureException: Record<string, string> = {
+  "EthereumException/InvalidTransaction/InsufficientTransactionGasError":
+    "TransactionException.INTRINSIC_GAS_TOO_LOW",
+  "EthereumException/InvalidTransaction/IntrinsicGasBelowFloorGasCostError":
+    "TransactionException.INTRINSIC_GAS_BELOW_FLOOR_GAS_COST",
+  "EthereumException/InvalidTransaction/InsufficientBalanceError":
+    "TransactionException.INSUFFICIENT_ACCOUNT_FUNDS",
+  "EthereumException/InvalidTransaction/NonceMismatchError":
+    "TransactionException.NONCE_MISMATCH",
+  "EthereumException/InvalidTransaction/NonceTooLowError":
+    "TransactionException.NONCE_MISMATCH_TOO_LOW",
+  "EthereumException/InvalidTransaction/NonceTooHighError":
+    "TransactionException.NONCE_MISMATCH_TOO_HIGH",
+  "EthereumException/InvalidTransaction/InvalidSenderError":
+    "TransactionException.SENDER_NOT_EOA",
+  "EthereumException/InvalidTransaction/GasUsedExceedsLimitError":
+    "TransactionException.GAS_ALLOWANCE_EXCEEDED",
+  "EthereumException/InvalidTransaction/NonceOverflowError":
+    "TransactionException.NONCE_IS_MAX",
+  "EthereumException/InvalidTransaction/TransactionTypeError":
+    "TransactionException.TYPE_NOT_SUPPORTED",
+  "EthereumException/InvalidTransaction/TYPE_1_TX_PRE_FORK":
+    "TransactionException.TYPE_1_TX_PRE_FORK",
+  "EthereumException/InvalidTransaction/TYPE_2_TX_PRE_FORK":
+    "TransactionException.TYPE_2_TX_PRE_FORK",
+  "EthereumException/InvalidTransaction/TYPE_3_TX_PRE_FORK":
+    "TransactionException.TYPE_3_TX_PRE_FORK",
+  "EthereumException/InvalidTransaction/TYPE_4_TX_PRE_FORK":
+    "TransactionException.TYPE_4_TX_PRE_FORK",
+  "EthereumException/InvalidTransaction/TransactionTypeContractCreationError":
+    "TransactionException.TYPE_3_TX_CONTRACT_CREATION",
+  "EthereumException/InvalidTransaction/Type4TxContractCreationError":
+    "TransactionException.TYPE_4_TX_CONTRACT_CREATION",
+  "EthereumException/InvalidTransaction/BlobGasLimitExceededError":
+    "TransactionException.TYPE_3_TX_MAX_BLOB_GAS_ALLOWANCE_EXCEEDED",
+  "EthereumException/InvalidTransaction/InsufficientMaxFeePerBlobGasError":
+    "TransactionException.INSUFFICIENT_MAX_FEE_PER_BLOB_GAS",
+  "EthereumException/InvalidTransaction/InsufficientMaxFeePerGasError":
+    "TransactionException.INSUFFICIENT_MAX_FEE_PER_GAS",
+  "EthereumException/InvalidTransaction/InvalidBlobVersionedHashError":
+    "TransactionException.TYPE_3_TX_INVALID_BLOB_VERSIONED_HASH",
+  "EthereumException/InvalidTransaction/NoBlobDataError":
+    "TransactionException.TYPE_3_TX_ZERO_BLOBS",
+  "EthereumException/InvalidTransaction/BlobCountExceededError":
+    "TransactionException.TYPE_3_TX_BLOB_COUNT_EXCEEDED",
+  "EthereumException/InvalidTransaction/PriorityFeeGreaterThanMaxFeeError":
+    "TransactionException.PRIORITY_GREATER_THAN_MAX_FEE_PER_GAS",
+  "EthereumException/InvalidTransaction/EmptyAuthorizationListError":
+    "TransactionException.TYPE_4_EMPTY_AUTHORIZATION_LIST",
+  "EthereumException/InvalidTransaction/InitCodeTooLargeError":
+    "TransactionException.INITCODE_SIZE_EXCEEDED",
+  "EthereumException/InvalidTransaction/TransactionGasLimitExceededError":
+    "TransactionException.GAS_LIMIT_EXCEEDED",
+
+  // Block exceptions
+  "EthereumException/InvalidBlock": "BlockException.INVALID_BLOCK",
+  "EthereumException/InvalidBlock/IncorrectExcessBlobGasError":
+    "BlockException.INCORRECT_EXCESS_BLOB_GAS",
+  "EthereumException/InvalidBlock/IncorrectBlobGasUsedError":
+    "BlockException.INCORRECT_BLOB_GAS_USED",
+  "EthereumException/InvalidBlock/InvalidGasLimitError":
+    "BlockException.INVALID_GASLIMIT",
+  "EthereumException/InvalidBlock/BlobGasUsedAboveLimitError":
+    "BlockException.BLOB_GAS_USED_ABOVE_LIMIT",
+  "EthereumException/InvalidBlock/InvalidWithdrawalsRootError":
+    "BlockException.INVALID_WITHDRAWALS_ROOT",
+  "EthereumException/InvalidBlock/IncorrectBlockFormatError":
+    "BlockException.INCORRECT_BLOCK_FORMAT",
+  "EthereumException/InvalidBlock/RlpStructuresEncodingError":
+    "BlockException.RLP_STRUCTURES_ENCODING",
+  "EthereumException/InvalidBlock/InvalidDepositEventLayoutError":
+    "BlockException.INVALID_DEPOSIT_EVENT_LAYOUT",
+  "EthereumException/InvalidBlock/InvalidRequestsError":
+    "BlockException.INVALID_REQUESTS",
+  "EthereumException/InvalidBlock/SystemContractEmptyError":
+    "BlockException.SYSTEM_CONTRACT_EMPTY",
+  "EthereumException/InvalidBlock/SystemContractCallFailedError":
+    "BlockException.SYSTEM_CONTRACT_CALL_FAILED",
+  "EthereumException/InvalidBlock/InvalidBaseFeePerGasError":
+    "BlockException.INVALID_BASEFEE_PER_GAS",
+};
+
+/**
+ * Converts an internal error to the fixture exception format.
+ *
+ * @param error - The error object from our implementation
+ * @returns The fixture exception string (e.g., "TransactionException.INTRINSIC_GAS_TOO_LOW")
+ *          or null if no mapping exists
+ */
+const toFixtureException = (error: unknown): string | null => {
+  if (error === null || typeof error !== "object") {
+    return null;
+  }
+
+  const tag = "_tag" in error ? String(error._tag) : null;
+  if (tag === null) {
+    return null;
+  }
+
+  return errorTagToFixtureException[tag] ?? null;
+};
+
+/**
+ * Checks if an error matches one of the expected fixture exceptions.
+ *
+ * The expectException string can contain multiple exceptions separated by "|".
+ * For example: "TransactionException.NONCE_MISMATCH|TransactionException.NONCE_TOO_HIGH"
+ *
+ * @param error - The error object from our implementation
+ * @param expectException - The expected exception string from the fixture
+ * @returns Object with match result and details
+ */
+const matchesExpectedException = (
+  error: unknown,
+  expectException: string,
+): {
+  matches: boolean;
+  actualException: string | null;
+  expectedOptions: string[];
+} => {
+  const actualException = toFixtureException(error);
+  const expectedOptions = expectException.split("|").map((s) => s.trim());
+
+  const matches =
+    actualException !== null && expectedOptions.includes(actualException);
+
+  return { matches, actualException, expectedOptions };
+};
+
 type FlatStateTestFixture = ReturnType<
   typeof flattenStateTestFixtures
 > extends Generator<infer T, void>
   ? T
   : never;
 
-// Test state tracker for afterEach hooks
-// Tracks the current test's shortHash and whether it passed or failed
 type TestState = {
   shortHash: string | null;
   passed: boolean;
   skipped: boolean;
+  startTime: number;
+  error: unknown;
 };
 
 describe("StateTest", () => {
-  // Track current test state for afterEach
   const testState: TestState = {
     shortHash: null,
     passed: false,
     skipped: false,
+    startTime: 0,
+    error: undefined,
   };
 
   afterEach(async () => {
     if (testState.shortHash && !testState.skipped) {
+      const durationMs = performance.now() - testState.startTime;
       if (testState.passed) {
-        await markTestPassed(testState.shortHash);
+        await markTestPassed(testState.shortHash, durationMs);
       } else {
-        await unmarkTestPassed(testState.shortHash);
+        await markTestFailed(testState.shortHash, testState.error, durationMs);
       }
     }
-    // Reset state for next test
     testState.shortHash = null;
     testState.passed = false;
     testState.skipped = false;
+    testState.startTime = 0;
+    testState.error = undefined;
   });
 
   test.each(
@@ -145,6 +284,8 @@ describe("StateTest", () => {
       testState.shortHash = testCaseIndex.shortHash;
       testState.passed = false;
       testState.skipped = false;
+      testState.startTime = performance.now();
+      testState.error = undefined;
 
       if (await checkTestCache(testCaseIndex.shortHash)) {
         testState.skipped = true;
@@ -395,7 +536,6 @@ describe("StateTest", () => {
           Match.orElseAbsurd,
         );
 
-        // sign the transaction
         if (fixture.transaction.secretKey) {
           const privateKey = new Bytes32({
             value: fixture.transaction.secretKey.value,
@@ -434,25 +574,48 @@ describe("StateTest", () => {
           if (Either.isRight(processTransactionResult)) {
             return yield* Effect.fail(
               new Error(
-                `Expected exception ${post.expectException} but got right`,
+                `Expected exception ${post.expectException} but transaction succeeded`,
               ),
             );
           }
-          // TODO: check if the exception is the expected one
+          const actualError = processTransactionResult.left;
+          const { matches, actualException, expectedOptions } =
+            matchesExpectedException(actualError, post.expectException);
+
+          yield* Console.log(`Exception expected: ${post.expectException}`);
+          yield* Console.log(
+            `  Actual exception: ${actualException ?? "UNKNOWN (no mapping)"}`,
+          );
+
+          if (!matches) {
+            const errorTag =
+              actualError !== null &&
+              typeof actualError === "object" &&
+              "_tag" in actualError
+                ? String(actualError._tag)
+                : "unknown";
+            return yield* Effect.fail(
+              new Error(
+                actualException === null
+                  ? `Unmapped exception: got error tag "${errorTag}", expected one of: ${expectedOptions.join(
+                      " | ",
+                    )}`
+                  : `Exception mismatch: expected ${expectedOptions.join(
+                      " | ",
+                    )}, got ${actualException}`,
+              ),
+            );
+          }
         } else {
           yield* processTransactionResult;
         }
-
-        // check results
 
         const stateRoot = State.stateRoot(blockEnv.state);
         const expectedHash = post.hash.value.toHex();
         const actualHash = stateRoot.value.toHex();
         const testFailed = actualHash !== expectedHash;
 
-        // Only log details if test failed
         if (testFailed) {
-          // Check which accounts exist in actual vs expected
           yield* Console.log("\n=== ACCOUNT EXISTENCE COMPARISON ===");
           const expectedAddrs = new Set<string>();
           for (const { key: address } of post.state) {
@@ -464,9 +627,7 @@ describe("StateTest", () => {
             }
           }
           yield* Console.log("====================================\n");
-          // Log gas summary
           const gasUsed = block_output.blockGasUsed.value;
-          // Handle both legacy (gasPrice) and modern (maxFeePerGas) transactions
           const gasPrice =
             "maxFeePerGas" in fixture.transaction &&
             fixture.transaction.maxFeePerGas
@@ -476,10 +637,9 @@ describe("StateTest", () => {
                 ? fixture.transaction.gasPrice.value
                 : undefined;
 
-          // Calculate expected gas from balance difference
           const senderAddr = fixture.transaction.sender;
-          let expectedGasUsed: bigint | undefined;
-          if (gasPrice !== undefined) {
+          let estimatedGasFromBalance: bigint | undefined;
+          if (gasPrice !== undefined && gasPrice > 0n) {
             for (const { key: addr, value: preAcct } of fixture.pre) {
               if (addr.toHex() === senderAddr?.toHex()) {
                 for (const {
@@ -492,8 +652,12 @@ describe("StateTest", () => {
                   ) {
                     const preBalance = preAcct.balance.value;
                     const expectedPostBalance = expectedAcct.balance.value;
-                    const expectedWeiCost = preBalance - expectedPostBalance;
-                    expectedGasUsed = expectedWeiCost / gasPrice;
+                    const txValue = fixture.transaction.value?.value ?? 0n;
+                    const expectedWeiCost =
+                      preBalance - expectedPostBalance - txValue;
+                    if (expectedWeiCost >= 0n) {
+                      estimatedGasFromBalance = expectedWeiCost / gasPrice;
+                    }
                     break;
                   }
                 }
@@ -502,26 +666,30 @@ describe("StateTest", () => {
             }
           }
 
-          if (expectedGasUsed !== undefined) {
-            const gasDiff = gasUsed - expectedGasUsed;
+          if (estimatedGasFromBalance !== undefined) {
+            const gasDiff = gasUsed - estimatedGasFromBalance;
             yield* Console.log(
               "\n\x1b[36m%s\x1b[0m",
-              "=== GAS USAGE SUMMARY ===",
+              "=== GAS USAGE SUMMARY (approximate) ===",
             );
-            yield* Console.log(`Expected gas: ${expectedGasUsed}`);
-            yield* Console.log(`Actual gas:   ${gasUsed}`);
+            yield* Console.log(
+              `Estimated gas (from balance): ${estimatedGasFromBalance}`,
+            );
+            yield* Console.log(`Actual gas used:              ${gasUsed}`);
             if (gasDiff !== 0n) {
               yield* Console.log(
-                "\x1b[31m%s\x1b[0m",
-                `Difference:   ${gasDiff > 0n ? "+" : ""}${gasDiff}`,
+                "\x1b[33m%s\x1b[0m",
+                `Difference: ${
+                  gasDiff > 0n ? "+" : ""
+                }${gasDiff} (may be due to value transfer, EIP-1559 pricing, or refunds)`,
               );
             } else {
               yield* Console.log(
                 "\x1b[32m%s\x1b[0m",
-                `Difference:   ${gasDiff} ✓`,
+                `Difference: ${gasDiff} ✓`,
               );
             }
-            yield* Console.log("=========================\n");
+            yield* Console.log("========================================\n");
           }
 
           for (const { key: address, value: expectedAccount } of post.state) {
@@ -574,7 +742,6 @@ describe("StateTest", () => {
               key: slot,
               value: expectedValueBytes,
             } of expectedAccount.storage) {
-              // const slot3Key =
               const actualValue = `0x${State.getStorage(
                 blockEnv.state,
                 address,
@@ -582,7 +749,9 @@ describe("StateTest", () => {
               )
                 .toBeBytes32()
                 .value.toHex()}`;
-              const expectedValue = `0x${new Bytes32({ value: expectedValueBytes.value }).value.toHex()}`;
+              const expectedValue = `0x${new Bytes32({
+                value: expectedValueBytes.value,
+              }).value.toHex()}`;
               if (actualValue !== expectedValue) {
                 yield* Console.log(
                   "\x1b[31m%s\x1b[0m",
@@ -612,19 +781,23 @@ describe("StateTest", () => {
         expect(actualLogsHash).toBe(expectedLogsHash);
       });
 
-      await Effect.gen(function* () {
-        yield* Effect.log(`Running test case: ${testCaseIndex.id}`);
-        yield* Effect.log(testCaseRaw);
-        const fixturesSource = yield* Schema.decodeUnknown(StateTestFix, {
-          exact: true,
-        })(testCaseRaw);
-        for (const fixture of flattenStateTestFixtures(fixturesSource)) {
-          const fork = yield* resolveFork(fixture.fork);
-          yield* runStateTest(fixture).pipe(Effect.provide(fork));
-        }
-      }).pipe(runWithTestLogger);
-      // Mark as passed - afterEach will handle the caching
-      testState.passed = true;
+      try {
+        await Effect.gen(function* () {
+          yield* Effect.log(`Running test case: ${testCaseIndex.id}`);
+          yield* Effect.log(testCaseRaw);
+          const fixturesSource = yield* Schema.decodeUnknown(StateTestFix, {
+            exact: true,
+          })(testCaseRaw);
+          for (const fixture of flattenStateTestFixtures(fixturesSource)) {
+            const fork = yield* resolveFork(fixture.fork);
+            yield* runStateTest(fixture).pipe(Effect.provide(fork));
+          }
+        }).pipe(runWithTestLogger);
+        testState.passed = true;
+      } catch (error) {
+        testState.error = error;
+        throw error;
+      }
     },
     TEST_CONFIG,
   );
@@ -634,25 +807,28 @@ describe("BlockchainTest", () => {
   const allBlockchainTests = [...casesByFormat.blockchain_test.values()];
   const totalBlockchainTests = allBlockchainTests.length;
 
-  // Track current test state for afterEach
   const testState: TestState = {
     shortHash: null,
     passed: false,
     skipped: false,
+    startTime: 0,
+    error: undefined,
   };
 
   afterEach(async () => {
     if (testState.shortHash && !testState.skipped) {
+      const durationMs = performance.now() - testState.startTime;
       if (testState.passed) {
-        await markTestPassed(testState.shortHash);
+        await markTestPassed(testState.shortHash, durationMs);
       } else {
-        await unmarkTestPassed(testState.shortHash);
+        await markTestFailed(testState.shortHash, testState.error, durationMs);
       }
     }
-    // Reset state for next test
     testState.shortHash = null;
     testState.passed = false;
     testState.skipped = false;
+    testState.startTime = 0;
+    testState.error = undefined;
   });
 
   test.each(
@@ -669,6 +845,8 @@ describe("BlockchainTest", () => {
       testState.shortHash = testCaseIndex.shortHash;
       testState.passed = false;
       testState.skipped = false;
+      testState.startTime = performance.now();
+      testState.error = undefined;
 
       if (await checkTestCache(testCaseIndex.shortHash)) {
         testState.skipped = true;
@@ -716,11 +894,12 @@ describe("BlockchainTest", () => {
         const decodedGenesis = yield* decodeBlock(fixture.genesisRLP);
 
         // STEP 4: Compare decoded header with genesisBlockHeader - FAIL if mismatch
-        // Compare key fields between decoded header and fixture header
+        // We check stateRoot explicitly for a clear error message, but the block hash
+        // verification below will catch any field mismatch (since hash = keccak256(rlp(header)))
         const decodedHeader = decodedGenesis.header;
         const expectedHeader = fixture.genesisBlockHeader;
 
-        // State root comparison
+        // State root comparison (explicit check for better error messages)
         const decodedStateRoot = decodedHeader.stateRoot.value.toHex();
         const expectedStateRoot = expectedHeader.stateRoot.value.toHex();
         if (decodedStateRoot !== expectedStateRoot) {
@@ -752,8 +931,19 @@ describe("BlockchainTest", () => {
           .withState(state)
           .addBlock(decodedGenesis);
 
-        // Track the hash of the current head (genesis hash from fixture)
-        let currentHeadHash = fixture.genesisBlockHeader.hash.value.toHex();
+        // Compute and verify genesis block hash
+        const computedGenesisHash = computeBlockHash(decodedGenesis.header);
+        let currentHeadHash = computedGenesisHash.value.toHex();
+        const expectedGenesisHash =
+          fixture.genesisBlockHeader.hash.value.toHex();
+        if (currentHeadHash !== expectedGenesisHash) {
+          yield* Console.log(
+            `Genesis hash mismatch: computed=${currentHeadHash}, expected=${expectedGenesisHash}`,
+          );
+          return yield* Effect.fail(
+            new Error("Computed genesis block hash does not match fixture"),
+          );
+        }
 
         // STEP 7: Process each block in fixture.blocks
         for (
@@ -765,7 +955,11 @@ describe("BlockchainTest", () => {
           const expectsException = "expectException" in block;
 
           yield* Console.log(
-            `Processing block ${blockIndex + 1}/${fixture.blocks.length}${expectsException ? ` (expects exception: ${block.expectException})` : ""}`,
+            `Processing block ${blockIndex + 1}/${fixture.blocks.length}${
+              expectsException
+                ? ` (expects exception: ${block.expectException})`
+                : ""
+            }`,
           );
 
           // 7.2: Attempt to decode RLP
@@ -780,6 +974,41 @@ describe("BlockchainTest", () => {
               return yield* Effect.fail(
                 new Error("Block decode failed but no exception expected"),
               );
+            }
+            // Expected decode failure - check if the error matches expected exception
+            // RLP decode errors map to RLP_STRUCTURES_ENCODING
+            const { matches, actualException, expectedOptions } =
+              matchesExpectedException(
+                // Create an error object with RLP tag for matching
+                {
+                  _tag: "EthereumException/InvalidBlock/RlpStructuresEncodingError",
+                },
+                block.expectException,
+              );
+
+            yield* Console.log(
+              `Decode exception expected: ${block.expectException}`,
+            );
+            yield* Console.log(
+              `  Actual exception: ${actualException ?? "RLP decode error"}`,
+            );
+
+            if (!matches) {
+              // Check if any expected option is RLP related
+              const isRlpExpected = expectedOptions.some(
+                (opt) =>
+                  opt.includes("RLP") ||
+                  opt.includes("TYPE_3_TX_WITH_FULL_BLOBS"),
+              );
+              if (!isRlpExpected) {
+                return yield* Effect.fail(
+                  new Error(
+                    `Decode exception mismatch: expected ${expectedOptions.join(
+                      " | ",
+                    )}, got RLP decode error`,
+                  ),
+                );
+              }
             }
             // Expected decode failure - this is the last block per spec
             yield* Console.log("Expected decode failure occurred");
@@ -810,8 +1039,52 @@ describe("BlockchainTest", () => {
                 new Error(`Block apply failed: ${applyResult.left}`),
               );
             }
-            // Expected exception - this is the last block per spec
-            yield* Console.log("Expected block apply failure occurred");
+            // Expected exception - verify it matches
+            const actualError = applyResult.left;
+            const { matches, actualException, expectedOptions } =
+              matchesExpectedException(actualError, block.expectException);
+
+            yield* Console.log(`Exception expected: ${block.expectException}`);
+            yield* Console.log(
+              `  Actual exception: ${actualException ?? "UNKNOWN (no mapping)"}`,
+            );
+
+            if (!matches) {
+              // Special handling: INVALID_BLOCK is acceptable for RLP/blob-related expected exceptions
+              // These are low-level structural errors that our implementation may not distinguish
+              const isRlpOrBlobExpected = expectedOptions.some(
+                (opt) =>
+                  opt.includes("RLP") ||
+                  opt.includes("TYPE_3_TX_WITH_FULL_BLOBS"),
+              );
+              if (
+                isRlpOrBlobExpected &&
+                actualException === "BlockException.INVALID_BLOCK"
+              ) {
+                yield* Console.log(
+                  `  (INVALID_BLOCK accepted for RLP/blob-related expected exception)`,
+                );
+                break;
+              }
+
+              const errorTag =
+                actualError !== null &&
+                typeof actualError === "object" &&
+                "_tag" in actualError
+                  ? String(actualError._tag)
+                  : "unknown";
+              return yield* Effect.fail(
+                new Error(
+                  actualException === null
+                    ? `Unmapped exception: got error tag "${errorTag}", expected one of: ${expectedOptions.join(
+                        " | ",
+                      )}`
+                    : `Exception mismatch: expected ${expectedOptions.join(
+                        " | ",
+                      )}, got ${actualException}`,
+                ),
+              );
+            }
             break;
           }
 
@@ -826,10 +1099,22 @@ describe("BlockchainTest", () => {
 
           chain = applyResult.right;
 
-          // Update current head hash from the block header in fixture
-          // (The fixture contains the expected hash for each block)
+          // Compute the actual block hash from the processed block header
+          const lastBlock = chain.blocks[chain.blocks.length - 1];
+          const computedHash = computeBlockHash(lastBlock.header);
+          currentHeadHash = computedHash.value.toHex();
+
+          // Verify computed hash matches expected hash from fixture
           if ("blockHeader" in block && block.blockHeader.hash) {
-            currentHeadHash = block.blockHeader.hash.value.toHex();
+            const expectedBlockHash = block.blockHeader.hash.value.toHex();
+            if (currentHeadHash !== expectedBlockHash) {
+              yield* Console.log(
+                `Block ${
+                  blockIndex + 1
+                } hash mismatch: computed=${currentHeadHash}, expected=${expectedBlockHash}`,
+              );
+            }
+            expect(currentHeadHash).toBe(expectedBlockHash);
           }
         }
 
@@ -843,6 +1128,9 @@ describe("BlockchainTest", () => {
         expect(currentHeadHash).toBe(expectedLastBlockHash);
 
         // STEP 9: Compare postState against current state
+        // Note: We only check accounts listed in postState here for detailed error messages.
+        // Any extra/missing accounts would already cause a state root mismatch in stateTransition,
+        // which validates computed state root against block.header.stateRoot.
         for (const {
           key: address,
           value: expectedAccount,
@@ -852,7 +1140,9 @@ describe("BlockchainTest", () => {
           // Check nonce
           if (actualAccount.nonce.value !== expectedAccount.nonce.value) {
             yield* Console.log(
-              `Account ${address.toHex()} nonce mismatch: actual=${actualAccount.nonce.value}, expected=${expectedAccount.nonce.value}`,
+              `Account ${address.toHex()} nonce mismatch: actual=${
+                actualAccount.nonce.value
+              }, expected=${expectedAccount.nonce.value}`,
             );
           }
           expect(actualAccount.nonce.value).toBe(expectedAccount.nonce.value);
@@ -860,7 +1150,9 @@ describe("BlockchainTest", () => {
           // Check balance
           if (actualAccount.balance.value !== expectedAccount.balance.value) {
             yield* Console.log(
-              `Account ${address.toHex()} balance mismatch: actual=${actualAccount.balance.value}, expected=${expectedAccount.balance.value}`,
+              `Account ${address.toHex()} balance mismatch: actual=${
+                actualAccount.balance.value
+              }, expected=${expectedAccount.balance.value}`,
             );
           }
           expect(actualAccount.balance.value).toBe(
@@ -875,7 +1167,7 @@ describe("BlockchainTest", () => {
           }
           expect(actualCodeHex).toBe(expectedCodeHex);
 
-          // Check storage
+          // Check storage (only slots listed in expected - extra slots cause state root mismatch)
           for (const {
             key: slot,
             value: expectedValue,
@@ -901,14 +1193,19 @@ describe("BlockchainTest", () => {
         }
       });
 
-      await Effect.gen(function* () {
-        yield* Effect.log(`Running test case: ${testCaseIndex.id}`);
-        const fixture =
-          yield* Schema.decodeUnknown(BlockchainTest)(testCaseRaw);
-        yield* runBlockchainTest(fixture);
-      }).pipe(runWithTestLogger);
-      // Mark as passed - afterEach will handle the caching
-      testState.passed = true;
+      try {
+        await Effect.gen(function* () {
+          yield* Effect.log(`Running test case: ${testCaseIndex.id}`);
+          const fixture =
+            yield* Schema.decodeUnknown(BlockchainTest)(testCaseRaw);
+          yield* runBlockchainTest(fixture);
+        }).pipe(runWithTestLogger);
+        // Mark as passed - afterEach will handle the caching
+        testState.passed = true;
+      } catch (error) {
+        testState.error = error;
+        throw error;
+      }
     },
     TEST_CONFIG,
   );

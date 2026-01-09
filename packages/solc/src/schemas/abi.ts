@@ -3,7 +3,6 @@
  */
 import { Schema } from "effect";
 
-// State mutability enum
 export const StateMutability = Schema.Literal(
   "pure",
   "view",
@@ -11,13 +10,11 @@ export const StateMutability = Schema.Literal(
   "payable",
 );
 
-// ABI parameter (for inputs/outputs)
-// Note: components is recursive for tuples and arrays
 const ABIParameterBase = Schema.Struct({
   name: Schema.String,
   type: Schema.String,
   internalType: Schema.optional(Schema.String),
-  indexed: Schema.optional(Schema.Boolean), // Only for event parameters
+  indexed: Schema.optional(Schema.Boolean),
 });
 
 export interface ABIParameter
@@ -34,7 +31,6 @@ export const ABIParameter: Schema.Schema<ABIParameter> = Schema.suspend(() =>
   }),
 );
 
-// Function ABI entry
 export const ABIFunction = Schema.Struct({
   type: Schema.Literal("function"),
   name: Schema.String,
@@ -45,7 +41,6 @@ export const ABIFunction = Schema.Struct({
 
 export type ABIFunction = typeof ABIFunction.Type;
 
-// Constructor ABI entry
 export const ABIConstructor = Schema.Struct({
   type: Schema.Literal("constructor"),
   inputs: Schema.Array(ABIParameter),
@@ -54,7 +49,6 @@ export const ABIConstructor = Schema.Struct({
 
 export type ABIConstructor = typeof ABIConstructor.Type;
 
-// Fallback ABI entry
 export const ABIFallback = Schema.Struct({
   type: Schema.Literal("fallback"),
   stateMutability: StateMutability,
@@ -62,7 +56,6 @@ export const ABIFallback = Schema.Struct({
 
 export type ABIFallback = typeof ABIFallback.Type;
 
-// Receive ABI entry
 export const ABIReceive = Schema.Struct({
   type: Schema.Literal("receive"),
   stateMutability: StateMutability,
@@ -70,7 +63,6 @@ export const ABIReceive = Schema.Struct({
 
 export type ABIReceive = typeof ABIReceive.Type;
 
-// Event ABI entry
 export const ABIEvent = Schema.Struct({
   type: Schema.Literal("event"),
   name: Schema.String,
@@ -80,7 +72,6 @@ export const ABIEvent = Schema.Struct({
 
 export type ABIEvent = typeof ABIEvent.Type;
 
-// Error ABI entry
 export const ABIError = Schema.Struct({
   type: Schema.Literal("error"),
   name: Schema.String,
@@ -89,7 +80,6 @@ export const ABIError = Schema.Struct({
 
 export type ABIError = typeof ABIError.Type;
 
-// Complete ABI entry (union of all types)
 export const ABIEntry = Schema.Union(
   ABIFunction,
   ABIConstructor,
@@ -101,7 +91,6 @@ export const ABIEntry = Schema.Union(
 
 export type ABIEntry = typeof ABIEntry.Type;
 
-// Complete ABI (array of entries)
 export const ABI = Schema.Array(ABIEntry);
 
 export type ABI = typeof ABI.Type;

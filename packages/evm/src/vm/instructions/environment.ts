@@ -280,7 +280,6 @@ export const calldatacopy: Effect.Effect<void, EthereumException, Evm> =
     );
 
     // OPERATION
-    // If size is 0, nothing to copy
     if (size.value === 0n) {
       yield* evm.incrementPC(1);
       return;
@@ -381,8 +380,6 @@ export const codecopy: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
 
       yield* Ref.set(evm.memory, newMemory);
     } catch (_error) {
-      // Memory allocation or access failed (values too large for JavaScript)
-      // This should never happen if gas calculation is correct, but guard against it
       return yield* Effect.fail(new OutOfGasError({}));
     }
 
@@ -510,13 +507,11 @@ export const extcodecopy: Effect.Effect<void, EthereumException, Evm | Fork> =
     );
 
     // OPERATION
-    // Expand memory if needed
     const newMemory = new Uint8Array(
       memory.length + Number(extension.expandBy.value),
     );
     newMemory.set(memory);
 
-    // Get account code and copy to memory
     const account = State.getAccount(evm.message.blockEnv.state, addr);
     const value = bufferRead(account.code, codeStartIndex, size);
     const destStart = Number(memoryStartIndex.value);
@@ -699,88 +694,3 @@ export const selfbalance: Effect.Effect<void, EthereumException, Evm> =
     // PROGRAM COUNTER
     yield* evm.incrementPC(1);
   });
-
-/**
- * BASEFEE: Get base fee
- *
- * Pushes the base fee of the current block on to the stack.
- *
- * Gas: 2 (GAS_BASE)
- * Stack: [...] -> [baseFee, ...]
- */
-// const _basefee: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
-//   function* () {
-//     const evm = yield* Evm;
-
-//     // GAS
-//     yield* Gas.chargeGas(Gas.GAS_BASE);
-
-//     // OPERATION
-//     const baseFee = new U256({
-//       value: evm.message.blockEnv.baseFeePerGas.value,
-//     });
-//     yield* evm.stack.push(baseFee);
-
-//     // PROGRAM COUNTER
-//     yield* evm.incrementPC(1);
-//   },
-// );
-
-/**
- * BLOBHASH: Get transaction blob versioned hash
- *
- * Pushes the versioned hash at a particular index on to the stack.
- *
- * Gas: 3 (GAS_BLOBHASH_OPCODE)
- * Stack: [index, ...] -> [hash, ...]
- */
-// const _blobhash: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
-//   function* () {
-//     const evm = yield* Evm;
-
-//     // STACK
-//     const index = yield* evm.stack.pop();
-
-//     // GAS
-//     yield* Gas.chargeGas(Gas.GAS_BLOBHASH_OPCODE);
-
-//     // OPERATION
-//     const indexNum = Number(index.value);
-//     let blobHashValue: Bytes32;
-//     if (indexNum < evm.message.txEnv.blobVersionedHashes.length) {
-//       blobHashValue = evm.message.txEnv.blobVersionedHashes[indexNum];
-//     } else {
-//       blobHashValue = new Bytes32({ value: new Uint8Array(32) });
-//     }
-//     yield* evm.stack.push(U256.fromBeBytes(blobHashValue.value));
-
-//     // PROGRAM COUNTER
-//     yield* evm.incrementPC(1);
-//   },
-// );
-
-/**
- * BLOBBASEFEE: Get blob base fee
- *
- * Pushes the blob base fee on to the stack.
- *
- * Gas: 2 (GAS_BASE)
- * Stack: [...] -> [blobBaseFee, ...]
- */
-// const _blobbasefee: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
-//   function* () {
-//     const evm = yield* Evm;
-
-//     // GAS
-//     yield* Gas.chargeGas(Gas.GAS_BASE);
-
-//     // OPERATION
-//     // TODO: Implement calculateBlobGasPrice in gas.ts
-//     // For now, return a simple calculation: MIN_BLOB_GASPRICE * excess_blob_gas
-//     const blobBaseFee = evm.message.blockEnv.excessBlobGas;
-//     yield* evm.stack.push(new U256({ value: blobBaseFee.value }));
-
-//     // PROGRAM COUNTER
-//     yield* evm.incrementPC(1);
-//   },
-// );

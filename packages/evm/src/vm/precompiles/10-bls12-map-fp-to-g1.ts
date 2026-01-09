@@ -37,7 +37,6 @@ export const bls12MapFpToG1 = Effect.gen(function* () {
 
   yield* Gas.chargeGas(new Uint({ value: Gas.GAS_BLS_G1_MAP.value }));
 
-  // Read 64 bytes as a bigint
   const fpBn = Uint.fromBeBytes(data);
   if (fpBn.value >= BLS_FIELD_MODULUS) {
     return yield* Effect.fail(
@@ -50,7 +49,6 @@ export const bls12MapFpToG1 = Effect.gen(function* () {
   // @ts-expect-error - mapToCurve expects a single bigint for m=1 curves (like G1)
   const g1 = bls12_381.G1.mapToCurve(fpBn.value);
 
-  // convert G1 point to 128 bytes
   const output = g1PointToBytes(g1);
 
   yield* Ref.set(evm.output, new Bytes({ value: output }));

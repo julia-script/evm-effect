@@ -41,13 +41,8 @@ type PrecompileEntry = [
   Address,
   Effect.Effect<void, EthereumException, Evm | Fork>,
 ];
-// Frontier precompiles (from genesis)
 const FRONTIER_PRECOMPILES: PrecompileEntry[] = [
-  [
-    new Address("0000000000000000000000000000000000000001"),
-
-    erecover,
-  ],
+  [new Address("0000000000000000000000000000000000000001"), erecover],
   [new Address("0000000000000000000000000000000000000002"), sha256],
   [new Address("0000000000000000000000000000000000000003"), ripemd160],
   [new Address("0000000000000000000000000000000000000004"), identity],
@@ -55,7 +50,6 @@ const FRONTIER_PRECOMPILES: PrecompileEntry[] = [
 
 const HOMESTEAD_PRECOMPILES: PrecompileEntry[] = [...FRONTIER_PRECOMPILES];
 
-// Byzantium added modexp (EIP-198) and bn254 (EIP-196, EIP-197)
 const BYZANTIUM_PRECOMPILES: PrecompileEntry[] = [
   ...HOMESTEAD_PRECOMPILES,
   [new Address("0000000000000000000000000000000000000005"), modexp],
@@ -72,7 +66,6 @@ const PETERSBURG_PRECOMPILES: PrecompileEntry[] = [
   ...CONSTANTINOPLE_PRECOMPILES,
 ];
 
-// Istanbul added BLAKE2F (EIP-152)
 const ISTANBUL_PRECOMPILES: PrecompileEntry[] = [
   ...PETERSBURG_PRECOMPILES,
   [new Address("0000000000000000000000000000000000000009"), blake2f],
@@ -84,7 +77,6 @@ const LONDON_PRECOMPILES: PrecompileEntry[] = [...BERLIN_PRECOMPILES];
 
 const PARIS_PRECOMPILES: PrecompileEntry[] = [...LONDON_PRECOMPILES];
 const SHANGHAI_PRECOMPILES: PrecompileEntry[] = [...PARIS_PRECOMPILES];
-// Cancun added KZG point evaluation (EIP-4844)
 const CANCUN_PRECOMPILES: PrecompileEntry[] = [
   ...SHANGHAI_PRECOMPILES,
   [new Address("000000000000000000000000000000000000000A"), kzgPointEvaluation],
@@ -102,7 +94,10 @@ const PRAGUE_PRECOMPILES: PrecompileEntry[] = [
 ];
 
 const FRONTIER_EIPS: number[] = [];
-const HOMESTEAD_EIPS: number[] = [...FRONTIER_EIPS];
+const HOMESTEAD_EIPS: number[] = [
+  ...FRONTIER_EIPS,
+  2, // EIP-2: Homestead Hard-fork Changes (code deposit OOG is exceptional halt)
+];
 const TANGERINE_WHISTLE_EIPS = [
   ...HOMESTEAD_EIPS,
   150, // EIP-150: Gas cost changes for IO-heavy operations (Tangerine Whistle)
@@ -122,18 +117,6 @@ const SPURIUS_DRAGON_EIPS = [
 
 const BYZANTIUM_EIPS = [
   ...SPURIUS_DRAGON_EIPS,
-  // - [EIP-100: Change difficulty adjustment to target mean block time including
-  //   uncles][EIP-100]
-  // - [EIP-140: REVERT instruction in the Ethereum Virtual Machine][EIP-140]
-  // - [EIP-196: Precompiled contracts for addition and scalar multiplication on the
-  //   elliptic curve alt_bn128][EIP-196]
-  // - [EIP-197: Precompiled contracts for optimal ate pairing check on the elliptic
-  //   curve alt_bn128][EIP-197]
-  // - [EIP-198: Precompiled contract for bigint modular exponentiation][EIP-198]
-  // - [EIP-211: New opcodes: RETURNDATASIZE and RETURNDATACOPY][EIP-211]
-  // - [EIP-214: New opcode STATICCALL][EIP-214]
-  // - [EIP-649: Difficulty Bomb Delay and Block Reward Reduction][EIP-649]
-  // - [EIP-658: Embedding transaction status code in receipts][EIP-658]
   100, // EIP-100: Change difficulty adjustment to target mean block time including uncles
   140, // EIP-140: REVERT instruction in the Ethereum Virtual Machine
   196, // EIP-196: Precompiled contracts for addition and scalar multiplication on the elliptic curve alt_bn128

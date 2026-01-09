@@ -1,0 +1,232 @@
+name: EVM Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  blockchain-test-0-12000:
+    name: BlockchainTest [0-12000]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - run: bun install
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Download test fixtures
+        working-directory: packages/evm
+        run: uvx --from "git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing" consume cache --input=stable@latest --extract-to ./test-fixtures
+
+      - run: bun run build
+      - run: LIMIT=12000 SKIP=0 bun test packages/evm/test/fixtures.test.ts --test-name-pattern=BlockchainTest
+
+  blockchain-test-12000-24000:
+    name: BlockchainTest [12000-24000]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - run: bun install
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Download test fixtures
+        working-directory: packages/evm
+        run: uvx --from "git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing" consume cache --input=stable@latest --extract-to ./test-fixtures
+
+      - run: bun run build
+      - run: LIMIT=12000 SKIP=12000 bun test packages/evm/test/fixtures.test.ts --test-name-pattern=BlockchainTest
+
+  blockchain-test-24000-36000:
+    name: BlockchainTest [24000-36000]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - run: bun install
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Download test fixtures
+        working-directory: packages/evm
+        run: uvx --from "git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing" consume cache --input=stable@latest --extract-to ./test-fixtures
+
+      - run: bun run build
+      - run: LIMIT=12000 SKIP=24000 bun test packages/evm/test/fixtures.test.ts --test-name-pattern=BlockchainTest
+
+  blockchain-test-36000-48000:
+    name: BlockchainTest [36000-48000]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - run: bun install
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Download test fixtures
+        working-directory: packages/evm
+        run: uvx --from "git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing" consume cache --input=stable@latest --extract-to ./test-fixtures
+
+      - run: bun run build
+      - run: LIMIT=12000 SKIP=36000 bun test packages/evm/test/fixtures.test.ts --test-name-pattern=BlockchainTest
+
+  state-test-0-12000:
+    name: StateTest [0-12000]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - run: bun install
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Download test fixtures
+        working-directory: packages/evm
+        run: uvx --from "git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing" consume cache --input=stable@latest --extract-to ./test-fixtures
+
+      - run: bun run build
+      - run: LIMIT=12000 SKIP=0 bun test packages/evm/test/fixtures.test.ts --test-name-pattern=StateTest
+
+  state-test-12000-24000:
+    name: StateTest [12000-24000]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - run: bun install
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Download test fixtures
+        working-directory: packages/evm
+        run: uvx --from "git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing" consume cache --input=stable@latest --extract-to ./test-fixtures
+
+      - run: bun run build
+      - run: LIMIT=12000 SKIP=12000 bun test packages/evm/test/fixtures.test.ts --test-name-pattern=StateTest
+
+  state-test-24000-36000:
+    name: StateTest [24000-36000]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - run: bun install
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Download test fixtures
+        working-directory: packages/evm
+        run: uvx --from "git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing" consume cache --input=stable@latest --extract-to ./test-fixtures
+
+      - run: bun run build
+      - run: LIMIT=12000 SKIP=24000 bun test packages/evm/test/fixtures.test.ts --test-name-pattern=StateTest
+
+  state-test-36000-48000:
+    name: StateTest [36000-48000]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - run: bun install
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Download test fixtures
+        working-directory: packages/evm
+        run: uvx --from "git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing" consume cache --input=stable@latest --extract-to ./test-fixtures
+
+      - run: bun run build
+      - run: LIMIT=12000 SKIP=36000 bun test packages/evm/test/fixtures.test.ts --test-name-pattern=StateTest
