@@ -1,0 +1,51 @@
+{
+  "name": "@evm-effect/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
+    },
+    "./test": {
+      "import": "./dist/test/index.js",
+      "types": "./dist/test/index.d.ts"
+    },
+    "./test/*": {
+      "import": "./dist/test/*.js",
+      "types": "./dist/test/*.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "dev": "tsc -b tsconfig.build.json --watch",
+    "clean": "rm -rf build",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@effect/experimental": "catalog:",
+    "@effect/opentelemetry": "^0.58.0",
+    "@effect/platform": "catalog:",
+    "@effect/platform-bun": "catalog:",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.206.0",
+    "@opentelemetry/exporter-zipkin": "^2.1.0",
+    "@opentelemetry/sdk-logs": "^0.206.0",
+    "@opentelemetry/sdk-metrics": "^2.1.0",
+    "@opentelemetry/sdk-trace-base": "^2.1.0",
+    "@opentelemetry/sdk-trace-node": "^2.1.0",
+    "@opentelemetry/sdk-trace-web": "^2.1.0",
+    "effect": "catalog:",
+    "fast-check": "catalog:",
+    "superjson": "^2.2.2",
+    "ts-dedent": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@evm-effect/ethereum-types",
+  "version": "0.0.1",
+  "description": "Ethereum primitive types (numeric and bytes) with Effect-TS",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "dev": "tsc -b tsconfig.build.json --watch",
+    "check": "tsc -b tsconfig.json"
+  },
+  "dependencies": {
+    "@effect/platform": "catalog:",
+    "@effect/platform-bun": "catalog:",
+    "effect": "catalog:",
+    "ts-dedent": "^2.2.0"
+  },
+  "devDependencies": {
+    "@evm-effect/shared": "workspace:*",
+    "@types/node": "^24.8.1",
+    "fast-check": "catalog:",
+    "typescript": "catalog:"
+  }
+}

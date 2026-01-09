@@ -1,0 +1,38 @@
+{
+  "name": "@evm-effect/crypto",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Effect-TS wrappers for cryptographic functions used in Ethereum",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build tsconfig.build.json",
+    "dev": "tsc --build tsconfig.build.json --watch",
+    "test": "bun test",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@evm-effect/ethereum-types": "workspace:*",
+    "@evm-effect/rlp": "workspace:*",
+    "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1",
+    "@noble/secp256k1": "^3.0.0",
+    "effect": "catalog:",
+    "ts-dedent": "^2.2.0",
+    "viem": "^2.38.3"
+  },
+  "devDependencies": {
+    "@effect/platform-bun": "^0.81.1",
+    "@evm-effect/shared": "workspace:*",
+    "@types/bun": "catalog:",
+    "fast-check": "catalog:"
+  }
+}

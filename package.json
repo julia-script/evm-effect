@@ -1,0 +1,59 @@
+{
+  "name": "evm-effect",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.3.0",
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ],
+    "catalog": {
+      "@effect/platform": "^0.92.1",
+      "@effect/platform-bun": "^0.81.1",
+      "effect": "^3.11.7",
+      "@types/bun": "1.3.0",
+      "typescript": "5.9.3",
+      "fast-check": "^4.3.0",
+      "@effect/experimental": "^0.56.0",
+      "ts-dedent": "^2.2.0"
+    }
+  },
+  "scripts": {
+    "clean": "node scripts/clean.mjs",
+    "codegen": "bun --recursive --parallel run codegen",
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "check": "turbo check",
+    "check-recursive": "bun --recursive exec tsc -b tsconfig.json",
+    "test": "turbo test",
+    "changeset-version": "changeset version && node scripts/version.mjs",
+    "changeset-publish": "pnpm build && TEST_DIST= bun test && changeset publish",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --fix --unsafe"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.28.3",
+    "@babel/core": "^7.28.4",
+    "@babel/plugin-transform-export-namespace-from": "^7.27.1",
+    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
+    "@changesets/changelog-github": "^0.5.1",
+    "@changesets/cli": "^2.29.7",
+    "@effect/build-utils": "^0.8.9",
+    "@effect/language-service": "latest",
+    "@manypkg/cli": "^0.25.1",
+    "@types/bun": "catalog:",
+    "@types/node": "^24.10.0",
+    "babel-plugin-annotate-pure-calls": "^0.5.0",
+    "glob": "^11.0.3",
+    "knip": "^5.68.0",
+    "msgpackr": "^1.11.5",
+    "tsx": "^4.20.6",
+    "turbo": "^2.5.8",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@noble/curves": "^2.0.1",
+    "c-kzg": "^4.1.0",
+    "zod": "^4.1.12"
+  }
+}

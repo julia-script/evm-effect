@@ -1,0 +1,47 @@
+{
+  "name": "@evm-effect/evm",
+  "version": "0.0.1",
+  "description": "Ethereum Virtual Machine implementation in TypeScript with Effect-TS",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "dev": "tsc -b tsconfig.build.json --watch",
+    "check": "tsc -b tsconfig.json",
+    "test": "bun test",
+    "fixtures:stable": "uvx --from git+https://github.com/ethereum/execution-spec-tests consume cache --input=stable@latest --extract-to ./test-fixtures",
+    "fixtures:develop": "uvx --from git+https://github.com/ethereum/execution-spec-tests consume cache --input=develop@latest --extract-to ./test-fixtures",
+    "test:direct": "uvx --from git+https://github.com/ethereum/execution-spec-tests consume direct --input=test-fixtures/fixtures -m state_test --bin=./test/statetest.ts",
+    "test:direct:modexp": "uvx --from git+https://github.com/ethereum/execution-spec-tests consume direct --input=test-fixtures/fixtures -m state_test --bin=./test/statetest.ts -k modexp",
+    "test:downloaded": "FIXTURES_PATH=test-fixtures/fixtures TEST_FILTER=eip7883_modexp bun test test/fixtures.test.ts",
+    "test:downloaded:all": "FIXTURES_PATH=test-fixtures/fixtures TEST_FILTER= bun test test/fixtures.test.ts"
+  },
+  "dependencies": {
+    "@effect/experimental": "catalog:",
+    "@effect/platform": "catalog:",
+    "@effect/platform-bun": "catalog:",
+    "@effect/schema": "^0.75.4",
+    "@evm-effect/crypto": "workspace:*",
+    "@evm-effect/ethereum-types": "workspace:*",
+    "@evm-effect/rlp": "workspace:*",
+    "@evm-effect/shared": "workspace:*",
+    "@evm-effect/solc": "workspace:*",
+    "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1",
+    "effect": "catalog:",
+    "kzg-wasm": "^0.5.0",
+    "superjson": "^2.2.2",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24.8.1",
+    "fast-check": "catalog:",
+    "typescript": "catalog:",
+    "@types/bun": "catalog:"
+  }
+}

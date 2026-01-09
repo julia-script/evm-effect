@@ -1,0 +1,25 @@
+{
+  "name": "@evm-effect/rlp",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "RLP (Recursive Length Prefix) encoding/decoding for Ethereum using Effect-TS",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build tsconfig.build.json",
+    "dev": "tsc --build tsconfig.build.json --watch",
+    "test": "bun test",
+    "clean": "rm -rf build"
+  },
+  "dependencies": {
+    "@evm-effect/ethereum-types": "workspace:*",
+    "@evm-effect/shared": "workspace:*",
+    "effect": "catalog:",
+    "ts-dedent": "^2.2.0"
+  },
+  "devDependencies": {
+    "@effect/platform-bun": "^0.81.1",
+    "@types/bun": "catalog:",
+    "fast-check": "catalog:"
+  }
+}
