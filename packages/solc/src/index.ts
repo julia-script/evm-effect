@@ -1,8 +1,8 @@
+import type { HttpClient } from "@effect/platform";
 import { Bytes } from "@evm-effect/ethereum-types";
-import { Data, type Effect, Either, Option, Schema } from "effect";
-import solc from "solc";
+import { Context, Data, type Effect, Either, Option } from "effect";
 import type { CompilerInput } from "./schemas/input.js";
-import * as output from "./schemas/output.js";
+import type * as output from "./schemas/output.js";
 export namespace CompilerOutput {
   export type CompilerOutput = output.CompilerOutput;
   export type CompilerError = output.CompilerError;
@@ -79,77 +79,22 @@ export namespace Contract {
     return Option.some(bytes.right);
   };
 }
-
-export class SolcCompilationError extends Data.TaggedError(
-  "SolcCompilationError",
-)<{
-  readonly message: string;
-  readonly compilerErrors: CompilerOutput.CompilerError[];
+export class SolcWorkerError extends Data.TaggedError("SolcWorkerError")<{
+  message: string;
 }> {}
-export class Solc extends Data.TaggedClass("Solc")<{
-  compile: (input: CompilerInput) => Effect.Effect<string, never>;
-}> {
-  /**
-   * This calls the compile function but does not validate the output.
-   * This exist in case there is a bug in our schema so you can get unstack in the meantime.
-   */
-  static unsafe_rawCompile(
-    input: CompilerInput,
-  ): Either.Either<CompilerOutput.CompilerOutput, SolcCompilationError> {
-    const result = solc.compile(JSON.stringify(input));
-    return Schema.decodeEither(Schema.parseJson())(result).pipe(
-      Either.mapLeft(
-        (error): SolcCompilationError =>
-          new SolcCompilationError({
-            message: `${error}`,
-            compilerErrors: [],
-          }),
-      ),
-      Either.map((output) => output as CompilerOutput.CompilerOutput),
-    );
-  }
 
-  static compile(
-    input: CompilerInput,
-    options: {
-      failThreshold?: CompilerOutput.CompilerError["severity"];
-    } = {
-      failThreshold: "error",
-    },
-  ): Either.Either<CompilerOutput.CompilerOutput, SolcCompilationError> {
-    const result = solc.compile(JSON.stringify(input));
-    return Schema.decodeEither(Schema.parseJson(output.CompilerOutput))(
-      result,
-    ).pipe(
-      Either.mapLeft(
-        (error) =>
-          new SolcCompilationError({
-            message: `Parsing compiler output failed: ${error}`,
-            compilerErrors: [],
-          }),
-      ),
-      Either.flatMap((output) => {
-        const errorSeverity = ["info", "warning", "error"];
-        const failThresholdIndex = errorSeverity.indexOf(
-          options.failThreshold ?? "error",
-        );
-        const filteredErrors =
-          output.errors?.filter(
-            (error) =>
-              errorSeverity.indexOf(error.severity) >= failThresholdIndex,
-          ) ?? [];
-        if (filteredErrors.length > 0) {
-          return Either.left(
-            new SolcCompilationError({
-              message: `Compiler errors found:\n${filteredErrors
-                .map((error) => `- ${error.message}`)
-                .join("\n")}`,
-              compilerErrors: filteredErrors,
-            }),
-          );
-        }
-        return Either.right(output);
-      }),
-    );
+export class Solc extends Context.Tag("Solc")<
+  Solc,
+  {
+    readonly compile: (
+      input: CompilerInput,
+      options?: {
+        solidityVersion?: string;
+      },
+    ) => Effect.Effect<
+      CompilerOutput.CompilerOutput,
+      SolcWorkerError,
+      HttpClient.HttpClient
+    >;
   }
-}
+>() {}

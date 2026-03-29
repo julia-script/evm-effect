@@ -3,18 +3,25 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Effect-TS wrappers for cryptographic functions used in Ethereum",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "exports": {
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
+    }
+  },
   "scripts": {
-    "build": "tsc --build tsconfig.build.json",
+    "build": "bun run build:worker && tsc --build tsconfig.build.json",
+    "build:worker": "rspack build",
     "dev": "tsc --build tsconfig.build.json --watch",
     "test": "bun test",
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@evm-effect/crypto": "workspace:*",
     "@evm-effect/ethereum-types": "workspace:*",
     "@noble/hashes": "^2.0.1",
     "effect": "catalog:",
+    "node-polyfill-webpack-plugin": "^4.1.0",
     "solc": "^0.8.30",
     "solc-js": "^1.0.1",
     "ts-dedent": "^2.2.0"
@@ -22,7 +29,10 @@
   "devDependencies": {
     "@effect/platform-bun": "^0.81.1",
     "@evm-effect/shared": "workspace:*",
+    "@rspack/cli": "^1.7.9",
+    "@rspack/core": "^1.7.9",
     "@types/bun": "catalog:",
-    "fast-check": "catalog:"
+    "fast-check": "catalog:",
+    "tsdown": "^0.21.4"
   }
 }

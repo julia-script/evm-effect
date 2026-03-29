@@ -4,7 +4,7 @@
 
 set -e
 
-dirs=("node_modules" "dist" ".turbo")
+dirs=("node_modules" "dist" ".turbo" "generated")
 files=("*.tsbuildinfo")
 
 for dir in "${dirs[@]}"; do

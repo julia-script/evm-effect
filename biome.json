@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -13,7 +13,9 @@
       "!**/dist",
       "!.llms",
       "!scripts",
-      "!.history"
+      "!.history",
+      "!**/.next",
+      "!**/generated"
     ]
   },
   "formatter": {
@@ -33,7 +35,8 @@
         "noBannedTypes": "off"
       },
       "suspicious": {
-        "useIterableCallbackReturn": "off"
+        "useIterableCallbackReturn": "off",
+        "noUnknownAtRules": "off"
       }
     }
   },

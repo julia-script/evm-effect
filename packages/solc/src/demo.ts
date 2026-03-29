@@ -1,12 +1,16 @@
-import { Effect } from "effect";
-import { CompilerOutput, Contract, Solc } from "./index.js";
+import { FetchHttpClient } from "@effect/platform";
+import { Console, Effect } from "effect";
+import { Solc } from "./index.js";
+import { SolcNodeLayer } from "./node.js";
 
-var output = Solc.compile({
-  language: "Solidity",
-  sources: {
-    "test.sol": {
-      content: /*solidity*/ `
- // SPDX-License-Identifier: MIT
+const program = Effect.gen(function* () {
+  const solc = yield* Solc;
+  var output = yield* solc.compile({
+    language: "Solidity",
+    sources: {
+      "test.sol": {
+        content: /*solidity*/ `
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.3;
 
 contract Counter {
@@ -28,9 +32,9 @@ contract Counter {
     }
 }
       `,
-    },
-    "test2.sol": {
-      content: /*solidity*/ `
+      },
+      "test2.sol": {
+        content: /*solidity*/ `
  // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.3;
 
@@ -38,27 +42,17 @@ contract Counter2 {
     uint public count;
 }
       `,
-    },
-  },
-
-  settings: {
-    outputSelection: {
-      "*": {
-        "*": ["*"],
       },
     },
-  },
-});
-const program = Effect.gen(function* () {
-  const result = yield* output;
-  console.log("output", output);
 
-  const contract = yield* CompilerOutput.getContract(
-    result,
-    "test2.sol",
-    "Counter2",
-  );
-  const bytes = yield* Contract.getBytes(contract);
-  yield* Effect.log(bytes);
-});
+    settings: {
+      outputSelection: {
+        "*": {
+          "*": ["*"],
+        },
+      },
+    },
+  });
+  yield* Console.log(output);
+}).pipe(Effect.provide([SolcNodeLayer, FetchHttpClient.layer]));
 Effect.runPromise(program);

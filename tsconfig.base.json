@@ -24,7 +24,7 @@
     "noFallthroughCasesInSwitch": true,
     "noEmitOnError": false,
     "noErrorTruncation": false,
-    "allowJs": false,
+    "allowJs": true,
     "checkJs": false,
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": true,

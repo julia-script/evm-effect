@@ -21,7 +21,7 @@
     "editor.defaultFormatter": "biomejs.biome"
   },
   "[typescriptreact]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "eslint.validate": ["markdown", "javascript", "typescript"],
   "editor.codeActionsOnSave": {

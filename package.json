@@ -19,7 +19,7 @@
     }
   },
   "scripts": {
-    "clean": "node scripts/clean.mjs",
+    "clean": "./clean.sh",
     "codegen": "bun --recursive --parallel run codegen",
     "build": "turbo build",
     "dev": "turbo dev",
