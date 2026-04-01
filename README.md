@@ -4,6 +4,14 @@ An Ethereum Virtual Machine (EVM) implementation in TypeScript using the [Effect
 
 This implementation is designed for building developer tooling that requires deep introspection into EVM execution — such as debuggers, tracers, profilers, and testing frameworks. The Effect-TS foundation provides structured concurrency, typed errors, and built-in tracing capabilities that make it straightforward to observe and analyze every step of execution.
 
+**Primary packages:**
+
+| Package | Role |
+|--------|------|
+| [`@evm-effect/evm`](https://github.com/julia-script/evm-effect/tree/main/packages/evm) | EVM interpreter, block/transaction processing, state, precompiles, and tracing. See [packages/evm/README.md](packages/evm/README.md). |
+| [`@evm-effect/solc`](https://github.com/julia-script/evm-effect/tree/main/packages/solc) | Compile Solidity via Effect (Node or Next.js worker). See [packages/solc/README.md](packages/solc/README.md). |
+
+Other packages in this repo (`@evm-effect/ethereum-types`, `@evm-effect/crypto`, `@evm-effect/rlp`, and internal packages) are published as needed for those two; you typically install `evm` and/or `solc` and let the package manager resolve the rest.
 
 ## Test Coverage
 
@@ -133,12 +141,32 @@ Effect.runPromise(program.pipe(Effect.provide(Fork.london())));
 
 ## Installation
 
-This project is **not yet published to npm**. The API is still being refined and will likely undergo changes.
-
-To use from source:
+From npm (use the packages you need; peer-style deps such as `effect` should match your app):
 
 ```bash
-git clone https://github.com/your-username/evm-effect.git
+npm add @evm-effect/evm effect @effect/platform @effect/platform-bun
+```
+
+```bash
+npm add @evm-effect/solc effect @effect/platform
+```
+
+Or with [Bun](https://bun.sh/):
+
+```bash
+bun add @evm-effect/evm effect @effect/platform @effect/platform-bun
+```
+
+```bash
+bun add @evm-effect/solc effect @effect/platform
+```
+
+Pre-1.0 releases may still change APIs; pin versions in production as you would for any `0.x` dependency.
+
+**From source** (contributors or local development):
+
+```bash
+git clone https://github.com/julia-script/evm-effect.git
 cd evm-effect
 bun install
 bun run build

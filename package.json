@@ -26,8 +26,8 @@
     "check": "turbo check",
     "check-recursive": "bun --recursive exec tsc -b tsconfig.json",
     "test": "turbo test",
-    "changeset-version": "changeset version && node scripts/version.mjs",
-    "changeset-publish": "pnpm build && TEST_DIST= bun test && changeset publish",
+    "changeset-version": "changeset version",
+    "changeset-publish": "bun run build && TEST_DIST= bun test && changeset publish",
     "lint": "biome check .",
     "lint:fix": "biome check . --fix --unsafe"
   },

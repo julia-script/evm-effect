@@ -3,6 +3,23 @@
   "version": "0.0.0",
   "type": "module",
   "description": "Effect-TS bindings for compiling Solidity with solc (Node or Next.js worker)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julia-script/evm-effect.git",
+    "directory": "packages/solc"
+  },
+  "bugs": {
+    "url": "https://github.com/julia-script/evm-effect/issues"
+  },
+  "homepage": "https://github.com/julia-script/evm-effect/tree/main/packages/solc",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",

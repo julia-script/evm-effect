@@ -2,6 +2,23 @@
   "name": "@evm-effect/evm",
   "version": "0.0.0",
   "description": "Ethereum Virtual Machine implementation in TypeScript with Effect-TS",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julia-script/evm-effect.git",
+    "directory": "packages/evm"
+  },
+  "bugs": {
+    "url": "https://github.com/julia-script/evm-effect/issues"
+  },
+  "homepage": "https://github.com/julia-script/evm-effect/tree/main/packages/evm",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
   "exports": {
     ".": {

@@ -3,6 +3,22 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Effect-TS wrappers for cryptographic functions used in Ethereum",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julia-script/evm-effect.git",
+    "directory": "packages/crypto"
+  },
+  "bugs": {
+    "url": "https://github.com/julia-script/evm-effect/issues"
+  },
+  "homepage": "https://github.com/julia-script/evm-effect/tree/main/packages/crypto",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
