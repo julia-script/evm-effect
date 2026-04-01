@@ -1,6 +1,6 @@
 import path from "node:path";
 import { defineConfig } from "@rspack/cli";
-import rspack, { Compilation, type Compiler } from "@rspack/core";
+import rspack, { Compilation } from "@rspack/core";
 import NodePolyfillPlugin from "node-polyfill-webpack-plugin";
 
 const root = path.join(new URL(".", import.meta.url).pathname);
@@ -9,8 +9,9 @@ const PLUGIN_NAME = "WrapCompiledOutput";
 
 const jsAsset = /\.m?js$/;
 
-function getEntryJsAssetNames(compilation: Compilation): string[] {
-  const names = new Set<string>();
+/** @param {Compilation} compilation */
+function getEntryJsAssetNames(compilation) {
+  const names = new Set();
   for (const entrypoint of compilation.entrypoints.values()) {
     for (const chunk of entrypoint.chunks) {
       for (const file of chunk.files) {
@@ -23,7 +24,7 @@ function getEntryJsAssetNames(compilation: Compilation): string[] {
   return [...names];
 }
 
-function fileStemToExportId(filename: string): string {
+function fileStemToExportId(filename) {
   const base = filename.replace(/\.m?js$/, "");
   const id = base.replace(/[^a-zA-Z0-9_$]/g, "_");
   if (id.length === 0) {
@@ -41,7 +42,8 @@ function fileStemToExportId(filename: string): string {
  * Uses `content` when there is a single entry JS file; otherwise one export per file from the filename.
  */
 class WrapCompiledOutput {
-  apply(compiler: Compiler) {
+  /** @param {import("@rspack/core").Compiler} compiler */
+  apply(compiler) {
     compiler.hooks.compilation.tap(PLUGIN_NAME, (compilation) => {
       compilation.hooks.processAssets.tap(
         {
