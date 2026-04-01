@@ -15,6 +15,7 @@
       "typescript": "5.9.3",
       "fast-check": "^4.3.0",
       "@effect/experimental": "^0.56.0",
+      "@noble/hashes": "^2.0.1",
       "ts-dedent": "^2.2.0"
     }
   },

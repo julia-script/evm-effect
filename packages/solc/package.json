@@ -40,7 +40,7 @@
   "dependencies": {
     "@evm-effect/crypto": "workspace:*",
     "@evm-effect/ethereum-types": "workspace:*",
-    "@noble/hashes": "^2.0.1",
+    "@noble/hashes": "catalog:",
     "effect": "catalog:",
     "node-polyfill-webpack-plugin": "^4.1.0",
     "solc": "^0.8.30",

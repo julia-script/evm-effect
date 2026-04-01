@@ -61,7 +61,7 @@
     "@evm-effect/shared": "workspace:*",
     "@evm-effect/solc": "workspace:*",
     "@noble/curves": "^2.0.1",
-    "@noble/hashes": "^2.0.1",
+    "@noble/hashes": "catalog:",
     "effect": "catalog:",
     "kzg-wasm": "^0.5.0",
     "superjson": "^2.2.2",

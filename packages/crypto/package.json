@@ -39,7 +39,7 @@
     "@evm-effect/ethereum-types": "workspace:*",
     "@evm-effect/rlp": "workspace:*",
     "@noble/curves": "^2.0.1",
-    "@noble/hashes": "^2.0.1",
+    "@noble/hashes": "catalog:",
     "@noble/secp256k1": "^3.0.0",
     "effect": "catalog:",
     "ts-dedent": "^2.2.0",
