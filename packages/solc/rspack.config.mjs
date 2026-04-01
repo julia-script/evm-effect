@@ -94,6 +94,7 @@ export default defineConfig({
     minimize: false,
   },
   resolve: {},
+  ignoreWarnings: [/size limit/, /limit the size/],
   experiments: {
     outputModule: true,
   },

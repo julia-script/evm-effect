@@ -153,6 +153,7 @@
       "name": "@evm-effect/solc",
       "version": "0.0.0",
       "dependencies": {
+        "@effect/platform": "catalog:",
         "@evm-effect/crypto": "workspace:*",
         "@evm-effect/ethereum-types": "workspace:*",
         "@noble/hashes": "catalog:",

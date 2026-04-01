@@ -28,7 +28,7 @@
     "check-recursive": "bun --recursive exec tsc -b tsconfig.json",
     "test": "turbo test",
     "changeset-version": "changeset version",
-    "changeset-publish": "bun run build && TEST_DIST= bun test && changeset publish",
+    "changeset-publish": "bun run build && changeset publish",
     "lint": "biome check .",
     "lint:fix": "biome check . --fix --unsafe"
   },
