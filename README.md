@@ -4,7 +4,6 @@ An Ethereum Virtual Machine (EVM) implementation in TypeScript using the [Effect
 
 This implementation is designed for building developer tooling that requires deep introspection into EVM execution — such as debuggers, tracers, profilers, and testing frameworks. The Effect-TS foundation provides structured concurrency, typed errors, and built-in tracing capabilities that make it straightforward to observe and analyze every step of execution.
 
-> **Note:** This project is not yet published to npm. The API is still in flux and will likely go through significant changes before the first stable release.
 
 ## Test Coverage
 

@@ -1,9 +1,13 @@
 {
   "name": "@evm-effect/solc",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "type": "module",
-  "description": "Effect-TS wrappers for cryptographic functions used in Ethereum",
+  "description": "Effect-TS bindings for compiling Solidity with solc (Node or Next.js worker)",
   "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
     "./*": {
       "import": "./dist/*.js",
       "types": "./dist/*.d.ts"

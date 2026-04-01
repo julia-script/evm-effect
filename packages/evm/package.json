@@ -1,6 +1,6 @@
 {
   "name": "@evm-effect/evm",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "Ethereum Virtual Machine implementation in TypeScript with Effect-TS",
   "type": "module",
   "exports": {
