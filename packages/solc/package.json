@@ -49,7 +49,7 @@
     "ts-dedent": "^2.2.0"
   },
   "devDependencies": {
-    "@effect/platform-bun": "^0.81.1",
+    "@effect/platform-bun": "catalog:",
     "@evm-effect/shared": "workspace:*",
     "@rspack/cli": "^1.7.9",
     "@rspack/core": "^1.7.9",

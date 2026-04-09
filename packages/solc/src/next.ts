@@ -31,7 +31,6 @@ export const nextWorkerApi = async (
 
     const versionMap = list.releases;
     versionMap.latest = versionMap[list.latestRelease];
-    console.log("versionMap", versionMap, version);
 
     const release = versionMap[version];
     if (!release) {

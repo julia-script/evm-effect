@@ -46,7 +46,7 @@
     "viem": "^2.38.3"
   },
   "devDependencies": {
-    "@effect/platform-bun": "^0.81.1",
+    "@effect/platform-bun": "catalog:",
     "@evm-effect/shared": "workspace:*",
     "@types/bun": "catalog:",
     "fast-check": "catalog:"

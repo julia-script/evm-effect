@@ -55,8 +55,12 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@effect/experimental": "^0.60.0",
+    "@effect/platform": "^0.96.0",
+    "@effect/platform-bun": "^0.89.0",
     "@noble/curves": "^2.0.1",
     "c-kzg": "^4.1.0",
+    "effect": "^3.21.0",
     "zod": "^4.3.6"
   }
 }
