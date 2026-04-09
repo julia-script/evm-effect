@@ -29,12 +29,12 @@
   },
   "dependencies": {
     "@evm-effect/ethereum-types": "workspace:*",
-    "@evm-effect/shared": "workspace:*",
     "effect": "catalog:",
     "ts-dedent": "^2.2.0"
   },
   "devDependencies": {
     "@effect/platform-bun": "^0.81.1",
+    "@evm-effect/shared": "workspace:*",
     "@types/bun": "catalog:",
     "fast-check": "catalog:"
   }

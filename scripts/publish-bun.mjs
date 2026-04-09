@@ -1,6 +1,6 @@
 /**
  * Publishes workspace packages with `bun publish` (resolves workspace:/catalog: in tarballs).
- * Order matches internal dependency edges: types → rlp → crypto → solc → evm.
+ * Order matches internal dependency edges: shared → types → rlp → crypto → solc → evm.
  * @see https://ianm.com/posts/2025-08-18-setting-up-changesets-with-bun-workspaces
  */
 import { spawnSync } from "node:child_process";
@@ -13,6 +13,7 @@ const root = join(__dirname, "..");
 
 /** Dependency order for @evm-effect/* public packages */
 const PUBLISH_ORDER = [
+  "packages/shared",
   "packages/ethereum-types",
   "packages/rlp",
   "packages/crypto",
