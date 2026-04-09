@@ -1,5 +1,18 @@
 # @evm-effect/evm
 
+## 0.0.3
+
+### Patch Changes
+
+- [`b908dfd`](https://github.com/julia-script/evm-effect/commit/b908dfd2ad81010b1b320769c4a1919213f7bd7d) Thanks [@julia-script](https://github.com/julia-script)! - Fix dependencies
+
+- Updated dependencies [[`b908dfd`](https://github.com/julia-script/evm-effect/commit/b908dfd2ad81010b1b320769c4a1919213f7bd7d)]:
+  - @evm-effect/rlp@0.1.3
+  - @evm-effect/crypto@0.2.1
+  - @evm-effect/ethereum-types@0.0.2
+  - @evm-effect/shared@0.0.3
+  - @evm-effect/solc@0.1.1
+
 ## 0.0.2
 
 ### Patch Changes

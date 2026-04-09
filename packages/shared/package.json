@@ -1,6 +1,6 @@
 {
   "name": "@evm-effect/shared",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Shared utilities (HashMap, HashSet, tracing) for evm-effect packages",
   "license": "MIT",
   "repository": {

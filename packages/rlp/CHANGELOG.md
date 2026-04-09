@@ -1,5 +1,14 @@
 # @evm-effect/rlp
 
+## 0.1.3
+
+### Patch Changes
+
+- [`b908dfd`](https://github.com/julia-script/evm-effect/commit/b908dfd2ad81010b1b320769c4a1919213f7bd7d) Thanks [@julia-script](https://github.com/julia-script)! - Fix dependencies
+
+- Updated dependencies [[`b908dfd`](https://github.com/julia-script/evm-effect/commit/b908dfd2ad81010b1b320769c4a1919213f7bd7d)]:
+  - @evm-effect/ethereum-types@0.0.2
+
 ## 0.1.2
 
 ### Patch Changes
