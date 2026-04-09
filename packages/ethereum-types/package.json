@@ -1,6 +1,6 @@
 {
   "name": "@evm-effect/ethereum-types",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Ethereum primitive types (numeric and bytes) with Effect-TS",
   "license": "MIT",
   "repository": {

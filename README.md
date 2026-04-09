@@ -141,24 +141,10 @@ Effect.runPromise(program.pipe(Effect.provide(Fork.london())));
 
 ## Installation
 
-From npm (use the packages you need; peer-style deps such as `effect` should match your app):
+
 
 ```bash
-npm add @evm-effect/evm effect @effect/platform @effect/platform-bun
-```
-
-```bash
-npm add @evm-effect/solc effect @effect/platform
-```
-
-Or with [Bun](https://bun.sh/):
-
-```bash
-bun add @evm-effect/evm effect @effect/platform @effect/platform-bun
-```
-
-```bash
-bun add @evm-effect/solc effect @effect/platform
+npm add @evm-effect/evm effect @effect/platform @effect/platform-node
 ```
 
 Pre-1.0 releases may still change APIs; pin versions in production as you would for any `0.x` dependency.

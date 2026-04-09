@@ -33,8 +33,8 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          version: bun run changeset-version
-          publish: bun run changeset-publish
+          version: bun run ci:version
+          publish: bun run ci:publish
           commit: Version Packages
           title: Version Packages
         env:
