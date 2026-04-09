@@ -31,7 +31,7 @@
     },
     "packages/crypto": {
       "name": "@evm-effect/crypto",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
         "@evm-effect/ethereum-types": "workspace:*",
         "@evm-effect/rlp": "workspace:*",
@@ -51,7 +51,7 @@
     },
     "packages/ethereum-types": {
       "name": "@evm-effect/ethereum-types",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "dependencies": {
         "@effect/platform": "catalog:",
         "@effect/platform-bun": "catalog:",
@@ -68,7 +68,7 @@
     },
     "packages/evm": {
       "name": "@evm-effect/evm",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
         "@effect/experimental": "catalog:",
         "@effect/platform": "catalog:",
@@ -95,7 +95,7 @@
     },
     "packages/examples": {
       "name": "@evm-effect/examples",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
         "@evm-effect/crypto": "workspace:*",
         "@evm-effect/ethereum-types": "workspace:*",
@@ -110,7 +110,7 @@
     },
     "packages/rlp": {
       "name": "@evm-effect/rlp",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "dependencies": {
         "@evm-effect/ethereum-types": "workspace:*",
         "effect": "catalog:",
@@ -125,7 +125,7 @@
     },
     "packages/shared": {
       "name": "@evm-effect/shared",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
         "@effect/experimental": "catalog:",
         "@effect/opentelemetry": "^0.58.0",
@@ -150,7 +150,7 @@
     },
     "packages/solc": {
       "name": "@evm-effect/solc",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@effect/platform": "catalog:",
         "@evm-effect/crypto": "workspace:*",
