@@ -1,7 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { BunContext } from "@effect/platform-bun";
+import {
+  BunCommandExecutor,
+  BunFileSystem,
+} from "@effect/platform-bun";
 import { pythonEval } from "@evm-effect/shared/test/python";
-import { Arbitrary, Either, FastCheck, Schema } from "effect";
+import { Arbitrary, Either, FastCheck, Layer, Schema } from "effect";
 import { dedent } from "ts-dedent";
 
 FastCheck.configureGlobal({ numRuns: 100, verbose: true });
@@ -71,7 +74,9 @@ const formatTestTitle = (extended: Extended): string => {
   return `[${extended.map((e) => formatTestTitle(e)).join(", ")}]`;
 };
 
-const layers = BunContext.layer;
+const layers = BunCommandExecutor.layer.pipe(
+  Layer.provide(BunFileSystem.layer),
+);
 describe("encode", async () => {
   const encodeToPython = (extended: Extended): string => {
     if (extended instanceof Uint8Array)
@@ -112,9 +117,9 @@ describe("encode", async () => {
       expect(Uint8Array.fromHex(pythonEncoded.exports[0]?.value)).toEqual(
         new Uint8Array(encoded.value),
       );
-    });
+    }).pipe(Effect.provide(layers), Effect.scoped);
     await Effect.runPromise(
-      program.pipe(Effect.provide(layers), Effect.scoped),
+      program
     );
   });
 });
