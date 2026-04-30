@@ -4,9 +4,9 @@
     "": {
       "name": "evm-effect",
       "dependencies": {
-        "@noble/curves": "^2.0.1",
+        "@noble/curves": "^2.2.0",
         "c-kzg": "^4.1.0",
-        "zod": "^4.3.6",
+        "zod": "^4.4.1",
       },
       "devDependencies": {
         "@babel/cli": "^7.28.6",
@@ -14,7 +14,7 @@
         "@babel/plugin-transform-export-namespace-from": "^7.27.1",
         "@babel/plugin-transform-modules-commonjs": "^7.28.6",
         "@changesets/changelog-github": "^0.5.2",
-        "@changesets/cli": "^2.30.0",
+        "@changesets/cli": "^2.31.0",
         "@effect/build-utils": "^0.8.9",
         "@effect/language-service": "latest",
         "@manypkg/cli": "^0.25.1",
@@ -23,9 +23,9 @@
         "babel-plugin-annotate-pure-calls": "^0.5.0",
         "glob": "^11.1.0",
         "knip": "^5.88.1",
-        "msgpackr": "^1.11.9",
+        "msgpackr": "^1.11.10",
         "tsx": "^4.21.0",
-        "turbo": "^2.9.5",
+        "turbo": "^2.9.6",
         "typescript": "^5.9.3",
       },
     },
@@ -68,7 +68,7 @@
     },
     "packages/evm": {
       "name": "@evm-effect/evm",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@effect/experimental": "catalog:",
         "@effect/platform": "catalog:",
@@ -95,7 +95,7 @@
     },
     "packages/examples": {
       "name": "@evm-effect/examples",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@evm-effect/crypto": "workspace:*",
         "@evm-effect/ethereum-types": "workspace:*",
@@ -451,7 +451,7 @@
 
     "@noble/curves": ["@noble/curves@2.2.0", "", { "dependencies": { "@noble/hashes": "2.2.0" } }, "sha512-T/BoHgFXirb0ENSPBquzX0rcjXeM6Lo892a2jlYJkqk83LqZx0l1Of7DzlKJ6jkpvMrkHSnAcgb5JegL8SeIkQ=="],
 
-    "@noble/hashes": ["@noble/hashes@2.0.1", "", {}, "sha512-XlOlEbQcE9fmuXxrVTXCTlG2nlRXa9Rj3rr5Ue/+tX+nmkgbX720YHh0VR3hBF9xDvwnb8D2shVGOwNx+ulArw=="],
+    "@noble/hashes": ["@noble/hashes@2.2.0", "", {}, "sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg=="],
 
     "@noble/secp256k1": ["@noble/secp256k1@3.0.0", "", {}, "sha512-NJBaR352KyIvj3t6sgT/+7xrNyF9Xk9QlLSIqUGVUYlsnDTAUqY8LOmwpcgEx4AMJXRITQ5XEVHD+mMaPfr3mg=="],
 
@@ -1794,8 +1794,6 @@
     "@manypkg/get-packages/fs-extra": ["fs-extra@8.1.0", "", { "dependencies": { "graceful-fs": "^4.2.0", "jsonfile": "^4.0.0", "universalify": "^0.1.0" } }, "sha512-yhlQgA6mnOJUKOsRUFsgJdQCvkKhcz8tlZG5HBQfReYZy46OwLcY+Zia0mtdHsOo9y/hP+CxMN0TU9QxoOtG4g=="],
 
     "@manypkg/tools/js-yaml": ["js-yaml@4.1.0", "", { "dependencies": { "argparse": "^2.0.1" }, "bin": { "js-yaml": "bin/js-yaml.js" } }, "sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA=="],
-
-    "@noble/curves/@noble/hashes": ["@noble/hashes@2.2.0", "", {}, "sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg=="],
 
     "@parcel/watcher/detect-libc": ["detect-libc@1.0.3", "", { "bin": { "detect-libc": "./bin/detect-libc.js" } }, "sha512-pGjwhsmsp4kL2RTz08wcOlGN83otlqHeD/Z5T8GXZB+/YcpQ/dgo+lbU8ZsGxV0HIvqqxo9l7mqYwyYMD9bKDg=="],
 
