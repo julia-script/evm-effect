@@ -28,3 +28,4 @@ export {
 } from "./vm/message.js";
 export { StorageKey } from "./vm/StorageKey.js";
 export { Account } from "./vm/types.js";
+export { Evm } from "./vm/evm.js";
