@@ -36,6 +36,10 @@
     "./vm/StorageKey": {
       "import": "./dist/vm/StorageKey.js",
       "types": "./dist/vm/StorageKey.d.ts"
+    },
+    "./trace": {
+      "import": "./dist/trace.js",
+      "types": "./dist/trace.d.ts"
     }
   },
   "scripts": {
