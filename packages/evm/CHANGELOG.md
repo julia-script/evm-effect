@@ -1,5 +1,11 @@
 # @evm-effect/evm
 
+## 0.0.5
+
+### Patch Changes
+
+- [`20dc44b`](https://github.com/julia-script/evm-effect/commit/20dc44be9dd21261eadbe702213f27d72c098b75) Thanks [@julia-script](https://github.com/julia-script)! - Export `Evm` from the package root entrypoint so consumers can import it directly from `@evm-effect/evm`.
+
 ## 0.0.4
 
 ### Patch Changes
