@@ -1,8 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import {
-  BunCommandExecutor,
-  BunFileSystem,
-} from "@effect/platform-bun";
+import { BunCommandExecutor, BunFileSystem } from "@effect/platform-bun";
 import { pythonEval } from "@evm-effect/shared/test/python";
 import { Arbitrary, Either, FastCheck, Layer, Schema } from "effect";
 import { dedent } from "ts-dedent";
@@ -118,9 +115,7 @@ describe("encode", async () => {
         new Uint8Array(encoded.value),
       );
     }).pipe(Effect.provide(layers), Effect.scoped);
-    await Effect.runPromise(
-      program
-    );
+    await Effect.runPromise(program);
   });
 });
 
@@ -131,16 +126,15 @@ describe("decode", async () => {
   const simple = Arbitrary.make(arbNested);
   const samples = FastCheck.sample(simple, { seed: 1 }) as (Bytes | Bytes[])[];
 
-  it.each(samples.map((e, i) => ({ name: formatTestTitle(e), simple: e, i })))(
-    "$i - $name",
-    async ({ simple }) => {
-      const encoded = encode(simple);
-      const decoded = decode(encoded);
-      expect(Either.isRight(decoded)).toBe(true);
+  it.each(
+    samples.map((e, i) => ({ name: formatTestTitle(e), simple: e, i })),
+  )("$i - $name", async ({ simple }) => {
+    const encoded = encode(simple);
+    const decoded = decode(encoded);
+    expect(Either.isRight(decoded)).toBe(true);
 
-      expect(Either.getOrThrow(decoded)).toEqual(simple);
-    },
-  );
+    expect(Either.getOrThrow(decoded)).toEqual(simple);
+  });
 });
 describe("encodeTo", async () => {
   const testStruct = Schema.Struct({

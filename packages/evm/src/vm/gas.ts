@@ -169,13 +169,11 @@ export const chargeGas = (amount: UintType) =>
     const evm = yield* Evm;
     yield* evmTrace(GasAndRefund({ gasCost: amount.value }));
     if (evm.gasLeft < amount.value) {
-      yield* Effect.fail(new OutOfGasError({ message: "Out of gas" }));
-      return;
+      return yield* Effect.fail(new OutOfGasError({ message: "Out of gas" }));
     }
     const newGas = evm.gasLeft - amount.value;
     if (newGas < 0n) {
-      yield* Effect.fail(new OutOfGasError({ message: "Out of gas" }));
-      return;
+      return yield* Effect.fail(new OutOfGasError({ message: "Out of gas" }));
     }
     evm.setGasLeft(newGas);
   });

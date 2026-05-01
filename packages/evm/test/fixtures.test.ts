@@ -232,11 +232,10 @@ const matchesExpectedException = (
   return { matches, actualException, expectedOptions };
 };
 
-type FlatStateTestFixture = ReturnType<
-  typeof flattenStateTestFixtures
-> extends Generator<infer T, void>
-  ? T
-  : never;
+type FlatStateTestFixture =
+  ReturnType<typeof flattenStateTestFixtures> extends Generator<infer T, void>
+    ? T
+    : never;
 
 type TestState = {
   shortHash: string | null;

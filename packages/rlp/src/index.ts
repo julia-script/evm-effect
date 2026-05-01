@@ -2,8 +2,9 @@ import { decode } from "./decode.js";
 import { decodeTo } from "./decodeTo.js";
 import { encode } from "./encode.js";
 import { encodeTo } from "./encodeTo.js";
-export { decode, decodeTo, encode, encodeTo };
+
 export * from "./exceptions.js";
+export { decode, decodeTo, encode, encodeTo };
 export default {
   encode,
   decode,

@@ -31,8 +31,9 @@
     "ci:publish": "bun run build && bun scripts/publish-bun.mjs && changeset tag",
     "changeset-version": "bun run ci:version",
     "changeset-publish": "bun run ci:publish",
-    "lint": "biome check .",
-    "lint:fix": "biome check . --fix --unsafe"
+    "lint": "bunx @biomejs/biome check .",
+    "lint:fix": "bunx @biomejs/biome check . --fix --unsafe",
+    "biome:migrate": "bunx @biomejs/biome migrate --write"
   },
   "devDependencies": {
     "@babel/cli": "^7.28.6",

@@ -64,13 +64,8 @@ export class TransactionEnvironment extends Schema.TaggedClass<TransactionEnviro
   txHash: Schema.OptionFromSelf(Bytes32),
 }) {}
 
-export type test = typeof SuspendedEvm extends Schema.suspend<
-  Evm,
-  infer T,
-  never
->
-  ? T
-  : never;
+export type test =
+  typeof SuspendedEvm extends Schema.suspend<Evm, infer T, never> ? T : never;
 const SuspendedEvm = Schema.suspend(
   (): Schema.Schema<Evm, Evm> => Schema.instanceOf(Evm),
 );

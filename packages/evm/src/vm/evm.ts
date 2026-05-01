@@ -111,7 +111,6 @@ export class Evm extends Context.Tag("Evm")<
     logs: Ref.Ref<ReadonlyArray<Log>>;
     refundCounter: Ref.Ref<U256>;
     running: boolean;
-    latch: Effect.Latch;
     message: Message;
     output: Ref.Ref<Bytes>;
     accountsToDelete: HashSet<Address>;
@@ -146,7 +145,6 @@ export class Evm extends Context.Tag("Evm")<
         logs: yield* Ref.make<ReadonlyArray<Log>>([]),
         refundCounter: yield* Ref.make(new U256({ value: 0n })),
         running: true,
-        latch: yield* Effect.makeLatch(),
         output: yield* Ref.make<Bytes>(new Bytes({ value: new Uint8Array(0) })),
         accountsToDelete: HashSet.empty(),
         touchedAccounts: HashSet.empty(),

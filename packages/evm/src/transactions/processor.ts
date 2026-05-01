@@ -20,6 +20,11 @@ import {
   stateRoot,
   TransientStorage,
 } from "../state.js";
+import {
+  processTrace,
+  TransactionProcessingEnd,
+  TransactionProcessingStart,
+} from "../trace.js";
 import { LegacyReceipt, Receipt } from "../types/Receipt.js";
 import { LegacyTransaction, type Transaction } from "../types/Transaction.js";
 import { Fork } from "../vm/Fork.js";
@@ -70,6 +75,14 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
     tx: tx,
     index: index.value,
   });
+
+  yield* processTrace(
+    TransactionProcessingStart({
+      index: Number(index.value),
+      tx: tx,
+      blockEnv: blockEnv,
+    }),
+  );
 
   const encodedIndex = rlp.encode(index);
   const encodedTx = yield* encodeTransaction(tx).pipe(Effect.orDie);
@@ -228,6 +241,7 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
   });
 
   let encodedReceiptResult: Either.Either<Bytes, unknown>;
+  let unencodedReceipt: Receipt | LegacyReceipt;
 
   if (fork.eip(658)) {
     const receipt = new Receipt({
@@ -237,6 +251,7 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
       logs: txOutput.logs,
     });
     encodedReceiptResult = rlp.encodeTo(Receipt, receipt);
+    unencodedReceipt = receipt;
   } else {
     const postState = stateRoot(blockEnv.state);
     const receipt = new LegacyReceipt({
@@ -246,6 +261,7 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
       logs: txOutput.logs,
     });
     encodedReceiptResult = rlp.encodeTo(LegacyReceipt, receipt);
+    unencodedReceipt = receipt;
   }
   if (Either.isLeft(encodedReceiptResult)) {
     return yield* Effect.die(new Error("Failed to encode receipt"));
@@ -285,6 +301,17 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
   blockOutput.receiptsTrie.set(receiptKey, encodedReceipt);
 
   blockOutput.blockLogs = [...blockOutput.blockLogs, ...txOutput.logs];
+  yield* processTrace(
+    TransactionProcessingEnd({
+      index: Number(index.value),
+      tx: tx,
+      blockEnv: blockEnv,
+      receipt: unencodedReceipt,
+      encodedReceipt: encodedReceipt,
+      blockOutput: blockOutput,
+      txOutput: txOutput,
+    }),
+  );
 });
 
 function encodeOrDie<A, I, R>(

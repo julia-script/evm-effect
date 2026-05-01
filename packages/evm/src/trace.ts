@@ -1,3 +1,4 @@
+import type { Transaction } from "@evm-effect/crypto/transactions";
 import { Address, U256 } from "@evm-effect/ethereum-types";
 import type { Bytes } from "@evm-effect/ethereum-types/bytes";
 import { bufferFromHex, bufferToHex } from "@evm-effect/ethereum-types/utils";
@@ -13,13 +14,31 @@ import {
   Schema,
 } from "effect";
 import { BigIntFromSelf } from "effect/Schema";
+import type { BlockOutput } from "./blockchain.js";
+import type { MessageCallOutput } from "./blocks/system.js";
 import type { EthereumException } from "./exceptions.js";
+import type { LegacyReceipt, Receipt } from "./types/Receipt.js";
 import { Evm } from "./vm/evm.js";
-import type { TransactionEnvironment } from "./vm/message.js";
+import type { BlockEnvironment, TransactionEnvironment } from "./vm/message.js";
 import { getOpcodeName } from "./vm/opcodes.js";
 
 export type EvmTraceEvent = Data.TaggedEnum<{
+  TransactionProcessingStart: {
+    readonly index: number;
+    readonly tx: Transaction;
+    readonly blockEnv: BlockEnvironment;
+  };
+  TransactionProcessingEnd: {
+    readonly index: number;
+    readonly tx: Transaction;
+    readonly blockEnv: BlockEnvironment;
+    readonly receipt: Receipt | LegacyReceipt;
+    readonly encodedReceipt: Bytes;
+    readonly blockOutput: BlockOutput;
+    readonly txOutput: MessageCallOutput;
+  };
   TransactionStart: {};
+
   TransactionEnd: {
     readonly gasUsed: bigint;
     readonly output: Bytes;
@@ -34,6 +53,8 @@ export type EvmTraceEvent = Data.TaggedEnum<{
   GasAndRefund: { readonly gasCost: bigint };
 }>;
 export const {
+  TransactionProcessingEnd,
+  TransactionProcessingStart,
   TransactionEnd,
   PrecompileStart,
   PrecompileEnd,
@@ -43,10 +64,17 @@ export const {
   EvmStop,
   GasAndRefund,
 } = Data.taggedEnum<EvmTraceEvent>();
+export type TransactionEvent = Extract<
+  EvmTraceEvent,
+  { _tag: "TransactionProcessingStart" | "TransactionProcessingEnd" }
+>;
+export type TraceEvent = Exclude<EvmTraceEvent, TransactionEvent>;
 
 export class EvmTracer extends Context.Tag("EvmTracer")<
   EvmTracer,
-  { readonly trace: (event: EvmTraceEvent) => Effect.Effect<void, never, Evm> }
+  {
+    readonly trace: (event: EvmTraceEvent) => Effect.Effect<void, never, never>;
+  }
 >() {
   static empty = EvmTracer.of({
     trace: () => Effect.succeed(void 0),
@@ -55,14 +83,26 @@ export class EvmTracer extends Context.Tag("EvmTracer")<
     Layer.effect(EvmTracer, Eip3155Tracer(options));
 }
 
-export const evmTrace = Effect.fn("evmTrace")(function* (event: EvmTraceEvent) {
+export const processTrace = Effect.fn("processTrace")(function* (
+  event: TransactionEvent,
+) {
+  const maybeTracer = yield* Effect.serviceOption(EvmTracer);
+  // const emptyEvm = Evm.make()
+
+  if (Option.isSome(maybeTracer)) {
+    yield* maybeTracer.value.trace(event);
+  }
+});
+export const evmTrace: (
+  event: Readonly<TraceEvent>,
+) => Effect.Effect<void, never, Evm> = Effect.fn("evmTrace")(function* (event) {
   const maybeTracer = yield* Effect.serviceOption(EvmTracer);
 
   if (Option.isSome(maybeTracer)) {
     yield* maybeTracer.value.trace(event);
   }
 });
-export const evmTraceWith = (evm: Evm["Type"], event: EvmTraceEvent) =>
+export const evmTraceWith = (evm: Evm["Type"], event: TraceEvent) =>
   evmTrace(event).pipe(Effect.provideService(Evm, evm));
 
 class NumberFromHex extends Schema.transformOrFail(
@@ -207,6 +247,7 @@ export class FinalTrace extends Schema.Class<FinalTrace>("FinalTrace")({
   gasUsed: BigIntFromHex,
   error: Schema.optional(Schema.String),
 }) {}
+
 const AnyTrace = Schema.Union(Trace, FinalTrace);
 type AnyTrace = typeof AnyTrace.Type;
 type Eip3155TracerOptions = {
@@ -236,12 +277,12 @@ const Eip3155Tracer = Effect.fn("Eip3155Tracer")(function* ({
     ]
   > = [];
 
-  const trace = (event: EvmTraceEvent): Effect.Effect<void, never, Evm> =>
-    Effect.gen(function* () {
+  const trace: (event: EvmTraceEvent) => Effect.Effect<void, never, Evm> =
+    Effect.fn("trace")(function* (event: EvmTraceEvent) {
       const evm = yield* Evm;
       const pushTrace = (
         trace: (typeof Trace)["Type"] | (typeof FinalTrace)["Type"],
-      ): Effect.Effect<undefined, never, Evm> => {
+      ): Effect.Effect<undefined, never, never> => {
         activeTraces.push([trace, {}]);
 
         return Effect.succeed(undefined);
@@ -290,6 +331,12 @@ const Eip3155Tracer = Effect.fn("Eip3155Tracer")(function* ({
 
       yield* Match.value(event).pipe(
         Match.tags({
+          TransactionProcessingStart: () => {
+            return Effect.succeed(void 0);
+          },
+          TransactionProcessingEnd: () => {
+            return Effect.succeed(void 0);
+          },
           TransactionStart: () => {
             return Effect.succeed(void 0);
           },
@@ -428,6 +475,13 @@ const Eip3155Tracer = Effect.fn("Eip3155Tracer")(function* ({
       );
     });
   return EvmTracer.of({
-    trace: trace,
+    trace: Effect.fn("traceWrapper")(function* (event: EvmTraceEvent) {
+      const maybeEvm = yield* Effect.serviceOption(Evm);
+      if (Option.isNone(maybeEvm)) {
+        return Effect.succeed(void 0);
+      }
+      const evm = maybeEvm.value;
+      return yield* trace(event).pipe(Effect.provideService(Evm, evm));
+    }),
   });
 });
