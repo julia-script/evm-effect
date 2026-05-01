@@ -1,5 +1,12 @@
 # @evm-effect/crypto
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [[`c5ac0de`](https://github.com/julia-script/evm-effect/commit/c5ac0de865d0273e26767ede3a07adf69a15b188)]:
+  - @evm-effect/rlp@0.1.4
+
 ## 0.2.1
 
 ### Patch Changes
