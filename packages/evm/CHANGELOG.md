@@ -1,5 +1,11 @@
 # @evm-effect/evm
 
+## 0.0.7
+
+### Patch Changes
+
+- [`a514da6`](https://github.com/julia-script/evm-effect/commit/a514da660549feb8304c122be47b21abacc519de) Thanks [@julia-script](https://github.com/julia-script)! - Replace explicit `package.json` export subpaths with a single `"./*"` pattern so every built module under `dist/` resolves consistently without maintaining a separate entry per path.
+
 ## 0.0.6
 
 ### Patch Changes
