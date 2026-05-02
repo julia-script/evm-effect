@@ -25,21 +25,9 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./vm/interpreter": {
-      "import": "./dist/vm/interpreter.js",
-      "types": "./dist/vm/interpreter.d.ts"
-    },
-    "./vm/runtime": {
-      "import": "./dist/vm/runtime.js",
-      "types": "./dist/vm/runtime.d.ts"
-    },
-    "./vm/StorageKey": {
-      "import": "./dist/vm/StorageKey.js",
-      "types": "./dist/vm/StorageKey.d.ts"
-    },
-    "./trace": {
-      "import": "./dist/trace.js",
-      "types": "./dist/trace.d.ts"
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
     }
   },
   "scripts": {
