@@ -6,7 +6,7 @@
       "dependencies": {
         "@noble/curves": "^2.2.0",
         "c-kzg": "^4.1.0",
-        "zod": "^4.4.1",
+        "zod": "^4.4.2",
       },
       "devDependencies": {
         "@babel/cli": "^7.28.6",
@@ -23,7 +23,7 @@
         "babel-plugin-annotate-pure-calls": "^0.5.0",
         "glob": "^11.1.0",
         "knip": "^5.88.1",
-        "msgpackr": "^1.11.10",
+        "msgpackr": "^1.11.12",
         "tsx": "^4.21.0",
         "turbo": "^2.9.7",
         "typescript": "^5.9.3",
@@ -68,7 +68,7 @@
     },
     "packages/evm": {
       "name": "@evm-effect/evm",
-      "version": "0.0.7",
+      "version": "0.0.8",
       "dependencies": {
         "@effect/experimental": "catalog:",
         "@effect/platform": "catalog:",
@@ -95,7 +95,7 @@
     },
     "packages/examples": {
       "name": "@evm-effect/examples",
-      "version": "0.0.7",
+      "version": "0.0.8",
       "dependencies": {
         "@evm-effect/crypto": "workspace:*",
         "@evm-effect/ethereum-types": "workspace:*",
