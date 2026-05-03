@@ -1,5 +1,11 @@
 # @evm-effect/evm
 
+## 0.0.9
+
+### Patch Changes
+
+- [`9e2853a`](https://github.com/julia-script/evm-effect/commit/9e2853a3a9b92c41fdf3319502be0e1ba3698d01) Thanks [@julia-script](https://github.com/julia-script)! - Align alt_bn128 G1 precompiles with go-ethereum: validate affine inputs with the same on-curve rules as `bn256/cloudflare` (infinity as `(0,0)`, no Noble prime-subgroup check), fixing `pointAdd` / `pointAddTrunc` cases that mix cofactor-torsion points. On precompile `Run` failure, exhaust the call frame’s remaining gas like `Call` / `CallCode` after `RunPrecompiledContract`, while still using `PrecompileFailure` for tracing and state rollback.
+
 ## 0.0.8
 
 ### Patch Changes
