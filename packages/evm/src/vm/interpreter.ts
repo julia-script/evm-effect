@@ -17,6 +17,7 @@ import {
   InvalidContractPrefixError,
   InvalidOpcode,
   OutOfGasError,
+  PrecompileFailure,
   type Revert,
   StackDepthLimitError,
 } from "../exceptions.js";
@@ -140,6 +141,22 @@ export const executeCode = Effect.fn("executeCode")(function* (
         PrecompileStart({ address: message.codeAddress }),
       );
       yield* precompile.value.pipe(
+        Effect.catchIf(
+          (error): error is PrecompileFailure =>
+            error._tag === "EthereumException/PrecompileFailure",
+          (error) =>
+            Effect.gen(function* () {
+              yield* evmTrace(OpException({ error }));
+              // Match go-ethereum Call/CallCode: on precompile `Run` error (not revert),
+              // state is reverted and the call frame's remaining gas is exhausted.
+              evm.setGasLeft(0n);
+              yield* Ref.set(
+                evm.output,
+                new Bytes({ value: new Uint8Array(0) }),
+              );
+              yield* Ref.set(evm.error, Option.some<EthereumException>(error));
+            }),
+        ),
         Effect.catchIf(
           (error): error is ExceptionalHalt =>
             error._tag.startsWith(ExceptionalHaltTag),

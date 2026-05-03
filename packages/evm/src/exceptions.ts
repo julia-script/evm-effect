@@ -198,6 +198,18 @@ export class TransactionGasLimitExceededError extends Data.TaggedError(
 export class Revert extends Data.TaggedError(`EthereumException/Revert`)<{
   readonly message?: string | undefined;
 }> {}
+
+/**
+ * Precompile `Run` returned an error after `RequiredGas` was charged (e.g.
+ * invalid BN256 input). `RunPrecompiledContract` leaves gas on the budget, but
+ * go-ethereum `Call` / `CallCode` then exhausts remaining gas unless the error
+ * is `ErrExecutionReverted`; we mirror that by clearing this frame's gas in the
+ * interpreter while still tagging the failure for traces.
+ */
+export class PrecompileFailure extends Data.TaggedError(
+  `EthereumException/PrecompileFailure`,
+)<{ readonly message?: string | undefined }> {}
+
 export const ExceptionalHaltTag = "EthereumException/ExceptionalHalt" as const;
 export class ExceptionalHaltError extends Data.TaggedError(ExceptionalHaltTag)<{
   readonly message?: string | undefined;
@@ -274,7 +286,11 @@ export type ExceptionalHalt =
   | AddressCollisionError
   | KZGProofError;
 
-export type VmException = Revert | ExceptionalHalt | ExceptionalHaltError;
+export type VmException =
+  | Revert
+  | PrecompileFailure
+  | ExceptionalHalt
+  | ExceptionalHaltError;
 
 export type InvalidTransaction =
   | InvalidSenderError

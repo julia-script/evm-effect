@@ -2,10 +2,11 @@ import { Bytes, U256 } from "@evm-effect/ethereum-types";
 import { Uint } from "@evm-effect/ethereum-types/numeric";
 import { bn254 } from "@noble/curves/bn254.js";
 import { Effect, Ref } from "effect";
-import { OutOfGasError } from "../../exceptions.js";
+import { PrecompileFailure } from "../../exceptions.js";
 import { Evm } from "../evm.js";
 import { Fork } from "../Fork.js";
 import * as Gas from "../gas.js";
+import { assertBn254G1AffineLikeGeth } from "./bn254-g1-geth-validation.js";
 
 /**
  * Ethereum Virtual Machine (EVM) ALT_BN128 MUL PRECOMPILED CONTRACT
@@ -41,8 +42,8 @@ export const bn254Mul = Effect.gen(function* () {
     if (Ax.value === 0n && Ay.value === 0n) {
       A = bn254.G1.Point.ZERO;
     } else {
+      assertBn254G1AffineLikeGeth(Ax.value, Ay.value);
       A = bn254.G1.Point.fromAffine({ x: Ax.value, y: Ay.value });
-      A.assertValidity();
     }
 
     scalar = new U256({ value: scalar.value % bn254.G1.Point.Fn.ORDER });
@@ -65,11 +66,10 @@ export const bn254Mul = Effect.gen(function* () {
       yield* Ref.set(evm.output, new Bytes({ value: output }));
     }
   } catch (error) {
-    yield* Effect.fail(
-      new OutOfGasError({
+    return yield* Effect.fail(
+      new PrecompileFailure({
         message: `[bn254Mul] Error: ${error}`,
       }),
     );
-    return;
   }
 });
