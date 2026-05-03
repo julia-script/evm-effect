@@ -1,5 +1,11 @@
 # @evm-effect/evm
 
+## 0.0.8
+
+### Patch Changes
+
+- [`209b9f7`](https://github.com/julia-script/evm-effect/commit/209b9f7721b4b6cacb9665fa561cac1eb0cc9a60) Thanks [@julia-script](https://github.com/julia-script)! - Fix alt_bn128 ECADD (0x06) when the sum is the point at infinity: Noble’s `assertValidity()` rejects the identity, which previously surfaced as an exceptional halt and burned the full CALL stipend. The precompile now encodes infinity as 64 zero bytes per EIP-196, matching consensus clients and fixing `pointMulAdd` / `pointMulAdd2` fixture tests.
+
 ## 0.0.7
 
 ### Patch Changes
