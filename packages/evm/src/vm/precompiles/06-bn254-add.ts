@@ -27,7 +27,9 @@ export const bn254Add = Effect.gen(function* () {
   try {
     let A = bn254.G1.Point.fromAffine({ x: Ax.value, y: Ay.value });
     A = A.add(bn254.G1.Point.fromAffine({ x: Bx.value, y: By.value }));
-    A.assertValidity();
+    // Sum is either a valid affine point or the point at infinity. Noble's
+    // assertValidity() rejects ZERO ("bad point: ZERO"); EIP-196 encodes
+    // infinity as 64 zero bytes (same as geth Marshal of identity).
     const res = A.toAffine();
     const output = new Uint8Array(64);
     output.set(new U256({ value: res.x }).toBeBytes32().value, 0);
