@@ -1,5 +1,11 @@
 # @evm-effect/shared
 
+## 0.0.5
+
+### Patch Changes
+
+- [`f6e9a5b`](https://github.com/julia-script/evm-effect/commit/f6e9a5b4ecf17b2c000dcecede02452c933882ae) Thanks [@julia-script](https://github.com/julia-script)! - Fix `stringify` bytes rendering to use `bufferToHex` instead of calling `toHex()` on `Uint8Array`, preventing runtime errors when formatting byte-like values.
+
 ## 0.0.4
 
 ### Patch Changes
