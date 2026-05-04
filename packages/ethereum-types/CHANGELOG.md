@@ -1,5 +1,12 @@
 # @evm-effect/ethereum-types
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [[`d6a4e8f`](https://github.com/julia-script/evm-effect/commit/d6a4e8f8a54cece8ea6d159318c83b9ecd10160c)]:
+  - @evm-effect/shared@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes

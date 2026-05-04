@@ -1,5 +1,13 @@
 # @evm-effect/crypto
 
+## 0.2.6
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @evm-effect/ethereum-types@0.0.6
+  - @evm-effect/rlp@0.1.8
+
 ## 0.2.5
 
 ### Patch Changes

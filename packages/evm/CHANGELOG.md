@@ -1,5 +1,18 @@
 # @evm-effect/evm
 
+## 0.0.13
+
+### Patch Changes
+
+- [`d6a4e8f`](https://github.com/julia-script/evm-effect/commit/d6a4e8f8a54cece8ea6d159318c83b9ecd10160c) Thanks [@julia-script](https://github.com/julia-script)! - Export `annotateSafe` from `@evm-effect/shared/annotateSafe` instead of `@evm-effect/shared/traced`, so callers avoid pulling the OpenTelemetry tracing setup. Update the EVM package to use that entry, import `node:crypto` synchronously for requests-hash computation, and use `bufferToHex` from shared in the KZG point-evaluation precompile.
+
+- Updated dependencies [[`d6a4e8f`](https://github.com/julia-script/evm-effect/commit/d6a4e8f8a54cece8ea6d159318c83b9ecd10160c)]:
+  - @evm-effect/shared@0.0.6
+  - @evm-effect/crypto@0.2.6
+  - @evm-effect/ethereum-types@0.0.6
+  - @evm-effect/rlp@0.1.8
+  - @evm-effect/solc@0.1.6
+
 ## 0.0.12
 
 ### Patch Changes
