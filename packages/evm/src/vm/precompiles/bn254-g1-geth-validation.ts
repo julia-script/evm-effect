@@ -1,6 +1,5 @@
 import { bn254 } from "@noble/curves/bn254.js";
 
-
 export const assertBn254G1AffineLikeGeth = (x: bigint, y: bigint): void => {
   const Fp = bn254.fields.Fp;
   const px = Fp.create(x);

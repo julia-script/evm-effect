@@ -17,7 +17,7 @@ import {
   InvalidContractPrefixError,
   InvalidOpcode,
   OutOfGasError,
-  PrecompileFailure,
+  type PrecompileFailure,
   type Revert,
   StackDepthLimitError,
 } from "../exceptions.js";
