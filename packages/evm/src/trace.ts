@@ -1,7 +1,7 @@
 import type { Transaction } from "@evm-effect/crypto/transactions";
 import { Address, U256 } from "@evm-effect/ethereum-types";
 import type { Bytes } from "@evm-effect/ethereum-types/bytes";
-import { bufferFromHex, bufferToHex } from "@evm-effect/ethereum-types/utils";
+import { bufferFromHex, bufferToHex } from "@evm-effect/shared/bytes";
 import {
   Context,
   Data,

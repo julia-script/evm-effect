@@ -5,16 +5,12 @@
  * the primitive types (Bytes, U256, etc.)
  */
 
+import { bufferFromHex, bufferToHex } from "@evm-effect/shared/bytes";
 import { Either, Equal, Hash, Schema } from "effect";
 import type { Bytes32 } from "./bytes.js";
-import { Bytes20, type Bytes256, fromHex as bytesFromHex } from "./bytes.js";
+import { Bytes, Bytes20, type Bytes256 } from "./bytes.js";
 import { EvmTypeError } from "./exceptions.js";
-import {
-  type Byteish,
-  bufferToHex,
-  hash,
-  normalizeToUint8Array,
-} from "./utils.js";
+import { type Byteish, hash, normalizeToUint8Array } from "./utils.js";
 
 /**
  * Ethereum address (20 bytes)
@@ -35,11 +31,7 @@ export class Address extends Schema.TaggedClass<Address>("Address")("Address", {
       return;
     }
     if (typeof value === "string") {
-      const bytesResult = bytesFromHex(value);
-      if (Either.isLeft(bytesResult)) {
-        throw new Error(bytesResult.left.message);
-      }
-      super({ value: new Bytes20({ value: bytesResult.right.value }) });
+      super({ value: new Bytes20({ value: bufferFromHex(value) }) });
       return;
     }
     if (value instanceof Uint8Array) {
@@ -78,7 +70,7 @@ export class Address extends Schema.TaggedClass<Address>("Address")("Address", {
    * Create an address from a hex string
    */
   static fromHex(hex: string): Either.Either<Address, EvmTypeError> {
-    const bytesResult = bytesFromHex(hex);
+    const bytesResult = Bytes.fromHex(hex);
     if (Either.isLeft(bytesResult)) {
       return Either.left(bytesResult.left);
     }

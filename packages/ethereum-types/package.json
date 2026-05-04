@@ -37,6 +37,7 @@
     "check": "tsc -b tsconfig.json"
   },
   "dependencies": {
+    "@evm-effect/shared": "workspace:*",
     "@noble/hashes": "catalog:",
     "@effect/platform": "catalog:",
     "@effect/platform-bun": "catalog:",
@@ -44,7 +45,6 @@
     "ts-dedent": "^2.2.0"
   },
   "devDependencies": {
-    "@evm-effect/shared": "workspace:*",
     "@types/node": "^24.8.1",
     "fast-check": "catalog:",
     "typescript": "catalog:"

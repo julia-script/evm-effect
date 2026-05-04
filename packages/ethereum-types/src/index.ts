@@ -36,11 +36,9 @@ export {
   concat,
   equals,
   extractAndPad,
-  fromHex,
   isBytes,
   pad,
   slice,
-  toHex,
 } from "./bytes.js";
 
 export {

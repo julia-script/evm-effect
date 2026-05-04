@@ -1,9 +1,8 @@
+import { bufferFromHex, bufferToHex } from "@evm-effect/shared/bytes";
 import { Either, Equal, Hash, Schema } from "effect";
 import { EvmTypeError } from "./exceptions.js";
 import {
   type Byteish,
-  bufferFromHex,
-  bufferToHex,
   hash,
   normalizeToUint8Array,
   uint8ArrayEquals,
@@ -452,75 +451,6 @@ export function concat(a: AnyBytes, b: AnyBytes): Bytes {
  */
 export function slice(bytes: AnyBytes, start: number, end?: number): Bytes {
   return new Bytes({ value: bytes.value.slice(start, end) });
-}
-
-/**
- * Parse hex string to bytes
- */
-export function fromHex(
-  hex: string,
-  targetLength?: number,
-): Either.Either<Bytes, EvmTypeError> {
-  return Either.try({
-    try: () => {
-      const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
-
-      if (cleaned.length % 2 !== 0) {
-        throw new EvmTypeError({
-          message: "Hex string must have even length",
-          input: hex,
-        });
-      }
-
-      if (!/^[0-9a-fA-F]*$/.test(cleaned)) {
-        throw new EvmTypeError({
-          message: "Invalid hex string: contains non-hex characters",
-          input: hex,
-        });
-      }
-
-      const bytes = new Uint8Array(cleaned.length / 2);
-      for (let i = 0; i < cleaned.length; i += 2) {
-        bytes[i / 2] = Number.parseInt(cleaned.slice(i, i + 2), 16);
-      }
-
-      // Pad if target length specified
-      if (targetLength !== undefined) {
-        if (bytes.length > targetLength) {
-          throw new EvmTypeError({
-            message: `Hex string too long: expected ${targetLength} bytes, got ${bytes.length}`,
-            input: hex,
-          });
-        }
-        if (bytes.length < targetLength) {
-          const padded = new Uint8Array(targetLength);
-          padded.set(bytes, targetLength - bytes.length); // left-pad
-          return new Bytes({ value: padded });
-        }
-      }
-
-      return new Bytes({ value: bytes });
-    },
-    catch: (error) => {
-      if (error instanceof EvmTypeError) {
-        return error;
-      }
-      return new EvmTypeError({
-        message: `Failed to parse hex string: ${String(error)}`,
-        input: hex,
-      });
-    },
-  });
-}
-
-/**
- * Convert bytes to hex string with 0x prefix
- */
-export function toHex(bytes: AnyBytes): string {
-  const hex = Array.from(bytes.value)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return `0x${hex}`;
 }
 
 /**
