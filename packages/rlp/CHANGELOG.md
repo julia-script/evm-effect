@@ -1,5 +1,12 @@
 # @evm-effect/rlp
 
+## 0.1.8
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @evm-effect/ethereum-types@0.0.6
+
 ## 0.1.7
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @evm-effect/solc
 
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @evm-effect/crypto@0.2.6
+  - @evm-effect/ethereum-types@0.0.6
+
 ## 0.1.5
 
 ### Patch Changes
