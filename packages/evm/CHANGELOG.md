@@ -1,5 +1,18 @@
 # @evm-effect/evm
 
+## 0.0.11
+
+### Patch Changes
+
+- [`9e4e20f`](https://github.com/julia-script/evm-effect/commit/9e4e20fef1e6a7014211aa8d194b53af9ace94f8) Thanks [@julia-script](https://github.com/julia-script)! - Expose `bufferFromHex` and `bufferToHex` on `@evm-effect/shared/bytes`, and have `ethereum-types` and `evm` import them from there. `@evm-effect/ethereum-types` now depends on `@evm-effect/shared` at runtime. Remove the standalone `fromHex` and `toHex` exports from the ethereum-types package entrypoint in favor of `Bytes.fromHex` and instance `toHex()` methods.
+
+- Updated dependencies [[`9e4e20f`](https://github.com/julia-script/evm-effect/commit/9e4e20fef1e6a7014211aa8d194b53af9ace94f8)]:
+  - @evm-effect/shared@0.0.4
+  - @evm-effect/ethereum-types@0.0.4
+  - @evm-effect/crypto@0.2.4
+  - @evm-effect/rlp@0.1.6
+  - @evm-effect/solc@0.1.4
+
 ## 0.0.10
 
 ### Patch Changes
