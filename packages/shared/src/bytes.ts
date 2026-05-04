@@ -10,6 +10,9 @@ export const bufferToHex = (value: Uint8Array<ArrayBufferLike>): string => {
 };
 
 export const bufferFromHex = (string: string): Uint8Array<ArrayBuffer> => {
+  if (string.startsWith("0x")) {
+    string = string.slice(2);
+  }
   if ("fromHex" in Uint8Array) {
     return Uint8Array.fromHex(string);
   }
