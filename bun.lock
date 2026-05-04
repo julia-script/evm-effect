@@ -25,13 +25,13 @@
         "knip": "^5.88.1",
         "msgpackr": "^1.11.12",
         "tsx": "^4.21.0",
-        "turbo": "^2.9.7",
+        "turbo": "^2.9.8",
         "typescript": "^5.9.3",
       },
     },
     "packages/crypto": {
       "name": "@evm-effect/crypto",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "dependencies": {
         "@evm-effect/ethereum-types": "workspace:*",
         "@evm-effect/rlp": "workspace:*",
@@ -51,7 +51,7 @@
     },
     "packages/ethereum-types": {
       "name": "@evm-effect/ethereum-types",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
         "@effect/platform": "catalog:",
         "@effect/platform-bun": "catalog:",
@@ -68,7 +68,7 @@
     },
     "packages/evm": {
       "name": "@evm-effect/evm",
-      "version": "0.0.9",
+      "version": "0.0.10",
       "dependencies": {
         "@effect/experimental": "catalog:",
         "@effect/platform": "catalog:",
@@ -95,7 +95,7 @@
     },
     "packages/examples": {
       "name": "@evm-effect/examples",
-      "version": "0.0.9",
+      "version": "0.0.10",
       "dependencies": {
         "@evm-effect/crypto": "workspace:*",
         "@evm-effect/ethereum-types": "workspace:*",
@@ -110,7 +110,7 @@
     },
     "packages/rlp": {
       "name": "@evm-effect/rlp",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "dependencies": {
         "@evm-effect/ethereum-types": "workspace:*",
         "effect": "catalog:",
@@ -150,7 +150,7 @@
     },
     "packages/solc": {
       "name": "@evm-effect/solc",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "dependencies": {
         "@effect/platform": "catalog:",
         "@evm-effect/crypto": "workspace:*",
@@ -1749,7 +1749,7 @@
 
     "yocto-queue": ["yocto-queue@1.2.1", "", {}, "sha512-AyeEbWOu/TAXdxlV9wmGcR0+yh2j3vYPGOECcIj2S7MkrLyC7ne+oye2BKTItt0ii2PHk4cDy+95+LshzbXnGg=="],
 
-    "zod": ["zod@4.4.2", "", {}, "sha512-IynmDyxsEsb9RKzO3J9+4SxXnl2FTFSzNBaKKaMV6tsSk0rw9gYw9gs+JFCq/qk2LCZ78KDwyj+Z289TijSkUw=="],
+    "zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
 
     "@babel/cli/glob": ["glob@7.2.3", "", { "dependencies": { "fs.realpath": "^1.0.0", "inflight": "^1.0.4", "inherits": "2", "minimatch": "^3.1.1", "once": "^1.3.0", "path-is-absolute": "^1.0.0" } }, "sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q=="],
 
