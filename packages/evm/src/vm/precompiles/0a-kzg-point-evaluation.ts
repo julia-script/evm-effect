@@ -15,6 +15,7 @@
 
 import { Bytes } from "@evm-effect/ethereum-types/bytes";
 import { U256, Uint } from "@evm-effect/ethereum-types/numeric";
+import { bufferToHex } from "@evm-effect/shared/bytes";
 import { Effect, Ref } from "effect";
 import { KZGProofError } from "../../exceptions.js";
 import { Evm } from "../evm.js";
@@ -88,8 +89,7 @@ export const kzgPointEvaluation = Effect.gen(function* () {
     try: async () => {
       const kzgLib = await loadKZG();
 
-      const toHex = (bytes: Uint8Array) =>
-        `0x${Buffer.from(bytes).toString("hex")}`;
+      const toHex = (bytes: Uint8Array) => `0x${bufferToHex(bytes)}`;
 
       const result = kzgLib.verifyKZGProof(
         toHex(commitment),

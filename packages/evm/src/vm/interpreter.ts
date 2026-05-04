@@ -5,8 +5,8 @@
  */
 
 import { type Address, Bytes, U256, Uint } from "@evm-effect/ethereum-types";
+import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { HashSet } from "@evm-effect/shared/hashset";
-import { annotateSafe } from "@evm-effect/shared/traced";
 import { Effect, Option, Ref } from "effect";
 import { MessageCallOutput } from "../blocks/system.js";
 import {

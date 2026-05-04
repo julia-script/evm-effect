@@ -5,6 +5,7 @@
  * This module implements the apply_body function and related block processing logic.
  */
 
+import { createHash } from "node:crypto";
 import { sha256 } from "@evm-effect/crypto";
 import {
   type Address,
@@ -558,7 +559,6 @@ export const computeRequestsHash = (
   requests: readonly Bytes[],
 ): Effect.Effect<Bytes32, InvalidBlock, never> =>
   Effect.gen(function* () {
-    const { createHash } = yield* Effect.promise(() => import("node:crypto"));
     const mainHasher = createHash("sha256");
 
     for (const request of requests) {

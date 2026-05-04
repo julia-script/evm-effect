@@ -20,9 +20,9 @@ import {
   U256,
   Uint,
 } from "@evm-effect/ethereum-types";
+import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { HashMap } from "@evm-effect/shared/hashmap";
 import { HashSet } from "@evm-effect/shared/hashset";
-import { annotateSafe } from "@evm-effect/shared/traced";
 import { Data, Effect, Either, Equal, Option } from "effect";
 import { EMPTY_TRIE_ROOT, Trie, root as trieRoot } from "./trie/trie.js";
 import { type Account, EMPTY_ACCOUNT } from "./vm/types.js";

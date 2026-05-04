@@ -6,7 +6,7 @@ import {
   U64,
   Uint,
 } from "@evm-effect/ethereum-types";
-import { annotateSafe } from "@evm-effect/shared/traced";
+import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { Data, Effect } from "effect";
 import type { BlockOutput } from "../blockchain.js";
 import {

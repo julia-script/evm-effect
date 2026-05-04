@@ -8,8 +8,8 @@ import {
   Uint,
 } from "@evm-effect/ethereum-types";
 import rlp from "@evm-effect/rlp";
+import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { HashSet } from "@evm-effect/shared/hashset";
-import { annotateSafe } from "@evm-effect/shared/traced";
 import { Effect, Either, Option, type Schema } from "effect";
 import type { BlockOutput } from "../blockchain.js";
 import { logsBloom } from "../receipts/bloom.js";
