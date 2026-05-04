@@ -1,4 +1,5 @@
 import { Match, Predicate } from "effect";
+import { bufferToHex } from "./bytes.js";
 
 export const startWith =
   <T extends string>(prefix: T) =>
@@ -46,7 +47,7 @@ export const stringify = (value: unknown) => {
           propertyMatch("value", Predicate.isUint8Array),
           propertyMatch("_tag", pattern("^Bytes\\d{0,3}$")),
         ),
-        (value) => `${value._tag}(0x${value.value.toHex() || "00"})`,
+        (value) => `${value._tag}(0x${bufferToHex(value.value) || "00"})`,
       ),
       Match.when(Predicate.hasProperty("_tag"), ({ _tag, ...value }) => ({
         _tag,
