@@ -1,5 +1,14 @@
 # @evm-effect/examples
 
+## 0.0.12
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @evm-effect/crypto@0.2.5
+  - @evm-effect/ethereum-types@0.0.5
+  - @evm-effect/evm@0.0.12
+
 ## 0.0.11
 
 ### Patch Changes

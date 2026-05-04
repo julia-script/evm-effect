@@ -1,5 +1,16 @@
 # @evm-effect/evm
 
+## 0.0.12
+
+### Patch Changes
+
+- Updated dependencies [[`f6e9a5b`](https://github.com/julia-script/evm-effect/commit/f6e9a5b4ecf17b2c000dcecede02452c933882ae)]:
+  - @evm-effect/shared@0.0.5
+  - @evm-effect/crypto@0.2.5
+  - @evm-effect/ethereum-types@0.0.5
+  - @evm-effect/rlp@0.1.7
+  - @evm-effect/solc@0.1.5
+
 ## 0.0.11
 
 ### Patch Changes
