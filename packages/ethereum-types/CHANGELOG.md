@@ -1,5 +1,11 @@
 # @evm-effect/ethereum-types
 
+## 0.0.3
+
+### Patch Changes
+
+- [`fc8463c`](https://github.com/julia-script/evm-effect/commit/fc8463c64c0a34b80569334c9f62c5796936781d) Thanks [@julia-script](https://github.com/julia-script)! - Add manual hex encode/decode fallbacks in `bufferToHex` and `bufferFromHex` when runtime `Uint8Array` helpers are missing. Use a type-only import for `PrecompileFailure` in the interpreter.
+
 ## 0.0.2
 
 ### Patch Changes
