@@ -68,7 +68,7 @@
     },
     "packages/evm": {
       "name": "@evm-effect/evm",
-      "version": "0.0.14",
+      "version": "0.0.15",
       "dependencies": {
         "@effect/experimental": "catalog:",
         "@effect/platform": "catalog:",
@@ -95,7 +95,7 @@
     },
     "packages/examples": {
       "name": "@evm-effect/examples",
-      "version": "0.0.14",
+      "version": "0.0.15",
       "dependencies": {
         "@evm-effect/crypto": "workspace:*",
         "@evm-effect/ethereum-types": "workspace:*",
@@ -150,7 +150,7 @@
     },
     "packages/solc": {
       "name": "@evm-effect/solc",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
         "@effect/platform": "catalog:",
         "@evm-effect/crypto": "workspace:*",

@@ -1,5 +1,13 @@
 # @evm-effect/solc
 
+## 0.2.1
+
+### Patch Changes
+
+- [`97feb10`](https://github.com/julia-script/evm-effect/commit/97feb10c6db1cb32422f035b844d474b287f68e3) Thanks [@julia-script](https://github.com/julia-script)! - Allow `sources[].ast` to be either a Solidity `SourceUnit` or a Yul `YulBlock`, add optional `legacyAST` on source output, type `generatedSources[].ast` as Yul asm JSON, export `isSolcSourceUnitAst`, and add tests for generated utility Yul and compiler input modes.
+
+- [`9be85b3`](https://github.com/julia-script/evm-effect/commit/9be85b3a6ad0c2a1ebba2672ddf8cb431e65654a) Thanks [@julia-script](https://github.com/julia-script)! - Add Effect schemas for Yul IR (`irAst` / `irOptimizedAst`) and Solidity `InlineAssembly` AST roots, wire them through compiler output types, and treat a missing `parameters` field on `YulFunctionDefinition` as an empty list so solc IR decodes fully (including statements such as `YulLeave`).
+
 ## 0.2.0
 
 ### Minor Changes
