@@ -7,6 +7,7 @@ import { SolcAst } from "./ast.js";
 import { EVMOutput } from "./bytecode.js";
 import { DevDoc, UserDoc } from "./documentation.js";
 import { ErrorType, Severity } from "./types.js";
+import { YulIrAst } from "./yul-ast.js";
 
 export {
   type AstNode,
@@ -14,6 +15,16 @@ export {
   SolcAst,
   TypeDescriptions,
 } from "./ast.js";
+
+export {
+  YulCode,
+  YulData,
+  YulExpressionSchema,
+  YulInlineAssemblyAst,
+  YulIrAst,
+  YulObjectSchema,
+  YulStatementSchema,
+} from "./yul-ast.js";
 
 export const SourceLocation = Schema.Struct({
   file: Schema.String,
@@ -115,9 +126,9 @@ export const ContractOutput = Schema.Struct({
   userdoc: Schema.optional(UserDoc),
   devdoc: Schema.optional(DevDoc),
   ir: Schema.optional(Schema.String),
-  irAst: Schema.optional(Schema.Unknown),
+  irAst: Schema.optional(YulIrAst),
   irOptimized: Schema.optional(Schema.String),
-  irOptimizedAst: Schema.optional(Schema.Unknown),
+  irOptimizedAst: Schema.optional(YulIrAst),
   yulCFGJson: Schema.optional(Schema.Unknown),
   storageLayout: Schema.optional(StorageLayout),
   transientStorageLayout: Schema.optional(StorageLayout),

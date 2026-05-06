@@ -4,6 +4,7 @@
  */
 import { Schema } from "effect";
 import { StateMutability } from "./abi.js";
+import { YulInlineAssemblyAst, type YulJsonNode } from "./yul-ast.js";
 
 /**
  * Recursive Solidity JSON AST node (`nodeType` discriminates variants).
@@ -19,6 +20,8 @@ export interface AstNode {
   readonly statements?: ReadonlyArray<AstNode> | undefined;
   readonly name?: string | undefined;
   readonly body?: AstNode | undefined;
+  /** Yul block JSON on `InlineAssembly` nodes */
+  readonly AST?: YulJsonNode | undefined;
   readonly [key: string]: unknown;
 }
 
@@ -683,7 +686,7 @@ const InlineAssembly = Schema.Struct({
   eofVersion: Schema.optional(Schema.Number),
   documentation: Schema.optional(Schema.String),
   flags: Schema.optional(Schema.Array(Schema.String)),
-  AST: Schema.Unknown,
+  AST: YulInlineAssemblyAst,
 });
 
 const AstCatchall = Schema.Struct({
