@@ -1,5 +1,11 @@
 # @evm-effect/solc
 
+## 0.2.0
+
+### Minor Changes
+
+- [`f25068c`](https://github.com/julia-script/evm-effect/commit/f25068cd2a7210010da337bd3fc8a512cfe64c91) Thanks [@julia-script](https://github.com/julia-script)! - Add Effect schemas for standard compiler JSON AST (`SolcAst` / `AstNodeSchema`) and type `SourceOutput.ast` instead of `unknown`. Include solc-backed tests that decode real compile output.
+
 ## 0.1.6
 
 ### Patch Changes

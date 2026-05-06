@@ -1,5 +1,12 @@
 # @evm-effect/examples
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @evm-effect/evm@0.0.14
+
 ## 0.0.13
 
 ### Patch Changes
