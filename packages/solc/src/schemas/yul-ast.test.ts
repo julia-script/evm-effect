@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import solc from "solc";
 import { decodeOutput } from "./helpers.js";
-import type { CompilerOutput } from "./output.js";
+import { type CompilerOutput, isSolcSourceUnitAst } from "./output.js";
 
 type YulObjectDecoded = {
   readonly nodeType: "YulObject";
@@ -196,7 +196,10 @@ contract C {
 `,
     });
     const ast = out.sources?.["C.sol"]?.ast;
-    const contract = ast?.nodes?.find(
+    if (!isSolcSourceUnitAst(ast)) {
+      throw new Error("expected SourceUnit ast");
+    }
+    const contract = ast.nodes.find(
       (n) => n.nodeType === "ContractDefinition" && n.name === "C",
     );
     const fn = contract?.nodes?.find(
@@ -235,9 +238,9 @@ contract Loop {
 `,
     });
     const ast = findInlineAssemblyAst(out.sources?.["Loop.sol"]?.ast);
-    expect(ast && typeof ast === "object" && (ast as { nodeType?: string }).nodeType).toBe(
-      "YulBlock",
-    );
+    expect(
+      ast && typeof ast === "object" && (ast as { nodeType?: string }).nodeType,
+    ).toBe("YulBlock");
     const kinds = collectYulNodeTypes(ast);
     for (const expected of [
       "YulForLoop",

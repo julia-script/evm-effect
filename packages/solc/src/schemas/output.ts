@@ -3,11 +3,11 @@
  */
 import { Schema } from "effect";
 import { ABI } from "./abi.js";
-import { SolcAst } from "./ast.js";
+import { SolcAst, type SolcAst as SolcSourceUnitAst } from "./ast.js";
 import { EVMOutput } from "./bytecode.js";
 import { DevDoc, UserDoc } from "./documentation.js";
 import { ErrorType, Severity } from "./types.js";
-import { YulIrAst } from "./yul-ast.js";
+import { YulInlineAssemblyAst, YulIrAst } from "./yul-ast.js";
 
 export {
   type AstNode,
@@ -69,12 +69,24 @@ export const AuxiliaryInputRequested = Schema.Struct({
 
 export type AuxiliaryInputRequested = typeof AuxiliaryInputRequested.Type;
 
+/** Root AST for a `sources[file]` entry: Solidity `SourceUnit` or generated / Yul `YulBlock`. */
+export const SourceFileAst = Schema.Union(SolcAst, YulInlineAssemblyAst);
+
+export type SourceFileAst = typeof SourceFileAst.Type;
+
 export const SourceOutput = Schema.Struct({
   id: Schema.Number,
-  ast: Schema.optional(SolcAst),
+  ast: Schema.optional(SourceFileAst),
+  legacyAST: Schema.optional(Schema.Unknown),
 });
 
 export type SourceOutput = typeof SourceOutput.Type;
+
+export function isSolcSourceUnitAst(
+  ast: SourceFileAst | undefined,
+): ast is SolcSourceUnitAst {
+  return ast !== undefined && ast.nodeType === "SourceUnit";
+}
 
 export const StorageLayoutEntry = Schema.Struct({
   astId: Schema.Number,

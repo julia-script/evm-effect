@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import solc from "solc";
 import { decodeOutput } from "./helpers.js";
-import type { CompilerOutput } from "./output.js";
+import { type CompilerOutput, isSolcSourceUnitAst } from "./output.js";
 
 const astOutputSelection = {
   "*": {
@@ -40,8 +40,11 @@ contract Counter {
     });
     const ast = out.sources?.["Counter.sol"]?.ast;
     expect(ast?.nodeType).toBe("SourceUnit");
-    expect(ast?.license).toBe("MIT");
-    const contract = ast?.nodes?.find(
+    if (!isSolcSourceUnitAst(ast)) {
+      throw new Error("expected SourceUnit ast");
+    }
+    expect(ast.license).toBe("MIT");
+    const contract = ast.nodes.find(
       (n) => n.nodeType === "ContractDefinition" && n.name === "Counter",
     );
     expect(contract?.nodeType).toBe("ContractDefinition");
@@ -78,7 +81,10 @@ contract Symbol {}
     });
     const ast = out.sources?.["Decl.sol"]?.ast;
     expect(ast?.nodeType).toBe("SourceUnit");
-    const contract = ast?.nodes?.find(
+    if (!isSolcSourceUnitAst(ast)) {
+      throw new Error("expected SourceUnit ast");
+    }
+    const contract = ast.nodes.find(
       (n) => n.nodeType === "ContractDefinition" && n.name === "C",
     );
     expect(contract?.nodeType).toBe("ContractDefinition");
@@ -88,10 +94,8 @@ contract Symbol {}
     expect(kinds.has("UserDefinedValueTypeDefinition")).toBe(true);
     expect(kinds.has("EventDefinition")).toBe(true);
     expect(kinds.has("ErrorDefinition")).toBe(true);
-    expect(ast?.nodes?.some((n) => n.nodeType === "ImportDirective")).toBe(
-      true,
-    );
-    expect(ast?.nodes?.some((n) => n.nodeType === "UsingForDirective")).toBe(
+    expect(ast.nodes.some((n) => n.nodeType === "ImportDirective")).toBe(true);
+    expect(ast.nodes.some((n) => n.nodeType === "UsingForDirective")).toBe(
       true,
     );
   });
@@ -123,7 +127,10 @@ contract C {
 `,
     });
     const ast = out.sources?.["Stmt.sol"]?.ast;
-    const contract = ast?.nodes?.find(
+    if (!isSolcSourceUnitAst(ast)) {
+      throw new Error("expected SourceUnit ast");
+    }
+    const contract = ast.nodes.find(
       (n) => n.nodeType === "ContractDefinition" && n.name === "C",
     );
     const fn = contract?.nodes?.find(

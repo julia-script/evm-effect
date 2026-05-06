@@ -27,6 +27,7 @@ export const SourceFile = Schema.Struct({
 
 export type SourceFile = typeof SourceFile.Type;
 
+/** Source files map for `language: "Solidity"` (one or more `.sol` inputs), not standalone Yul mode. */
 export const SolidityYulSources = Schema.Record({
   key: Schema.String.pipe(Schema.minLength(1)),
   value: SourceFile,
