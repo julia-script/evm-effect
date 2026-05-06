@@ -3,9 +3,17 @@
  */
 import { Schema } from "effect";
 import { ABI } from "./abi.js";
+import { SolcAst } from "./ast.js";
 import { EVMOutput } from "./bytecode.js";
 import { DevDoc, UserDoc } from "./documentation.js";
 import { ErrorType, Severity } from "./types.js";
+
+export {
+  type AstNode,
+  AstNodeSchema,
+  SolcAst,
+  TypeDescriptions,
+} from "./ast.js";
 
 export const SourceLocation = Schema.Struct({
   file: Schema.String,
@@ -52,7 +60,7 @@ export type AuxiliaryInputRequested = typeof AuxiliaryInputRequested.Type;
 
 export const SourceOutput = Schema.Struct({
   id: Schema.Number,
-  ast: Schema.optional(Schema.Unknown),
+  ast: Schema.optional(SolcAst),
 });
 
 export type SourceOutput = typeof SourceOutput.Type;
