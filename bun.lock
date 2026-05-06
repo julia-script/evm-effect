@@ -25,7 +25,7 @@
         "knip": "^5.88.1",
         "msgpackr": "^1.11.12",
         "tsx": "^4.21.0",
-        "turbo": "^2.9.8",
+        "turbo": "^2.9.9",
         "typescript": "^5.9.3",
       },
     },
@@ -68,7 +68,7 @@
     },
     "packages/evm": {
       "name": "@evm-effect/evm",
-      "version": "0.0.13",
+      "version": "0.0.14",
       "dependencies": {
         "@effect/experimental": "catalog:",
         "@effect/platform": "catalog:",
@@ -95,7 +95,7 @@
     },
     "packages/examples": {
       "name": "@evm-effect/examples",
-      "version": "0.0.13",
+      "version": "0.0.14",
       "dependencies": {
         "@evm-effect/crypto": "workspace:*",
         "@evm-effect/ethereum-types": "workspace:*",
@@ -150,7 +150,7 @@
     },
     "packages/solc": {
       "name": "@evm-effect/solc",
-      "version": "0.1.6",
+      "version": "0.2.0",
       "dependencies": {
         "@effect/platform": "catalog:",
         "@evm-effect/crypto": "workspace:*",
