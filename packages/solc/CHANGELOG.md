@@ -1,5 +1,11 @@
 # @evm-effect/solc
 
+## 0.2.3
+
+### Patch Changes
+
+- [`c882251`](https://github.com/julia-script/evm-effect/commit/c882251a4fe4bb2e434fc7ca6ebd1efe65307886) Thanks [@julia-script](https://github.com/julia-script)! - Tighten Yul AST schema typing by separating expression and statement nodes and removing fallback catchall variants.
+
 ## 0.2.2
 
 ### Patch Changes
