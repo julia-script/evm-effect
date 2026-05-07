@@ -1,5 +1,12 @@
 # @evm-effect/evm
 
+## 0.0.16
+
+### Patch Changes
+
+- Updated dependencies [[`26f7e33`](https://github.com/julia-script/evm-effect/commit/26f7e33233cb5ba7f1c8096aa47631f553475ae9)]:
+  - @evm-effect/solc@0.2.2
+
 ## 0.0.15
 
 ### Patch Changes
