@@ -1,5 +1,11 @@
 # @evm-effect/solc
 
+## 0.2.2
+
+### Patch Changes
+
+- [`26f7e33`](https://github.com/julia-script/evm-effect/commit/26f7e33233cb5ba7f1c8096aa47631f553475ae9) Thanks [@julia-script](https://github.com/julia-script)! - Refine Solidity and Yul output schemas: use `YulBlock` for mixed source AST, model contract IR as `YulObjectSchema`, re-export AST modules from `output`, and extend schema tests.
+
 ## 0.2.1
 
 ### Patch Changes
