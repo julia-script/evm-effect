@@ -3,7 +3,7 @@
  */
 import { Schema } from "effect";
 import { HexString } from "./types.js";
-import { YulInlineAssemblyAst } from "./yul-ast.js";
+import { YulBlock } from "./yul-ast.js";
 
 export const LinkReferencePosition = Schema.Struct({
   start: Schema.Number,
@@ -30,7 +30,7 @@ export const ImmutableReferences = Schema.Record({
 export type ImmutableReferences = typeof ImmutableReferences.Type;
 
 export const GeneratedSource = Schema.Struct({
-  ast: Schema.optional(YulInlineAssemblyAst),
+  ast: Schema.optional(YulBlock),
   contents: Schema.String,
   id: Schema.Number,
   language: Schema.String,

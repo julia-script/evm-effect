@@ -3,14 +3,6 @@ import solc from "solc";
 import { decodeOutput } from "./helpers.js";
 import { type CompilerOutput, isSolcSourceUnitAst } from "./output.js";
 
-type YulObjectDecoded = {
-  readonly nodeType: "YulObject";
-  readonly code: {
-    readonly nodeType: "YulCode";
-    readonly block: { readonly nodeType: string };
-  };
-};
-
 /** Walk JSON-like trees and collect every `nodeType` string (Yul + any nested JSON). */
 function collectYulNodeTypes(value: unknown): Set<string> {
   const out = new Set<string>();
@@ -104,7 +96,7 @@ contract C {
     const ir = c?.irAst;
     expect(ir && "nodeType" in ir && ir.nodeType).toBe("YulObject");
     if (ir && "nodeType" in ir && ir.nodeType === "YulObject") {
-      const obj = ir as YulObjectDecoded;
+      const obj = ir;
       expect(obj.code.nodeType).toBe("YulCode");
       expect(obj.code.block.nodeType).toBe("YulBlock");
     }
@@ -202,11 +194,20 @@ contract C {
     const contract = ast.nodes.find(
       (n) => n.nodeType === "ContractDefinition" && n.name === "C",
     );
+    if (!contract || !("nodes" in contract)) {
+      throw new Error("expected ContractDefinition with nodes");
+    }
     const fn = contract?.nodes?.find(
       (n) => n.nodeType === "FunctionDefinition" && n.name === "f",
     );
+    if (!fn || !("body" in fn)) {
+      throw new Error("expected FunctionDefinition with body");
+    }
     const body = fn?.body;
     expect(body?.nodeType).toBe("Block");
+    if (!body || !("statements" in body)) {
+      throw new Error("expected Block with statements");
+    }
     const asmStmt = body?.statements?.find(
       (s) => s.nodeType === "InlineAssembly",
     );

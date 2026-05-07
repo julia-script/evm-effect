@@ -10,6 +10,8 @@ export const StateMutability = Schema.Literal(
   "payable",
 );
 
+export type StateMutabilityEncoded = typeof StateMutability.Encoded;
+
 const ABIParameterBase = Schema.Struct({
   name: Schema.String,
   type: Schema.String,

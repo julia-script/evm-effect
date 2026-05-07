@@ -3,96 +3,99 @@
  * Node kinds align with `libsolidity/ast/ASTJsonImporter.cpp`.
  */
 import { Schema } from "effect";
-import { StateMutability } from "./abi.js";
-import { YulInlineAssemblyAst, type YulJsonNode } from "./yul-ast.js";
-
-/**
- * Recursive Solidity JSON AST node (`nodeType` discriminates variants).
- * Intentionally wide so recursive `Schema.suspend` typings resolve.
- */
-export interface AstNode {
-  readonly id: number;
-  readonly src: string;
-  readonly nodeType: string;
-  /** Present on contracts, source units, etc. */
-  readonly nodes?: ReadonlyArray<AstNode> | undefined;
-  /** Present on blocks, unchecked blocks. */
-  readonly statements?: ReadonlyArray<AstNode> | undefined;
-  readonly name?: string | undefined;
-  readonly body?: AstNode | undefined;
-  /** Yul block JSON on `InlineAssembly` nodes */
-  readonly AST?: YulJsonNode | undefined;
-  readonly [key: string]: unknown;
-}
+import { StateMutability, type StateMutabilityEncoded } from "./abi.js";
+import { YulBlock, type YulBlockEncoded } from "./yul-ast.js";
 
 /** `typeDescriptions` on many expression/type nodes */
 export const TypeDescriptions = Schema.Struct({
-  typeIdentifier: Schema.String,
-  typeString: Schema.String,
+  typeIdentifier: Schema.optional(Schema.String),
+  typeString: Schema.optional(Schema.String),
 });
 
-export type TypeDescriptions = typeof TypeDescriptions.Type;
+export type TypeDescriptionsEncoded = typeof TypeDescriptions.Type;
 
-const OptionalDoc = Schema.optional(
-  Schema.Union(
-    Schema.String,
-    Schema.suspend(() => AstNodeSchema),
-  ),
+export type OptionalDocEncoded = string | AstNodeEncoded;
+export const OptionalDoc = Schema.Union(
+  Schema.String,
+  Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
 );
 
-const ast = (): Schema.Schema<AstNode> => Schema.suspend(() => AstNodeSchema);
-
-const Visibility = Schema.Literal(
+export const Visibility = Schema.Literal(
   "default",
   "private",
   "internal",
   "public",
   "external",
 );
+export type VisibilityEncoded = typeof Visibility.Encoded;
+export const VariableMutability = Schema.Literal(
+  "constant",
+  "mutable",
+  "immutable",
+);
+export type VariableMutabilityEncoded = typeof VariableMutability.Encoded;
+export const ContractKind = Schema.Literal("interface", "contract", "library");
+export type ContractKindEncoded = typeof ContractKind.Encoded;
 
-const VariableMutability = Schema.Literal("constant", "mutable", "immutable");
-
-const ContractKind = Schema.Literal("interface", "contract", "library");
-
-const FunctionKind = Schema.Literal(
+export const FunctionKind = Schema.Literal(
   "constructor",
   "function",
   "fallback",
   "receive",
   "freeFunction",
 );
-
-const LiteralKind = Schema.Literal(
+export type FunctionKindEncoded = typeof FunctionKind.Encoded;
+export const LiteralKind = Schema.Literal(
   "number",
   "string",
   "unicodeString",
   "hexString",
   "bool",
 );
-
-const StorageLocation = Schema.Literal(
+export type LiteralKindEncoded = typeof LiteralKind.Encoded;
+export const StorageLocation = Schema.Literal(
   "default",
   "storage",
   "memory",
   "calldata",
   "transient",
 );
-
+export type StorageLocationEncoded = typeof StorageLocation.Encoded;
 // --- Declarations & directive nodes ---
 
-const PragmaDirective = Schema.Struct({
+export interface PragmaDirectiveEncoded {
+  nodeType: "PragmaDirective";
+  id: number;
+  src: string;
+  literals: readonly string[];
+}
+export const PragmaDirective = Schema.Struct({
   nodeType: Schema.Literal("PragmaDirective"),
   id: Schema.Number,
   src: Schema.String,
   literals: Schema.Array(Schema.String),
 });
 
-const ImportSymbolAlias = Schema.Struct({
-  foreign: ast(),
+export interface ImportSymbolAliasEncoded {
+  foreign: AstNodeEncoded;
+  local: string | null;
+}
+export const ImportSymbolAlias = Schema.Struct({
+  foreign: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
   local: Schema.NullOr(Schema.String),
 });
 
-const ImportDirective = Schema.Struct({
+export interface ImportDirectiveEncoded {
+  nodeType: "ImportDirective";
+  id: number;
+  src: string;
+  file: string;
+  unitAlias?: string | undefined;
+  nameLocation: string;
+  absolutePath: string;
+  symbolAliases: readonly ImportSymbolAliasEncoded[];
+}
+export const ImportDirective = Schema.Struct({
   nodeType: Schema.Literal("ImportDirective"),
   id: Schema.Number,
   src: Schema.String,
@@ -103,18 +106,46 @@ const ImportDirective = Schema.Struct({
   symbolAliases: Schema.Array(ImportSymbolAlias),
 });
 
-const ContractDefinition = Schema.Struct({
+export interface ContractDefinitionEncoded {
+  nodeType: "ContractDefinition";
+  id: number;
+  src: string;
+  name: string;
+  nameLocation: string;
+  documentation?: OptionalDocEncoded | undefined;
+  contractKind: ContractKindEncoded;
+  abstract: boolean;
+  baseContracts: readonly AstNodeEncoded[];
+  nodes: readonly AstNodeEncoded[];
+  storageLayout?: AstNodeEncoded | undefined;
+  canonicalName?: string | undefined;
+  fullyImplemented?: boolean | undefined;
+  linearizedBaseContracts?: readonly number[] | undefined;
+  scope?: number | undefined;
+  usedErrors?: readonly number[] | undefined;
+  usedEvents?: readonly number[] | undefined;
+  contractDependencies?: readonly number[] | undefined;
+}
+export const ContractDefinition = Schema.Struct({
   nodeType: Schema.Literal("ContractDefinition"),
   id: Schema.Number,
   src: Schema.String,
   name: Schema.String,
   nameLocation: Schema.String,
-  documentation: OptionalDoc,
+  documentation: Schema.optional(
+    Schema.suspend((): Schema.Schema<OptionalDocEncoded> => OptionalDoc),
+  ),
   contractKind: ContractKind,
   abstract: Schema.Boolean,
-  baseContracts: Schema.Array(ast()),
-  nodes: Schema.Array(ast()),
-  storageLayout: Schema.optional(ast()),
+  baseContracts: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
+  nodes: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
+  storageLayout: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   // Compiler output metadata (optional on import)
   canonicalName: Schema.optional(Schema.String),
   fullyImplemented: Schema.optional(Schema.Boolean),
@@ -125,7 +156,14 @@ const ContractDefinition = Schema.Struct({
   contractDependencies: Schema.optional(Schema.Array(Schema.Number)),
 });
 
-const IdentifierPath = Schema.Struct({
+export interface IdentifierPathEncoded {
+  nodeType: "IdentifierPath";
+  id: number;
+  src: string;
+  name: string;
+  nameLocations?: readonly string[] | undefined;
+}
+export const IdentifierPath = Schema.Struct({
   nodeType: Schema.Literal("IdentifierPath"),
   id: Schema.Number,
   src: Schema.String,
@@ -133,173 +171,386 @@ const IdentifierPath = Schema.Struct({
   nameLocations: Schema.optional(Schema.Array(Schema.String)),
 });
 
-const InheritanceSpecifier = Schema.Struct({
+export interface InheritanceSpecifierEncoded {
+  nodeType: "InheritanceSpecifier";
+  id: number;
+  src: string;
+  baseName: AstNodeEncoded;
+  arguments?: readonly AstNodeEncoded[] | undefined;
+}
+export const InheritanceSpecifier = Schema.Struct({
   nodeType: Schema.Literal("InheritanceSpecifier"),
   id: Schema.Number,
   src: Schema.String,
-  baseName: ast(),
-  arguments: Schema.NullOr(Schema.Array(ast())),
+  baseName: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  arguments: Schema.optional(
+    Schema.Array(
+      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    ),
+  ),
 });
 
-const UsingForFunctionListEntry = Schema.Struct({
-  function: Schema.optional(ast()),
+export interface UsingForFunctionListEntryEncoded {
+  function?: AstNodeEncoded | undefined;
+  operator?: string | undefined;
+  definition?: AstNodeEncoded | undefined;
+}
+
+export const UsingForFunctionListEntry = Schema.Struct({
+  function: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   operator: Schema.optional(Schema.String),
-  definition: Schema.optional(ast()),
+  definition: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
 });
 
-const UsingForDirective = Schema.Struct({
+export interface UsingForDirectiveEncoded {
+  nodeType: "UsingForDirective";
+  id: number;
+  src: string;
+  global: boolean;
+  libraryName?: AstNodeEncoded | undefined;
+  functionList?: readonly UsingForFunctionListEntryEncoded[] | undefined;
+  typeName?: AstNodeEncoded | undefined;
+}
+
+export const UsingForDirective = Schema.Struct({
   nodeType: Schema.Literal("UsingForDirective"),
   id: Schema.Number,
   src: Schema.String,
   global: Schema.Boolean,
-  libraryName: Schema.optional(ast()),
+  libraryName: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   functionList: Schema.optional(Schema.Array(UsingForFunctionListEntry)),
-  typeName: Schema.optional(ast()),
+  typeName: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
 });
 
-const StructDefinition = Schema.Struct({
+export interface StructDefinitionEncoded {
+  nodeType: "StructDefinition";
+  id: number;
+  src: string;
+  name: string;
+  nameLocation: string;
+  documentation?: OptionalDocEncoded | undefined;
+  members: readonly AstNodeEncoded[];
+  canonicalName?: string | undefined;
+  scope?: number | undefined;
+  visibility?: VisibilityEncoded | undefined;
+}
+
+export const StructDefinition = Schema.Struct({
   nodeType: Schema.Literal("StructDefinition"),
   id: Schema.Number,
   src: Schema.String,
   name: Schema.String,
   nameLocation: Schema.String,
-  documentation: OptionalDoc,
-  members: Schema.Array(ast()),
+  documentation: Schema.optional(OptionalDoc),
+  members: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   canonicalName: Schema.optional(Schema.String),
   scope: Schema.optional(Schema.Number),
   visibility: Schema.optional(Visibility),
 });
 
-const EnumDefinition = Schema.Struct({
+export interface EnumDefinitionEncoded {
+  nodeType: "EnumDefinition";
+  id: number;
+  src: string;
+  name: string;
+  nameLocation: string;
+  documentation?: OptionalDocEncoded | undefined;
+  members: readonly AstNodeEncoded[];
+  canonicalName?: string | undefined;
+}
+
+export const EnumDefinition = Schema.Struct({
   nodeType: Schema.Literal("EnumDefinition"),
   id: Schema.Number,
   src: Schema.String,
   name: Schema.String,
   nameLocation: Schema.String,
-  documentation: OptionalDoc,
-  members: Schema.Array(ast()),
+  documentation: Schema.optional(OptionalDoc),
+  members: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   canonicalName: Schema.optional(Schema.String),
 });
 
-const EnumValue = Schema.Struct({
+export interface EnumValueEncoded {
+  nodeType: "EnumValue";
+  id: number;
+  src: string;
+  name: string;
+  documentation?: OptionalDocEncoded | undefined;
+}
+export const EnumValue = Schema.Struct({
   nodeType: Schema.Literal("EnumValue"),
   id: Schema.Number,
   src: Schema.String,
   name: Schema.String,
-  documentation: OptionalDoc,
+  documentation: Schema.optional(OptionalDoc),
 });
 
-const UserDefinedValueTypeDefinition = Schema.Struct({
+export interface UserDefinedValueTypeDefinitionEncoded {
+  nodeType: "UserDefinedValueTypeDefinition";
+  id: number;
+  src: string;
+  name: string;
+  nameLocation: string;
+  underlyingType: AstNodeEncoded;
+  canonicalName?: string | undefined;
+}
+export const UserDefinedValueTypeDefinition = Schema.Struct({
   nodeType: Schema.Literal("UserDefinedValueTypeDefinition"),
   id: Schema.Number,
   src: Schema.String,
   name: Schema.String,
   nameLocation: Schema.String,
-  underlyingType: ast(),
+  underlyingType: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
   canonicalName: Schema.optional(Schema.String),
 });
 
-const ParameterList = Schema.Struct({
+export interface ParameterListEncoded {
+  nodeType: "ParameterList";
+  id: number;
+  src: string;
+  parameters: readonly AstNodeEncoded[];
+}
+
+export const ParameterList = Schema.Struct({
   nodeType: Schema.Literal("ParameterList"),
   id: Schema.Number,
   src: Schema.String,
-  parameters: Schema.Array(ast()),
+  parameters: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
 });
 
-const OverrideSpecifier = Schema.Struct({
+export interface OverrideSpecifierEncoded {
+  nodeType: "OverrideSpecifier";
+  id: number;
+  src: string;
+  overrides: readonly AstNodeEncoded[];
+}
+
+export const OverrideSpecifier = Schema.Struct({
   nodeType: Schema.Literal("OverrideSpecifier"),
   id: Schema.Number,
   src: Schema.String,
-  overrides: Schema.Array(ast()),
+  overrides: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
 });
 
-const FunctionDefinition = Schema.Struct({
+export interface FunctionDefinitionEncoded {
+  nodeType: "FunctionDefinition";
+  id: number;
+  src: string;
+  name: string;
+  nameLocation: string;
+  documentation?: OptionalDocEncoded | undefined;
+  kind: FunctionKindEncoded;
+  virtual: boolean;
+  implemented: boolean;
+  visibility: VisibilityEncoded;
+  stateMutability: StateMutabilityEncoded;
+  parameters: ParameterListEncoded;
+  returnParameters: ParameterListEncoded;
+  modifiers: readonly AstNodeEncoded[];
+  overrides?: readonly AstNodeEncoded[] | undefined;
+  body?: AstNodeEncoded | undefined;
+  scope?: number | undefined;
+  functionSelector?: string | undefined;
+}
+export const FunctionDefinition = Schema.Struct({
   nodeType: Schema.Literal("FunctionDefinition"),
   id: Schema.Number,
   src: Schema.String,
   name: Schema.String,
   nameLocation: Schema.String,
-  documentation: OptionalDoc,
+  documentation: Schema.optional(OptionalDoc),
   kind: FunctionKind,
   virtual: Schema.Boolean,
   implemented: Schema.Boolean,
   visibility: Visibility,
   stateMutability: StateMutability,
-  parameters: ast(),
-  returnParameters: ast(),
-  modifiers: Schema.Array(ast()),
-  overrides: Schema.optional(ast()),
-  body: Schema.optional(ast()),
+  parameters: ParameterList,
+  returnParameters: ParameterList,
+  modifiers: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
+  overrides: Schema.optional(
+    Schema.Array(
+      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    ),
+  ),
+  body: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   scope: Schema.optional(Schema.Number),
   functionSelector: Schema.optional(Schema.String),
 });
 
-const VariableDeclaration = Schema.Struct({
+export interface VariableDeclarationEncoded {
+  nodeType: "VariableDeclaration";
+  id: number;
+  src: string;
+  name: string;
+  nameLocation: string;
+  documentation?: OptionalDocEncoded | undefined;
+  typeName?: AstNodeEncoded | undefined;
+  mutability: VariableMutabilityEncoded;
+  constant: boolean;
+  stateVariable?: boolean | undefined;
+  visibility: VisibilityEncoded;
+  storageLocation: StorageLocationEncoded;
+  overrides?: readonly AstNodeEncoded[] | undefined;
+  value?: AstNodeEncoded | undefined;
+  indexed?: boolean | undefined;
+  scope?: number | undefined;
+  functionSelector?: string | undefined;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+}
+export const VariableDeclaration = Schema.Struct({
   nodeType: Schema.Literal("VariableDeclaration"),
   id: Schema.Number,
   src: Schema.String,
   name: Schema.String,
   nameLocation: Schema.String,
-  documentation: OptionalDoc,
-  typeName: Schema.optional(ast()),
+  documentation: Schema.optional(OptionalDoc),
+  typeName: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   mutability: VariableMutability,
   constant: Schema.Boolean,
   stateVariable: Schema.optional(Schema.Boolean),
   visibility: Visibility,
   storageLocation: StorageLocation,
-  overrides: Schema.optional(ast()),
-  value: Schema.optional(ast()),
+  overrides: Schema.optional(
+    Schema.Array(
+      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    ),
+  ),
+  value: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   indexed: Schema.optional(Schema.Boolean),
   scope: Schema.optional(Schema.Number),
   functionSelector: Schema.optional(Schema.String),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
 
-const ModifierDefinition = Schema.Struct({
+export interface ModifierDefinitionEncoded {
+  nodeType: "ModifierDefinition";
+  id: number;
+  src: string;
+  name: string;
+  nameLocation: string;
+  documentation?: OptionalDocEncoded | undefined;
+  virtual: boolean;
+  parameters: ParameterListEncoded;
+  overrides?: readonly AstNodeEncoded[] | undefined;
+  body?: AstNodeEncoded | undefined;
+}
+export const ModifierDefinition = Schema.Struct({
   nodeType: Schema.Literal("ModifierDefinition"),
   id: Schema.Number,
   src: Schema.String,
   name: Schema.String,
   nameLocation: Schema.String,
-  documentation: OptionalDoc,
+  documentation: Schema.optional(OptionalDoc),
   virtual: Schema.Boolean,
-  parameters: ast(),
-  overrides: Schema.optional(ast()),
-  body: Schema.optional(ast()),
+  parameters: ParameterList,
+  overrides: Schema.optional(
+    Schema.Array(
+      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    ),
+  ),
+  body: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
 });
 
-const ModifierInvocation = Schema.Struct({
+export interface ModifierInvocationEncoded {
+  nodeType: "ModifierInvocation";
+  id: number;
+  src: string;
+  modifierName: AstNodeEncoded;
+  arguments?: readonly AstNodeEncoded[] | undefined;
+}
+export const ModifierInvocation = Schema.Struct({
   nodeType: Schema.Literal("ModifierInvocation"),
   id: Schema.Number,
   src: Schema.String,
-  modifierName: ast(),
-  arguments: Schema.NullOr(Schema.Array(ast())),
+  modifierName: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
+  arguments: Schema.optional(
+    Schema.Array(
+      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    ),
+  ),
 });
 
-const EventDefinition = Schema.Struct({
+export interface EventDefinitionEncoded {
+  nodeType: "EventDefinition";
+  id: number;
+  src: string;
+  name: string;
+  nameLocation: string;
+  documentation?: OptionalDocEncoded | undefined;
+  parameters: ParameterListEncoded;
+  anonymous: boolean;
+}
+export const EventDefinition = Schema.Struct({
   nodeType: Schema.Literal("EventDefinition"),
   id: Schema.Number,
   src: Schema.String,
   name: Schema.String,
   nameLocation: Schema.String,
-  documentation: OptionalDoc,
-  parameters: ast(),
+  documentation: Schema.optional(OptionalDoc),
+  parameters: ParameterList,
   anonymous: Schema.Boolean,
 });
 
-const ErrorDefinition = Schema.Struct({
+export interface ErrorDefinitionEncoded {
+  nodeType: "ErrorDefinition";
+  id: number;
+  src: string;
+  name: string;
+  nameLocation: string;
+  documentation?: OptionalDocEncoded | undefined;
+  parameters: ParameterListEncoded;
+}
+export const ErrorDefinition = Schema.Struct({
   nodeType: Schema.Literal("ErrorDefinition"),
   id: Schema.Number,
   src: Schema.String,
   name: Schema.String,
   nameLocation: Schema.String,
-  documentation: OptionalDoc,
-  parameters: ast(),
+  documentation: Schema.optional(OptionalDoc),
+  parameters: ParameterList,
 });
 
 // --- Type name nodes ---
 
-const ElementaryTypeName = Schema.Struct({
+export interface ElementaryTypeNameEncoded {
+  nodeType: "ElementaryTypeName";
+  id: number;
+  src: string;
+  name: string;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+  stateMutability?: StateMutabilityEncoded | undefined;
+}
+export const ElementaryTypeName = Schema.Struct({
   nodeType: Schema.Literal("ElementaryTypeName"),
   id: Schema.Number,
   src: Schema.String,
@@ -308,208 +559,433 @@ const ElementaryTypeName = Schema.Struct({
   stateMutability: Schema.optional(StateMutability),
 });
 
-const UserDefinedTypeName = Schema.Struct({
+export interface UserDefinedTypeNameEncoded {
+  nodeType: "UserDefinedTypeName";
+  id: number;
+  src: string;
+  pathNode: AstNodeEncoded;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+}
+
+export const UserDefinedTypeName = Schema.Struct({
   nodeType: Schema.Literal("UserDefinedTypeName"),
   id: Schema.Number,
   src: Schema.String,
-  pathNode: ast(),
+  pathNode: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
 
-const FunctionTypeName = Schema.Struct({
+export interface FunctionTypeNameEncoded {
+  nodeType: "FunctionTypeName";
+  id: number;
+  src: string;
+  parameterTypes: readonly AstNodeEncoded[];
+  returnParameterTypes: readonly AstNodeEncoded[];
+  visibility: VisibilityEncoded;
+  stateMutability: StateMutabilityEncoded;
+}
+
+export const FunctionTypeName = Schema.Struct({
   nodeType: Schema.Literal("FunctionTypeName"),
   id: Schema.Number,
   src: Schema.String,
-  parameterTypes: ast(),
-  returnParameterTypes: ast(),
+  parameterTypes: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
+  returnParameterTypes: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   visibility: Visibility,
   stateMutability: StateMutability,
 });
 
-const Mapping = Schema.Struct({
+export interface MappingEncoded {
+  nodeType: "Mapping";
+  id: number;
+  src: string;
+  keyType: AstNodeEncoded;
+  keyName: string;
+  keyNameLocation: string;
+  valueType: AstNodeEncoded;
+  valueName: string;
+  valueNameLocation: string;
+}
+
+export const Mapping = Schema.Struct({
   nodeType: Schema.Literal("Mapping"),
   id: Schema.Number,
   src: Schema.String,
-  keyType: ast(),
+  keyType: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
   keyName: Schema.String,
   keyNameLocation: Schema.String,
-  valueType: ast(),
+  valueType: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
   valueName: Schema.String,
   valueNameLocation: Schema.String,
 });
 
-const ArrayTypeName = Schema.Struct({
+export interface ArrayTypeNameEncoded {
+  nodeType: "ArrayTypeName";
+  id: number;
+  src: string;
+  baseType: AstNodeEncoded;
+  length?: number | undefined;
+}
+export const ArrayTypeName = Schema.Struct({
   nodeType: Schema.Literal("ArrayTypeName"),
   id: Schema.Number,
   src: Schema.String,
-  baseType: ast(),
-  length: Schema.optional(ast()),
+  baseType: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  length: Schema.optional(Schema.Number),
 });
 
 // --- Statements ---
 
-const Block = Schema.Struct({
+export interface BlockEncoded {
+  nodeType: "Block";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  statements: readonly AstNodeEncoded[];
+}
+export const Block = Schema.Struct({
   nodeType: Schema.Literal("Block"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  statements: Schema.Array(ast()),
+  statements: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
 });
 
-const UncheckedBlock = Schema.Struct({
+export interface UncheckedBlockEncoded {
+  nodeType: "UncheckedBlock";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  statements: readonly AstNodeEncoded[];
+}
+export const UncheckedBlock = Schema.Struct({
   nodeType: Schema.Literal("UncheckedBlock"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  statements: Schema.Array(ast()),
+  statements: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
 });
 
-const PlaceholderStatement = Schema.Struct({
+export interface PlaceholderStatementEncoded {
+  nodeType: "PlaceholderStatement";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+}
+export const PlaceholderStatement = Schema.Struct({
   nodeType: Schema.Literal("PlaceholderStatement"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
 });
 
-const IfStatement = Schema.Struct({
+export interface IfStatementEncoded {
+  nodeType: "IfStatement";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  condition: AstNodeEncoded;
+  trueBody: AstNodeEncoded;
+  falseBody?: AstNodeEncoded | undefined;
+}
+export const IfStatement = Schema.Struct({
   nodeType: Schema.Literal("IfStatement"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  condition: ast(),
-  trueBody: ast(),
-  falseBody: Schema.optional(ast()),
+  condition: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  trueBody: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  falseBody: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
 });
 
-const TryCatchClause = Schema.Struct({
+export interface TryCatchClauseEncoded {
+  nodeType: "TryCatchClause";
+  id: number;
+  src: string;
+  errorName: string;
+  parameters?: AstNodeEncoded | undefined;
+  block: AstNodeEncoded;
+}
+export const TryCatchClause = Schema.Struct({
   nodeType: Schema.Literal("TryCatchClause"),
   id: Schema.Number,
   src: Schema.String,
   errorName: Schema.String,
-  parameters: Schema.optional(ast()),
-  block: ast(),
+  parameters: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
+  block: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
 });
 
-const TryStatement = Schema.Struct({
+export interface TryStatementEncoded {
+  nodeType: "TryStatement";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  externalCall: AstNodeEncoded;
+  clauses: readonly AstNodeEncoded[];
+}
+export const TryStatement = Schema.Struct({
   nodeType: Schema.Literal("TryStatement"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  externalCall: ast(),
-  clauses: Schema.Array(ast()),
+  externalCall: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
+  clauses: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
 });
 
-const WhileStatement = Schema.Struct({
+export interface WhileStatementEncoded {
+  nodeType: "WhileStatement";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  condition: AstNodeEncoded;
+  body: AstNodeEncoded;
+}
+export const WhileStatement = Schema.Struct({
   nodeType: Schema.Literal("WhileStatement"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  condition: ast(),
-  body: ast(),
+  condition: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  body: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
 });
 
-const DoWhileStatement = Schema.Struct({
+export interface DoWhileStatementEncoded {
+  nodeType: "DoWhileStatement";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  condition: AstNodeEncoded;
+  body: AstNodeEncoded;
+}
+export const DoWhileStatement = Schema.Struct({
   nodeType: Schema.Literal("DoWhileStatement"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  condition: ast(),
-  body: ast(),
+  condition: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  body: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
 });
 
-const ForStatement = Schema.Struct({
+export interface ForStatementEncoded {
+  nodeType: "ForStatement";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  initializationExpression?: AstNodeEncoded | undefined;
+  condition?: AstNodeEncoded | undefined;
+  loopExpression?: AstNodeEncoded | undefined;
+  body: AstNodeEncoded;
+}
+export const ForStatement = Schema.Struct({
   nodeType: Schema.Literal("ForStatement"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  initializationExpression: Schema.optional(ast()),
-  condition: Schema.optional(ast()),
-  loopExpression: Schema.optional(ast()),
-  body: ast(),
+  initializationExpression: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
+  condition: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
+  loopExpression: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
+  body: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
 });
 
-const Continue = Schema.Struct({
+export interface ContinueEncoded {
+  nodeType: "Continue";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+}
+export const Continue = Schema.Struct({
   nodeType: Schema.Literal("Continue"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
 });
 
-const Break = Schema.Struct({
+export interface BreakEncoded {
+  nodeType: "Break";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+}
+export const Break = Schema.Struct({
   nodeType: Schema.Literal("Break"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
 });
 
-const Return = Schema.Struct({
+export interface ReturnEncoded {
+  nodeType: "Return";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  expression?: AstNodeEncoded | undefined;
+  functionReturnParameters?: number | undefined;
+}
+export const Return = Schema.Struct({
   nodeType: Schema.Literal("Return"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  expression: Schema.optional(ast()),
+  expression: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   functionReturnParameters: Schema.optional(Schema.Number),
 });
 
-const EmitStatement = Schema.Struct({
+export interface EmitStatementEncoded {
+  nodeType: "EmitStatement";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  eventCall: AstNodeEncoded;
+}
+export const EmitStatement = Schema.Struct({
   nodeType: Schema.Literal("EmitStatement"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  eventCall: ast(),
+  eventCall: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
 });
 
-const RevertStatement = Schema.Struct({
+export interface RevertStatementEncoded {
+  nodeType: "RevertStatement";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  errorCall: AstNodeEncoded;
+}
+export const RevertStatement = Schema.Struct({
   nodeType: Schema.Literal("RevertStatement"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  errorCall: ast(),
+  errorCall: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
 });
 
-const Throw = Schema.Struct({
+export interface ThrowEncoded {
+  nodeType: "Throw";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+}
+export const Throw = Schema.Struct({
   nodeType: Schema.Literal("Throw"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
 });
 
-const VariableDeclarationStatement = Schema.Struct({
+export interface VariableDeclarationStatementEncoded {
+  nodeType: "VariableDeclarationStatement";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  declarations: ReadonlyArray<AstNodeEncoded | null>;
+  initialValue?: AstNodeEncoded | undefined;
+}
+export const VariableDeclarationStatement = Schema.Struct({
   nodeType: Schema.Literal("VariableDeclarationStatement"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  declarations: Schema.Array(Schema.NullOr(ast())),
-  initialValue: Schema.optional(ast()),
+  declarations: Schema.Array(
+    Schema.NullOr(
+      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    ),
+  ),
+  initialValue: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
 });
 
-const ExpressionStatement = Schema.Struct({
+export interface ExpressionStatementEncoded {
+  nodeType: "ExpressionStatement";
+  id: number;
+  src: string;
+  documentation?: string | undefined;
+  expression: AstNodeEncoded;
+}
+export const ExpressionStatement = Schema.Struct({
   nodeType: Schema.Literal("ExpressionStatement"),
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  expression: ast(),
+  expression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
 });
 
 // --- Expressions ---
 
-const Conditional = Schema.Struct({
+export interface ConditionalEncoded {
+  nodeType: "Conditional";
+  id: number;
+  src: string;
+  condition: AstNodeEncoded;
+  trueExpression: AstNodeEncoded;
+  falseExpression: AstNodeEncoded;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+}
+export const Conditional = Schema.Struct({
   nodeType: Schema.Literal("Conditional"),
   id: Schema.Number,
   src: Schema.String,
-  condition: ast(),
-  trueExpression: ast(),
-  falseExpression: ast(),
+  condition: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  trueExpression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
+  falseExpression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
 
-const Assignment = Schema.Struct({
+export interface AssignmentEncoded {
+  nodeType: "Assignment";
+  id: number;
+  src: string;
+  operator: string;
+  leftHandSide: AstNodeEncoded;
+  rightHandSide: AstNodeEncoded;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+  isConstant?: boolean | undefined;
+  isLValue?: boolean | undefined;
+  isPure?: boolean | undefined;
+  lValueRequested?: boolean | undefined;
+}
+export const Assignment = Schema.Struct({
   nodeType: Schema.Literal("Assignment"),
   id: Schema.Number,
   src: Schema.String,
   operator: Schema.String,
-  leftHandSide: ast(),
-  rightHandSide: ast(),
+  leftHandSide: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
+  rightHandSide: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
   typeDescriptions: Schema.optional(TypeDescriptions),
   isConstant: Schema.optional(Schema.Boolean),
   isLValue: Schema.optional(Schema.Boolean),
@@ -517,32 +993,73 @@ const Assignment = Schema.Struct({
   lValueRequested: Schema.optional(Schema.Boolean),
 });
 
-const TupleExpression = Schema.Struct({
+export interface TupleExpressionEncoded {
+  nodeType: "TupleExpression";
+  id: number;
+  src: string;
+  components: ReadonlyArray<AstNodeEncoded | null>;
+  isInlineArray: boolean;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+}
+export const TupleExpression = Schema.Struct({
   nodeType: Schema.Literal("TupleExpression"),
   id: Schema.Number,
   src: Schema.String,
-  components: Schema.Array(Schema.NullOr(ast())),
+  components: Schema.Array(
+    Schema.NullOr(
+      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    ),
+  ),
   isInlineArray: Schema.Boolean,
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
 
-const UnaryOperation = Schema.Struct({
+export interface UnaryOperationEncoded {
+  nodeType: "UnaryOperation";
+  id: number;
+  src: string;
+  operator: string;
+  prefix: boolean;
+  subExpression: AstNodeEncoded;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+}
+export const UnaryOperation = Schema.Struct({
   nodeType: Schema.Literal("UnaryOperation"),
   id: Schema.Number,
   src: Schema.String,
   operator: Schema.String,
   prefix: Schema.Boolean,
-  subExpression: ast(),
+  subExpression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
 
-const BinaryOperation = Schema.Struct({
+export interface BinaryOperationEncoded {
+  nodeType: "BinaryOperation";
+  id: number;
+  src: string;
+  operator: string;
+  leftExpression: AstNodeEncoded;
+  rightExpression: AstNodeEncoded;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+  isConstant?: boolean | undefined;
+  isLValue?: boolean | undefined;
+  isPure?: boolean | undefined;
+  lValueRequested?: boolean | undefined;
+  commonType?: TypeDescriptionsEncoded | undefined;
+}
+export const BinaryOperation = Schema.Struct({
   nodeType: Schema.Literal("BinaryOperation"),
   id: Schema.Number,
   src: Schema.String,
   operator: Schema.String,
-  leftExpression: ast(),
-  rightExpression: ast(),
+  leftExpression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
+  rightExpression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
   typeDescriptions: Schema.optional(TypeDescriptions),
   isConstant: Schema.optional(Schema.Boolean),
   isLValue: Schema.optional(Schema.Boolean),
@@ -551,12 +1068,32 @@ const BinaryOperation = Schema.Struct({
   commonType: Schema.optional(TypeDescriptions),
 });
 
-const FunctionCall = Schema.Struct({
+export interface FunctionCallEncoded {
+  nodeType: "FunctionCall";
+  id: number;
+  src: string;
+  expression: AstNodeEncoded;
+  arguments: readonly AstNodeEncoded[];
+  names: readonly string[];
+  tryCall?: boolean | undefined;
+  kind?: string | undefined;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+  isConstant?: boolean | undefined;
+  isLValue?: boolean | undefined;
+  isPure?: boolean | undefined;
+  lValueRequested?: boolean | undefined;
+  nameLocations?: readonly string[] | undefined;
+}
+export const FunctionCall = Schema.Struct({
   nodeType: Schema.Literal("FunctionCall"),
   id: Schema.Number,
   src: Schema.String,
-  expression: ast(),
-  arguments: Schema.Array(ast()),
+  expression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
+  arguments: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   names: Schema.Array(Schema.String),
   tryCall: Schema.optional(Schema.Boolean),
   kind: Schema.optional(Schema.String),
@@ -568,29 +1105,65 @@ const FunctionCall = Schema.Struct({
   nameLocations: Schema.optional(Schema.Array(Schema.String)),
 });
 
-const FunctionCallOptions = Schema.Struct({
+export interface FunctionCallOptionsEncoded {
+  nodeType: "FunctionCallOptions";
+  id: number;
+  src: string;
+  expression: AstNodeEncoded;
+  names: readonly string[];
+  options: readonly AstNodeEncoded[];
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+}
+export const FunctionCallOptions = Schema.Struct({
   nodeType: Schema.Literal("FunctionCallOptions"),
   id: Schema.Number,
   src: Schema.String,
-  expression: ast(),
+  expression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
   names: Schema.Array(Schema.String),
-  options: Schema.Array(ast()),
+  options: Schema.Array(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
 
-const NewExpression = Schema.Struct({
+export interface NewExpressionEncoded {
+  nodeType: "NewExpression";
+  id: number;
+  src: string;
+  typeName: AstNodeEncoded;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+}
+export const NewExpression = Schema.Struct({
   nodeType: Schema.Literal("NewExpression"),
   id: Schema.Number,
   src: Schema.String,
-  typeName: ast(),
+  typeName: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
 
-const MemberAccess = Schema.Struct({
+export interface MemberAccessEncoded {
+  nodeType: "MemberAccess";
+  id: number;
+  src: string;
+  expression: AstNodeEncoded;
+  memberName: string;
+  memberLocation?: string | undefined;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+  isConstant?: boolean | undefined;
+  isLValue?: boolean | undefined;
+  isPure?: boolean | undefined;
+  lValueRequested?: boolean | undefined;
+  referencedDeclaration?: number | undefined;
+}
+export const MemberAccess = Schema.Struct({
   nodeType: Schema.Literal("MemberAccess"),
   id: Schema.Number,
   src: Schema.String,
-  expression: ast(),
+  expression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
   memberName: Schema.String,
   memberLocation: Schema.optional(Schema.String),
   typeDescriptions: Schema.optional(TypeDescriptions),
@@ -601,12 +1174,28 @@ const MemberAccess = Schema.Struct({
   referencedDeclaration: Schema.optional(Schema.Number),
 });
 
-const IndexAccess = Schema.Struct({
+export interface IndexAccessEncoded {
+  nodeType: "IndexAccess";
+  id: number;
+  src: string;
+  baseExpression: AstNodeEncoded;
+  indexExpression?: AstNodeEncoded | undefined;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+  isConstant?: boolean | undefined;
+  isLValue?: boolean | undefined;
+  isPure?: boolean | undefined;
+  lValueRequested?: boolean | undefined;
+}
+export const IndexAccess = Schema.Struct({
   nodeType: Schema.Literal("IndexAccess"),
   id: Schema.Number,
   src: Schema.String,
-  baseExpression: ast(),
-  indexExpression: Schema.optional(ast()),
+  baseExpression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
+  indexExpression: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   typeDescriptions: Schema.optional(TypeDescriptions),
   isConstant: Schema.optional(Schema.Boolean),
   isLValue: Schema.optional(Schema.Boolean),
@@ -614,17 +1203,41 @@ const IndexAccess = Schema.Struct({
   lValueRequested: Schema.optional(Schema.Boolean),
 });
 
-const IndexRangeAccess = Schema.Struct({
+export interface IndexRangeAccessEncoded {
+  nodeType: "IndexRangeAccess";
+  id: number;
+  src: string;
+  baseExpression: AstNodeEncoded;
+  startExpression?: AstNodeEncoded | undefined;
+  endExpression?: AstNodeEncoded | undefined;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+}
+export const IndexRangeAccess = Schema.Struct({
   nodeType: Schema.Literal("IndexRangeAccess"),
   id: Schema.Number,
   src: Schema.String,
-  baseExpression: ast(),
-  startExpression: Schema.optional(ast()),
-  endExpression: Schema.optional(ast()),
+  baseExpression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
+  startExpression: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
+  endExpression: Schema.optional(
+    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  ),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
 
-const Identifier = Schema.Struct({
+export interface IdentifierEncoded {
+  nodeType: "Identifier";
+  id: number;
+  src: string;
+  name: string;
+  overloadedDeclarations?: readonly number[] | undefined;
+  referencedDeclaration?: number | undefined;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+}
+export const Identifier = Schema.Struct({
   nodeType: Schema.Literal("Identifier"),
   id: Schema.Number,
   src: Schema.String,
@@ -634,11 +1247,22 @@ const Identifier = Schema.Struct({
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
 
-const ElementaryTypeNameExpression = Schema.Struct({
+export interface ElementaryTypeNameExpressionEncoded {
+  nodeType: "ElementaryTypeNameExpression";
+  id: number;
+  src: string;
+  typeName: AstNodeEncoded;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+  isConstant?: boolean | undefined;
+  isLValue?: boolean | undefined;
+  isPure?: boolean | undefined;
+  lValueRequested?: boolean | undefined;
+}
+export const ElementaryTypeNameExpression = Schema.Struct({
   nodeType: Schema.Literal("ElementaryTypeNameExpression"),
   id: Schema.Number,
   src: Schema.String,
-  typeName: ast(),
+  typeName: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
   typeDescriptions: Schema.optional(TypeDescriptions),
   isConstant: Schema.optional(Schema.Boolean),
   isLValue: Schema.optional(Schema.Boolean),
@@ -646,7 +1270,21 @@ const ElementaryTypeNameExpression = Schema.Struct({
   lValueRequested: Schema.optional(Schema.Boolean),
 });
 
-const Literal = Schema.Struct({
+export interface LiteralEncoded {
+  nodeType: "Literal";
+  id: number;
+  src: string;
+  kind: LiteralKindEncoded;
+  value?: string | undefined;
+  hexValue?: string | undefined;
+  typeDescriptions?: TypeDescriptionsEncoded | undefined;
+  isConstant?: boolean | undefined;
+  isLValue?: boolean | undefined;
+  isPure?: boolean | undefined;
+  lValueRequested?: boolean | undefined;
+  subdenomination?: string | undefined;
+}
+export const Literal = Schema.Struct({
   nodeType: Schema.Literal("Literal"),
   id: Schema.Number,
   src: Schema.String,
@@ -663,22 +1301,46 @@ const Literal = Schema.Struct({
 
 // --- Documentation & misc ---
 
-const StructuredDocumentation = Schema.Struct({
+export interface StructuredDocumentationEncoded {
+  nodeType: "StructuredDocumentation";
+  id: number;
+  src: string;
+  text: string;
+}
+export const StructuredDocumentation = Schema.Struct({
   nodeType: Schema.Literal("StructuredDocumentation"),
   id: Schema.Number,
   src: Schema.String,
   text: Schema.String,
 });
 
-const StorageLayoutSpecifier = Schema.Struct({
+export interface StorageLayoutSpecifierEncoded {
+  nodeType: "StorageLayoutSpecifier";
+  id: number;
+  src: string;
+  baseSlotExpression: AstNodeEncoded;
+}
+export const StorageLayoutSpecifier = Schema.Struct({
   nodeType: Schema.Literal("StorageLayoutSpecifier"),
   id: Schema.Number,
   src: Schema.String,
-  baseSlotExpression: ast(),
+  baseSlotExpression: Schema.suspend(
+    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+  ),
 });
 
 /** Yul subtree shape varies; keep opaque */
-const InlineAssembly = Schema.Struct({
+export interface InlineAssemblyEncoded {
+  nodeType: "InlineAssembly";
+  id: number;
+  src: string;
+  evmVersion: string;
+  eofVersion?: number | undefined;
+  documentation?: string | undefined;
+  flags?: readonly string[] | undefined;
+  AST: YulBlockEncoded;
+}
+export const InlineAssembly = Schema.Struct({
   nodeType: Schema.Literal("InlineAssembly"),
   id: Schema.Number,
   src: Schema.String,
@@ -686,17 +1348,31 @@ const InlineAssembly = Schema.Struct({
   eofVersion: Schema.optional(Schema.Number),
   documentation: Schema.optional(Schema.String),
   flags: Schema.optional(Schema.Array(Schema.String)),
-  AST: YulInlineAssemblyAst,
-});
-
-const AstCatchall = Schema.Struct({
-  id: Schema.Number,
-  nodeType: Schema.String,
-  src: Schema.String,
+  AST: YulBlock,
 });
 
 /** Grouped unions (for readability); flattened into `AstNodeSchema`. */
-const DeclarationNode = Schema.Union(
+export type DeclarationNodeEncoded =
+  | PragmaDirectiveEncoded
+  | ImportDirectiveEncoded
+  | ContractDefinitionEncoded
+  | IdentifierPathEncoded
+  | InheritanceSpecifierEncoded
+  | UsingForDirectiveEncoded
+  | StructDefinitionEncoded
+  | EnumDefinitionEncoded
+  | EnumValueEncoded
+  | UserDefinedValueTypeDefinitionEncoded
+  | ParameterListEncoded
+  | OverrideSpecifierEncoded
+  | FunctionDefinitionEncoded
+  | VariableDeclarationEncoded
+  | ModifierDefinitionEncoded
+  | ModifierInvocationEncoded
+  | EventDefinitionEncoded
+  | ErrorDefinitionEncoded;
+
+export const DeclarationNode = Schema.Union(
   PragmaDirective,
   ImportDirective,
   ContractDefinition,
@@ -717,7 +1393,13 @@ const DeclarationNode = Schema.Union(
   ErrorDefinition,
 );
 
-const TypeNode = Schema.Union(
+export type TypeNodeEncoded =
+  | ElementaryTypeNameEncoded
+  | UserDefinedTypeNameEncoded
+  | FunctionTypeNameEncoded
+  | MappingEncoded
+  | ArrayTypeNameEncoded;
+export const TypeNode = Schema.Union(
   ElementaryTypeName,
   UserDefinedTypeName,
   FunctionTypeName,
@@ -725,7 +1407,25 @@ const TypeNode = Schema.Union(
   ArrayTypeName,
 );
 
-const StatementNode = Schema.Union(
+export type StatementNodeEncoded =
+  | BlockEncoded
+  | UncheckedBlockEncoded
+  | PlaceholderStatementEncoded
+  | IfStatementEncoded
+  | TryCatchClauseEncoded
+  | TryStatementEncoded
+  | WhileStatementEncoded
+  | DoWhileStatementEncoded
+  | ForStatementEncoded
+  | ContinueEncoded
+  | BreakEncoded
+  | ReturnEncoded
+  | EmitStatementEncoded
+  | RevertStatementEncoded
+  | ThrowEncoded
+  | VariableDeclarationStatementEncoded
+  | ExpressionStatementEncoded;
+export const StatementNode = Schema.Union(
   Block,
   UncheckedBlock,
   PlaceholderStatement,
@@ -745,7 +1445,23 @@ const StatementNode = Schema.Union(
   ExpressionStatement,
 );
 
-const ExpressionNode = Schema.Union(
+export type ExpressionNodeEncoded =
+  | ConditionalEncoded
+  | AssignmentEncoded
+  | TupleExpressionEncoded
+  | UnaryOperationEncoded
+  | BinaryOperationEncoded
+  | FunctionCallEncoded
+  | FunctionCallOptionsEncoded
+  | NewExpressionEncoded
+  | MemberAccessEncoded
+  | IndexAccessEncoded
+  | IndexRangeAccessEncoded
+  | IdentifierEncoded
+  | ElementaryTypeNameExpressionEncoded
+  | LiteralEncoded;
+
+export const ExpressionNode = Schema.Union(
   Conditional,
   Assignment,
   TupleExpression,
@@ -762,21 +1478,29 @@ const ExpressionNode = Schema.Union(
   Literal,
 );
 
-const DocOrMiscNode = Schema.Union(
+export const DocOrMiscNode = Schema.Union(
   StructuredDocumentation,
   StorageLayoutSpecifier,
   InlineAssembly,
 );
 
-export const AstNodeSchema: Schema.Schema<AstNode> = Schema.suspend(() =>
-  Schema.Union(
-    DeclarationNode,
-    TypeNode,
-    StatementNode,
-    ExpressionNode,
-    DocOrMiscNode,
-    AstCatchall,
-  ),
+export type DocOrMiscNodeEncoded =
+  | StructuredDocumentationEncoded
+  | StorageLayoutSpecifierEncoded
+  | InlineAssemblyEncoded;
+
+export type AstNodeEncoded =
+  | DeclarationNodeEncoded
+  | TypeNodeEncoded
+  | StatementNodeEncoded
+  | ExpressionNodeEncoded
+  | DocOrMiscNodeEncoded;
+export const AstNodeSchema = Schema.Union(
+  DeclarationNode,
+  TypeNode,
+  StatementNode,
+  ExpressionNode,
+  DocOrMiscNode,
 );
 
 /** Root AST attached under `sources[absolutePath].ast` */

@@ -5,24 +5,33 @@
 import { Schema } from "effect";
 
 /** Wide node type for recursive Yul asm JSON (`src` / `nativeSrc` only on asm nodes). */
-export interface YulJsonNode {
-  readonly nodeType: string;
-  readonly src?: string | undefined;
-  readonly nativeSrc?: string | undefined;
-  readonly statements?: ReadonlyArray<YulJsonNode> | undefined;
-  readonly body?: YulJsonNode | undefined;
-  readonly expression?: YulJsonNode | undefined;
-  readonly name?: string | undefined;
-  readonly [key: string]: unknown;
-}
+// export interface YulJsonNode {
+//   readonly nodeType: string;
+//   readonly src?: string | undefined;
+//   readonly nativeSrc?: string | undefined;
+//   readonly statements?: ReadonlyArray<YulJsonNode> | undefined;
+//   readonly body?: YulJsonNode | undefined;
+//   readonly expression?: YulJsonNode | undefined;
+//   readonly name?: string | undefined;
+//   readonly [key: string]: unknown;
+// }
 
-const yulExpr = (): Schema.Schema<YulJsonNode> =>
+export const yulExpr = (): Schema.Schema<YulNodeEncoded> =>
   Schema.suspend(() => YulExpressionSchema);
 
-const yulStmt = (): Schema.Schema<YulJsonNode> =>
+export const yulStmt = (): Schema.Schema<YulNodeEncoded> =>
   Schema.suspend(() => YulStatementSchema);
 
-const YulLiteral = Schema.Struct({
+export interface YulLiteralEncoded {
+  nodeType: "YulLiteral";
+  src: string;
+  nativeSrc: string;
+  kind: "number" | "bool" | "string";
+  type?: string | undefined;
+  value?: string | undefined;
+  hexValue?: string | undefined;
+}
+export const YulLiteral = Schema.Struct({
   nodeType: Schema.Literal("YulLiteral"),
   src: Schema.String,
   nativeSrc: Schema.String,
@@ -32,14 +41,27 @@ const YulLiteral = Schema.Struct({
   hexValue: Schema.optional(Schema.String),
 });
 
-const YulIdentifier = Schema.Struct({
+export interface YulIdentifierEncoded {
+  nodeType: "YulIdentifier";
+  src: string;
+  nativeSrc: string;
+  name: string;
+}
+export const YulIdentifier = Schema.Struct({
   nodeType: Schema.Literal("YulIdentifier"),
   src: Schema.String,
   nativeSrc: Schema.String,
   name: Schema.String,
 });
 
-const YulFunctionCall = Schema.Struct({
+export interface YulFunctionCallEncoded {
+  nodeType: "YulFunctionCall";
+  src: string;
+  nativeSrc: string;
+  functionName: YulIdentifierEncoded;
+  arguments: readonly YulNodeEncoded[];
+}
+export const YulFunctionCall = Schema.Struct({
   nodeType: Schema.Literal("YulFunctionCall"),
   src: Schema.String,
   nativeSrc: Schema.String,
@@ -47,23 +69,37 @@ const YulFunctionCall = Schema.Struct({
   arguments: Schema.Array(yulExpr()),
 });
 
-const YulExpressionCatchall = Schema.Struct({
+export interface YulExpressionCatchallEncoded {
+  nodeType: string;
+  src?: string | undefined;
+  nativeSrc?: string | undefined;
+}
+export const YulExpressionCatchall = Schema.Struct({
   nodeType: Schema.String,
   src: Schema.optional(Schema.String),
   nativeSrc: Schema.optional(Schema.String),
 });
 
-export const YulExpressionSchema: Schema.Schema<YulJsonNode> = Schema.suspend(
-  () =>
-    Schema.Union(
-      YulLiteral,
-      YulIdentifier,
-      YulFunctionCall,
-      YulExpressionCatchall,
-    ),
+export type YulExpressionEncoded =
+  | YulLiteralEncoded
+  | YulIdentifierEncoded
+  | YulFunctionCallEncoded
+  | YulExpressionCatchallEncoded;
+export const YulExpressionSchema = Schema.Union(
+  YulLiteral,
+  YulIdentifier,
+  YulFunctionCall,
+  YulExpressionCatchall,
 );
 
-const YulTypedName = Schema.Struct({
+export interface YulTypedNameEncoded {
+  nodeType: "YulTypedName";
+  src: string;
+  nativeSrc: string;
+  name: string;
+  type: string;
+}
+export const YulTypedName = Schema.Struct({
   nodeType: Schema.Literal("YulTypedName"),
   src: Schema.String,
   nativeSrc: Schema.String,
@@ -71,21 +107,41 @@ const YulTypedName = Schema.Struct({
   type: Schema.String,
 });
 
-const YulBlock = Schema.Struct({
+export interface YulBlockEncoded {
+  nodeType: "YulBlock";
+  src: string;
+  nativeSrc: string;
+  statements: readonly YulNodeEncoded[];
+}
+
+export const YulBlock = Schema.Struct({
   nodeType: Schema.Literal("YulBlock"),
   src: Schema.String,
   nativeSrc: Schema.String,
   statements: Schema.Array(yulStmt()),
 });
 
-const YulExpressionStatement = Schema.Struct({
+export interface YulExpressionStatementEncoded {
+  nodeType: "YulExpressionStatement";
+  src: string;
+  nativeSrc: string;
+  expression: YulExpressionEncoded;
+}
+export const YulExpressionStatement = Schema.Struct({
   nodeType: Schema.Literal("YulExpressionStatement"),
   src: Schema.String,
   nativeSrc: Schema.String,
   expression: yulExpr(),
 });
 
-const YulAssignment = Schema.Struct({
+export interface YulAssignmentEncoded {
+  nodeType: "YulAssignment";
+  src: string;
+  nativeSrc: string;
+  variableNames: readonly YulIdentifierEncoded[];
+  value: YulExpressionEncoded | null;
+}
+export const YulAssignment = Schema.Struct({
   nodeType: Schema.Literal("YulAssignment"),
   src: Schema.String,
   nativeSrc: Schema.String,
@@ -93,7 +149,14 @@ const YulAssignment = Schema.Struct({
   value: Schema.NullOr(yulExpr()),
 });
 
-const YulVariableDeclaration = Schema.Struct({
+export interface YulVariableDeclarationEncoded {
+  nodeType: "YulVariableDeclaration";
+  src: string;
+  nativeSrc: string;
+  variables: readonly YulTypedNameEncoded[];
+  value: YulExpressionEncoded | null;
+}
+export const YulVariableDeclaration = Schema.Struct({
   nodeType: Schema.Literal("YulVariableDeclaration"),
   src: Schema.String,
   nativeSrc: Schema.String,
@@ -101,7 +164,16 @@ const YulVariableDeclaration = Schema.Struct({
   value: Schema.optional(yulExpr()),
 });
 
-const YulFunctionDefinition = Schema.Struct({
+export interface YulFunctionDefinitionEncoded {
+  nodeType: "YulFunctionDefinition";
+  src: string;
+  nativeSrc: string;
+  name: string;
+  parameters: readonly YulTypedNameEncoded[];
+  returnVariables: readonly YulTypedNameEncoded[];
+  body: YulBlockEncoded;
+}
+export const YulFunctionDefinition = Schema.Struct({
   nodeType: Schema.Literal("YulFunctionDefinition"),
   src: Schema.String,
   nativeSrc: Schema.String,
@@ -113,7 +185,15 @@ const YulFunctionDefinition = Schema.Struct({
   body: YulBlock,
 });
 
-const YulIf = Schema.Struct({
+export interface YulIfEncoded {
+  nodeType: "YulIf";
+  src: string;
+  nativeSrc: string;
+  condition: YulExpressionEncoded;
+  body: YulBlockEncoded;
+}
+
+export const YulIf = Schema.Struct({
   nodeType: Schema.Literal("YulIf"),
   src: Schema.String,
   nativeSrc: Schema.String,
@@ -121,7 +201,15 @@ const YulIf = Schema.Struct({
   body: YulBlock,
 });
 
-const YulCase = Schema.Struct({
+export interface YulCaseEncoded {
+  nodeType: "YulCase";
+  src: string;
+  nativeSrc: string;
+  value: YulLiteralEncoded | "default";
+  body: YulBlockEncoded;
+}
+
+export const YulCase = Schema.Struct({
   nodeType: Schema.Literal("YulCase"),
   src: Schema.String,
   nativeSrc: Schema.String,
@@ -129,7 +217,14 @@ const YulCase = Schema.Struct({
   body: YulBlock,
 });
 
-const YulSwitch = Schema.Struct({
+export interface YulSwitchEncoded {
+  nodeType: "YulSwitch";
+  src: string;
+  nativeSrc: string;
+  expression: YulExpressionEncoded;
+  cases: readonly YulCaseEncoded[];
+}
+export const YulSwitch = Schema.Struct({
   nodeType: Schema.Literal("YulSwitch"),
   src: Schema.String,
   nativeSrc: Schema.String,
@@ -137,7 +232,16 @@ const YulSwitch = Schema.Struct({
   cases: Schema.Array(YulCase),
 });
 
-const YulForLoop = Schema.Struct({
+export interface YulForLoopEncoded {
+  nodeType: "YulForLoop";
+  src: string;
+  nativeSrc: string;
+  pre: YulBlockEncoded;
+  condition: YulExpressionEncoded;
+  post: YulBlockEncoded;
+  body: YulBlockEncoded;
+}
+export const YulForLoop = Schema.Struct({
   nodeType: Schema.Literal("YulForLoop"),
   src: Schema.String,
   nativeSrc: Schema.String,
@@ -147,81 +251,125 @@ const YulForLoop = Schema.Struct({
   body: YulBlock,
 });
 
-const YulBreak = Schema.Struct({
+export interface YulBreakEncoded {
+  nodeType: "YulBreak";
+  src: string;
+  nativeSrc: string;
+}
+export const YulBreak = Schema.Struct({
   nodeType: Schema.Literal("YulBreak"),
   src: Schema.String,
   nativeSrc: Schema.String,
 });
 
-const YulContinue = Schema.Struct({
+export interface YulContinueEncoded {
+  nodeType: "YulContinue";
+  src: string;
+  nativeSrc: string;
+}
+export const YulContinue = Schema.Struct({
   nodeType: Schema.Literal("YulContinue"),
   src: Schema.String,
   nativeSrc: Schema.String,
 });
 
-const YulLeave = Schema.Struct({
+export interface YulLeaveEncoded {
+  nodeType: "YulLeave";
+  src: string;
+  nativeSrc: string;
+}
+export const YulLeave = Schema.Struct({
   nodeType: Schema.Literal("YulLeave"),
   src: Schema.String,
   nativeSrc: Schema.String,
 });
 
-const YulStatementCatchall = Schema.Struct({
+export interface YulStatementCatchallEncoded {
+  nodeType: string;
+  src?: string | undefined;
+  nativeSrc?: string | undefined;
+}
+export const YulStatementCatchall = Schema.Struct({
   nodeType: Schema.String,
   src: Schema.optional(Schema.String),
   nativeSrc: Schema.optional(Schema.String),
 });
 
-export const YulStatementSchema: Schema.Schema<YulJsonNode> = Schema.suspend(
-  () =>
-    Schema.Union(
-      YulBlock,
-      YulExpressionStatement,
-      YulAssignment,
-      YulVariableDeclaration,
-      YulFunctionDefinition,
-      YulIf,
-      YulSwitch,
-      YulForLoop,
-      YulBreak,
-      YulContinue,
-      YulLeave,
-      YulStatementCatchall,
-    ),
+export type YulNodeEncoded =
+  | YulBlockEncoded
+  | YulExpressionStatementEncoded
+  | YulAssignmentEncoded
+  | YulVariableDeclarationEncoded
+  | YulFunctionDefinitionEncoded
+  | YulIfEncoded
+  | YulSwitchEncoded
+  | YulForLoopEncoded
+  | YulBreakEncoded
+  | YulContinueEncoded
+  | YulLeaveEncoded
+  | YulStatementCatchallEncoded;
+
+export const YulStatementSchema = Schema.Union(
+  YulBlock,
+  YulExpressionStatement,
+  YulAssignment,
+  YulVariableDeclaration,
+  YulFunctionDefinition,
+  YulIf,
+  YulSwitch,
+  YulForLoop,
+  YulBreak,
+  YulContinue,
+  YulLeave,
+  YulStatementCatchall,
 );
 
 /** Root of `InlineAssembly.AST` in Solidity JSON. */
-export const YulInlineAssemblyAst = YulBlock;
+// export const YulInlineAssemblyAst = YulBlock;
 
-export type YulInlineAssemblyAst = typeof YulInlineAssemblyAst.Type;
+// export type YulInlineAssemblyAst = typeof YulInlineAssemblyAst.Type;
 
 /** Hex data sub-object in `YulObject.subObjects`. */
+export interface YulDataEncoded {
+  nodeType: "YulData";
+  value: string;
+}
 export const YulData = Schema.Struct({
   nodeType: Schema.Literal("YulData"),
   value: Schema.String,
 });
 
-export type YulData = typeof YulData.Type;
-
 export const YulCode = Schema.Struct({
   nodeType: Schema.Literal("YulCode"),
   block: YulBlock,
 });
-
-export type YulCode = typeof YulCode.Type;
+export interface YulCodeEncoded {
+  nodeType: "YulCode";
+  block: YulBlockEncoded;
+}
 
 // Self-referential `subObjects`; cast aligns `Schema` with wide `YulJsonNode` under exactOptionalPropertyTypes.
+export interface YulObjectEncoded {
+  nodeType: "YulObject";
+  name: string;
+  code: YulCodeEncoded;
+  subObjects: readonly (YulObjectEncoded | YulDataEncoded)[];
+}
 export const YulObjectSchema = Schema.Struct({
   nodeType: Schema.Literal("YulObject"),
   name: Schema.String,
   code: YulCode,
   subObjects: Schema.Array(
-    Schema.suspend(() => Schema.Union(YulObjectSchema, YulData)),
+    Schema.suspend(
+      (): Schema.Schema<YulObjectEncoded | YulDataEncoded> =>
+        Schema.Union(YulObjectSchema, YulData),
+    ),
   ),
-}) as unknown as Schema.Schema<YulJsonNode>;
+});
 
 export type YulObject = typeof YulObjectSchema.Type;
 
 /** `irAst` / `irOptimizedAst`: Yul object tree, or `{}` when absent. */
-export const YulIrAst = Schema.Union(YulObjectSchema, Schema.Struct({}));
+// export const YulIrAst = Schema.Union(YulObjectSchema, Schema.Struct({}));
 
-export type YulIrAst = typeof YulIrAst.Type;
+// export type YulIrAst = typeof YulIrAst.Type;

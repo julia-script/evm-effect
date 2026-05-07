@@ -7,24 +7,11 @@ import { SolcAst, type SolcAst as SolcSourceUnitAst } from "./ast.js";
 import { EVMOutput } from "./bytecode.js";
 import { DevDoc, UserDoc } from "./documentation.js";
 import { ErrorType, Severity } from "./types.js";
-import { YulInlineAssemblyAst, YulIrAst } from "./yul-ast.js";
+import { YulBlock, YulObjectSchema } from "./yul-ast.js";
 
-export {
-  type AstNode,
-  AstNodeSchema,
-  SolcAst,
-  TypeDescriptions,
-} from "./ast.js";
-
-export {
-  YulCode,
-  YulData,
-  YulExpressionSchema,
-  YulInlineAssemblyAst,
-  YulIrAst,
-  YulObjectSchema,
-  YulStatementSchema,
-} from "./yul-ast.js";
+export * from "./ast.js";
+// import { YulCode, YulData, YulExpressionSchema, YulObjectSchema, YulStatementSchema } from "./yul-ast.js";
+export * from "./yul-ast.js";
 
 export const SourceLocation = Schema.Struct({
   file: Schema.String,
@@ -70,7 +57,7 @@ export const AuxiliaryInputRequested = Schema.Struct({
 export type AuxiliaryInputRequested = typeof AuxiliaryInputRequested.Type;
 
 /** Root AST for a `sources[file]` entry: Solidity `SourceUnit` or generated / Yul `YulBlock`. */
-export const SourceFileAst = Schema.Union(SolcAst, YulInlineAssemblyAst);
+export const SourceFileAst = Schema.Union(SolcAst, YulBlock);
 
 export type SourceFileAst = typeof SourceFileAst.Type;
 
@@ -138,9 +125,9 @@ export const ContractOutput = Schema.Struct({
   userdoc: Schema.optional(UserDoc),
   devdoc: Schema.optional(DevDoc),
   ir: Schema.optional(Schema.String),
-  irAst: Schema.optional(YulIrAst),
+  irAst: Schema.optional(YulObjectSchema),
   irOptimized: Schema.optional(Schema.String),
-  irOptimizedAst: Schema.optional(YulIrAst),
+  irOptimizedAst: Schema.optional(YulObjectSchema),
   yulCFGJson: Schema.optional(Schema.Unknown),
   storageLayout: Schema.optional(StorageLayout),
   transientStorageLayout: Schema.optional(StorageLayout),

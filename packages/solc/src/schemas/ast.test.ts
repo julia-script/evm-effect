@@ -20,6 +20,7 @@ function compileSolidity(sources: Record<string, string>): CompilerOutput {
       outputSelection: astOutputSelection,
     },
   };
+
   const raw = solc.compile(JSON.stringify(input));
   return decodeOutput(JSON.parse(raw));
 }
@@ -48,6 +49,9 @@ contract Counter {
       (n) => n.nodeType === "ContractDefinition" && n.name === "Counter",
     );
     expect(contract?.nodeType).toBe("ContractDefinition");
+    if (!contract || !("nodes" in contract)) {
+      throw new Error("expected ContractDefinition with nodes");
+    }
     const fn = contract?.nodes?.filter(
       (n) => n.nodeType === "FunctionDefinition",
     );
@@ -88,6 +92,9 @@ contract Symbol {}
       (n) => n.nodeType === "ContractDefinition" && n.name === "C",
     );
     expect(contract?.nodeType).toBe("ContractDefinition");
+    if (!contract || !("nodes" in contract)) {
+      throw new Error("expected ContractDefinition with nodes");
+    }
     const kinds = new Set(contract?.nodes?.map((n) => n.nodeType));
     expect(kinds.has("StructDefinition")).toBe(true);
     expect(kinds.has("EnumDefinition")).toBe(true);
@@ -133,12 +140,21 @@ contract C {
     const contract = ast.nodes.find(
       (n) => n.nodeType === "ContractDefinition" && n.name === "C",
     );
+    if (!contract || !("nodes" in contract)) {
+      throw new Error("expected ContractDefinition with nodes");
+    }
     const fn = contract?.nodes?.find(
       (n) => n.nodeType === "FunctionDefinition" && n.name === "f",
     );
     expect(fn?.nodeType).toBe("FunctionDefinition");
+    if (!fn || !("body" in fn)) {
+      throw new Error("expected FunctionDefinition with body");
+    }
     const body = fn?.body;
     expect(body?.nodeType).toBe("Block");
+    if (!body || !("statements" in body)) {
+      throw new Error("expected Block with statements");
+    }
     const kinds = new Set(body?.statements?.map((s) => s.nodeType));
     expect(kinds.has("UncheckedBlock")).toBe(true);
     expect(kinds.has("ForStatement")).toBe(true);
