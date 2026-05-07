@@ -177,10 +177,10 @@ export const processCheckedSystemTransaction = (
   Fork
 > =>
   Effect.gen(function* () {
-    const systemContractCode = State.getAccount(
+    const systemContractCode = yield* State.getAccount(
       blockEnv.state,
       targetAddress,
-    ).code;
+    ).pipe(Effect.map((account) => account.code));
 
     if (systemContractCode.value.length === 0) {
       return yield* Effect.fail(
@@ -234,10 +234,10 @@ export const processUncheckedSystemTransaction = (
   data: Bytes,
 ): Effect.Effect<MessageCallOutput, never, Fork> =>
   Effect.gen(function* () {
-    const systemContractCode = State.getAccount(
+    const systemContractCode = yield* State.getAccount(
       blockEnv.state,
       targetAddress,
-    ).code;
+    ).pipe(Effect.map((account) => account.code));
 
     return yield* processSystemTransaction(
       blockEnv,

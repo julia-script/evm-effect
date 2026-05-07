@@ -73,7 +73,7 @@ export const setDelegation = Effect.fn("setDelegation")(function* (
 
     message.accessedAddresses.add(authority);
 
-    const authorityAccount = State.getAccount(state, authority);
+    const authorityAccount = yield* State.getAccount(state, authority);
     const authorityCode = authorityAccount.code;
 
     if (authorityCode.length && !isValidDelegation(authorityCode)) {
@@ -91,7 +91,7 @@ export const setDelegation = Effect.fn("setDelegation")(function* (
       });
       continue;
     }
-    if (State.accountExists(state, authority)) {
+    if (yield* State.accountExists(state, authority)) {
       const refundAmount = PER_EMPTY_ACCOUNT_COST - PER_AUTH_BASE_COST;
 
       refundCounter += refundAmount;
@@ -119,6 +119,6 @@ export const setDelegation = Effect.fn("setDelegation")(function* (
     return yield* Effect.fail(
       new InvalidBlock({ message: "Invalid type 4 transaction: no target" }),
     );
-  message.code = Code.from(State.getAccount(state, message.codeAddress).code);
+  message.code = Code.from(yield* State.getAccount(state, message.codeAddress).pipe(Effect.map((account) => account.code)));
   return new U256({ value: refundCounter });
 });

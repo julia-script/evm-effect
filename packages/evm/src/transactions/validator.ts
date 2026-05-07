@@ -220,7 +220,7 @@ export const checkTransaction = Effect.fn("checkTransaction")(function* (
     Effect.withSpan("Recover Sender Address"),
   );
 
-  const senderAccount = State.getAccount(blockEnv.state, senderAddress);
+  const senderAccount = yield* State.getAccount(blockEnv.state, senderAddress);
 
   yield* annotateSafe({
     senderAccount: senderAccount,

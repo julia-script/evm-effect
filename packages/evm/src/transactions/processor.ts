@@ -96,7 +96,7 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
   });
   const checkResult = yield* checkTransaction(blockEnv, blockOutput, tx);
   yield* annotateSafe({ checkResult: checkResult });
-  const senderAccount = getAccount(blockEnv.state, checkResult.senderAddress);
+  const senderAccount = yield* getAccount(blockEnv.state, checkResult.senderAddress);
   yield* annotateSafe({ senderAccount: senderAccount });
 
   const blobGasFee =

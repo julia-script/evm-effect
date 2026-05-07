@@ -51,48 +51,47 @@ import { Code } from "../runtime.js";
  * Simple access_delegation implementation for EIP-7702 support
  * Returns delegation info and access gas cost
  */
-const accessDelegation = (
+const accessDelegation = Effect.fn("accessDelegation")(function* (
   evm: Evm["Type"],
   address: Address,
-): Effect.Effect<[boolean, Address, Bytes, Uint], never, Evm | Fork> =>
-  Effect.gen(function* () {
-    const fork = yield* Fork;
+): Effect.fn.Return<[boolean, Address, Bytes, Uint], never, Evm | Fork> {
+  const fork = yield* Fork;
 
-    const account = State.getAccount(evm.message.blockEnv.state, address);
-    const code = account.code;
+  const account = yield* State.getAccount(evm.message.blockEnv.state, address);
+  const code = account.code;
 
-    if (!fork.eip(7702)) {
-      return [false, address, code, new Uint({ value: 0n })] as const;
-    }
+  if (!fork.eip(7702)) {
+    return [false, address, code, new Uint({ value: 0n })] as const;
+  }
 
-    if (!isValidDelegation(code)) {
-      return [false, address, code, new Uint({ value: 0n })] as const;
-    }
+  if (!isValidDelegation(code)) {
+    return [false, address, code, new Uint({ value: 0n })] as const;
+  }
 
-    const delegatedAddressOption = getDelegatedCodeAddress(code);
-    if (Option.isNone(delegatedAddressOption)) {
-      return [false, address, code, new Uint({ value: 0n })] as const;
-    }
+  const delegatedAddressOption = getDelegatedCodeAddress(code);
+  if (Option.isNone(delegatedAddressOption)) {
+    return [false, address, code, new Uint({ value: 0n })] as const;
+  }
 
-    const delegatedAddress = delegatedAddressOption.value;
+  const delegatedAddress = delegatedAddressOption.value;
 
-    const delegatedAccount = State.getAccount(
-      evm.message.blockEnv.state,
-      delegatedAddress,
-    );
-    const delegatedCode = delegatedAccount.code;
+  const delegatedAccount = yield* State.getAccount(
+    evm.message.blockEnv.state,
+    delegatedAddress,
+  );
+  const delegatedCode = delegatedAccount.code;
 
-    let accessGasCost: Uint;
-    const isWarm = evm.accessedAddresses.has(delegatedAddress);
-    if (isWarm) {
-      accessGasCost = Gas.GAS_WARM_ACCESS;
-    } else {
-      evm.accessedAddresses.add(delegatedAddress);
-      accessGasCost = Gas.GAS_COLD_ACCOUNT_ACCESS;
-    }
+  let accessGasCost: Uint;
+  const isWarm = evm.accessedAddresses.has(delegatedAddress);
+  if (isWarm) {
+    accessGasCost = Gas.GAS_WARM_ACCESS;
+  } else {
+    evm.accessedAddresses.add(delegatedAddress);
+    accessGasCost = Gas.GAS_COLD_ACCOUNT_ACCESS;
+  }
 
-    return [true, delegatedAddress, delegatedCode, accessGasCost] as const;
-  });
+  return [true, delegatedAddress, delegatedCode, accessGasCost] as const;
+});
 
 /**
  * Perform the core logic of the `CALL*` family of opcodes.
@@ -226,7 +225,10 @@ const genericCreate = (
     yield* Ref.set(evm.returnData, new Bytes({ value: new Uint8Array(0) }));
 
     const senderAddress = evm.message.currentTarget;
-    const sender = State.getAccount(evm.message.blockEnv.state, senderAddress);
+    const sender = yield* State.getAccount(
+      evm.message.blockEnv.state,
+      senderAddress,
+    );
 
     if (
       sender.balance.value < endowment.value ||
@@ -241,10 +243,10 @@ const genericCreate = (
     evm.accessedAddresses.add(contractAddress);
 
     if (
-      State.accountHasCodeOrNonce(
+      (yield* State.accountHasCodeOrNonce(
         evm.message.blockEnv.state,
         contractAddress,
-      ) ||
+      )) ||
       State.accountHasStorage(evm.message.blockEnv.state, contractAddress)
     ) {
       yield* State.incrementNonce(
@@ -424,22 +426,23 @@ export const selfdestruct: Effect.Effect<void, EthereumException, Evm | Fork> =
     }
 
     const originator = evm.message.currentTarget;
-    const originatorAccount = State.getAccount(
+    const originatorAccount = yield* State.getAccount(
       evm.message.blockEnv.state,
       originator,
     );
 
     if (fork.eip(161)) {
-      if (
-        !State.isAccountAlive(evm.message.blockEnv.state, beneficiary) &&
-        originatorAccount.balance.value !== 0n
-      ) {
+      const isAccountAlive = yield* State.isAccountAlive(
+        evm.message.blockEnv.state,
+        beneficiary,
+      );
+      if (!isAccountAlive && originatorAccount.balance.value !== 0n) {
         gasCost = new Uint({
           value: gasCost.value + Gas.GAS_SELF_DESTRUCT_NEW_ACCOUNT.value,
         });
       }
     } else if (fork.eip(150)) {
-      if (!State.accountExists(evm.message.blockEnv.state, beneficiary)) {
+      if (!(yield* State.accountExists(evm.message.blockEnv.state, beneficiary))) {
         gasCost = new Uint({
           value: gasCost.value + Gas.GAS_SELF_DESTRUCT_NEW_ACCOUNT.value,
         });
@@ -563,13 +566,13 @@ export const call = Effect.gen(function* () {
   let createGasCost = new Uint({ value: 0n });
 
   if (fork.eip(161)) {
-    const isAlive = State.isAccountAlive(evm.message.blockEnv.state, to);
+    const isAlive = yield* State.isAccountAlive(evm.message.blockEnv.state, to);
 
     if (value.value !== 0n && !isAlive) {
       createGasCost = Gas.GAS_NEW_ACCOUNT;
     }
   } else {
-    const accountExistsInState = State.accountExists(
+    const accountExistsInState = yield* State.accountExists(
       evm.message.blockEnv.state,
       to,
     );
@@ -617,10 +620,11 @@ export const call = Effect.gen(function* () {
   newMemory.set(currentMemory);
   yield* Ref.set(evm.memory, newMemory);
 
-  const senderBalance = State.getAccount(
+  const sender = yield* State.getAccount(
     evm.message.blockEnv.state,
     evm.message.currentTarget,
-  ).balance;
+  );
+  const senderBalance = sender.balance;
 
   if (senderBalance.value < value.value) {
     yield* evm.stack.push(new U256({ value: 0n }));
@@ -728,10 +732,11 @@ export const callcode = Effect.gen(function* () {
   yield* Ref.set(evm.memory, newMemory);
 
   // Sender balance check
-  const senderBalance = State.getAccount(
+  const sender = yield* State.getAccount(
     evm.message.blockEnv.state,
     evm.message.currentTarget,
-  ).balance;
+  );
+  const senderBalance = sender.balance;
 
   if (senderBalance.value < value.value) {
     // Insufficient balance
@@ -981,8 +986,10 @@ export const create = Effect.gen(function* () {
 
   const contractAddress = computeContractAddress(
     evm.message.currentTarget,
-    State.getAccount(evm.message.blockEnv.state, evm.message.currentTarget)
-      .nonce,
+    yield* State.getAccount(
+      evm.message.blockEnv.state,
+      evm.message.currentTarget,
+    ).pipe(Effect.map((account) => account.nonce)),
   );
 
   yield* genericCreate(

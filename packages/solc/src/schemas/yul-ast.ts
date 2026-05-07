@@ -4,18 +4,6 @@
  */
 import { Schema } from "effect";
 
-/** Wide node type for recursive Yul asm JSON (`src` / `nativeSrc` only on asm nodes). */
-// export interface YulJsonNode {
-//   readonly nodeType: string;
-//   readonly src?: string | undefined;
-//   readonly nativeSrc?: string | undefined;
-//   readonly statements?: ReadonlyArray<YulJsonNode> | undefined;
-//   readonly body?: YulJsonNode | undefined;
-//   readonly expression?: YulJsonNode | undefined;
-//   readonly name?: string | undefined;
-//   readonly [key: string]: unknown;
-// }
-
 export const yulExpr = Schema.suspend(
   (): Schema.Schema<YulExpressionEncoded> => YulExpressionSchema,
 );

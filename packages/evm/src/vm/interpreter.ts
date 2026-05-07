@@ -80,7 +80,7 @@ export const incorporateChildOnSuccess = Effect.fn("incorporateChildOnSuccess")(
       evm.touchedAccounts.add(addr);
     }
     if (
-      State.accountExistsAndIsEmpty(
+      yield* State.accountExistsAndIsEmpty(
         evm.message.blockEnv.state,
         childEvm.message.currentTarget,
       )
@@ -412,7 +412,7 @@ export const processMessageCall = Effect.fn("processMessageCall")(function* (
   let evm: Evm["Type"];
   if (!message.target) {
     const isCollision =
-      State.accountHasCodeOrNonce(blockEnv.state, message.currentTarget) ||
+      (yield* State.accountHasCodeOrNonce(blockEnv.state, message.currentTarget)) ||
       State.accountHasStorage(blockEnv.state, message.currentTarget);
     if (isCollision) {
       return yield* Effect.succeed(
@@ -435,20 +435,20 @@ export const processMessageCall = Effect.fn("processMessageCall")(function* (
         refundCounter = yield* setDelegation(message);
       }
 
-      const currentCode = State.getAccount(
+      const currentCode = yield* State.getAccount(
         message.blockEnv.state,
         message.currentTarget,
-      ).code;
+      ).pipe(Effect.map((account) => account.code));
       const delegatedAddress = getDelegatedCodeAddress(currentCode).pipe(
         Option.getOrNull,
       );
       if (delegatedAddress) {
         message.disablePrecompiles = true;
         message.accessedAddresses.add(delegatedAddress);
-        const delegatedCode = State.getAccount(
+        const delegatedCode = yield* State.getAccount(
           message.blockEnv.state,
           delegatedAddress,
-        ).code;
+        ).pipe(Effect.map((account) => account.code));
         message.code = Code.from(delegatedCode);
         message.codeAddress = delegatedAddress;
       }
@@ -462,7 +462,7 @@ export const processMessageCall = Effect.fn("processMessageCall")(function* (
   let accountsToDelete: HashSet<Address> = HashSet.empty();
   let touchedAccounts: HashSet<Address> = HashSet.empty();
 
-  if (State.accountExistsAndIsEmpty(blockEnv.state, message.currentTarget)) {
+  if (yield* State.accountExistsAndIsEmpty(blockEnv.state, message.currentTarget)) {
     evm.touchedAccounts.add(message.currentTarget);
   }
 

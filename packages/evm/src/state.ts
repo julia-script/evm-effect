@@ -206,13 +206,16 @@ export function rollbackTransaction(
  * @param address - Address to lookup.
  * @returns Account at address.
  */
-export function getAccount(state: State, address: Address): Account {
-  const account = getAccountOptional(state, address);
+export const getAccount = Effect.fn("getAccount")(function* (
+  state: State,
+  address: Address,
+): Effect.fn.Return<Account, never, never> {
+  const account = yield* getAccountOptional(state, address);
   if (account === null) {
     return EMPTY_ACCOUNT;
   }
   return account;
-}
+});
 
 /**
  * Get the `Account` object at an address. Returns `null` (rather than
@@ -222,12 +225,18 @@ export function getAccount(state: State, address: Address): Account {
  * @param address - Address to lookup.
  * @returns Account at address or null.
  */
-export function getAccountOptional(
+export const getAccountOptional = Effect.fn("getAccountOptional")(function* (
   state: State,
   address: Address,
-): Account | null {
-  return state._mainTrie.get(address);
-}
+): Effect.fn.Return<Account | null, never, never> {
+  return yield* Effect.succeed(state._mainTrie.get(address));
+});
+// export function getAccountOptional(
+//   state: State,
+//   address: Address,
+// ): Account | null {
+//   return state._mainTrie.get(address);
+// }
 
 /**
  * Set the `Account` object at an address. Setting to `null` deletes
@@ -304,7 +313,7 @@ export const markAccountCreated = Effect.fn("markAccountCreated")(function* (
  * @param key - Key to lookup.
  * @returns Value at the key.
  */
-export function getStorage(state: State, address: Address, key: Bytes32): U256 {
+export const getStorage = Effect.fn("getStorage")(function* (state: State, address: Address, key: Bytes32): Effect.fn.Return<U256, never, never> {
   const trie = state._storageTries.get(address);
   if (!trie) {
     return new U256({ value: 0n });
@@ -315,7 +324,7 @@ export function getStorage(state: State, address: Address, key: Bytes32): U256 {
     throw new Error("Storage value must be U256");
   }
   return value;
-}
+});
 
 /**
  * Set a value at a storage key on an account. Setting to `U256(0)` deletes
@@ -334,7 +343,7 @@ export const setStorage = Effect.fn("setStorage")(function* (
 ) {
   const account = state._mainTrie.get(address);
   if (account === null) {
-    throw new Error("Account must exist to set storage");
+    return yield* Effect.die(new Error("Account must exist to set storage"));
   }
 
   const trie = state._storageTries.get(address);
@@ -401,9 +410,10 @@ export function stateRoot(state: State): Root {
  * @param address - Address of the account that needs to be checked.
  * @returns True if account exists in the state trie, False otherwise
  */
-export function accountExists(state: State, address: Address): boolean {
-  return getAccountOptional(state, address) !== null;
-}
+export const accountExists = Effect.fn("accountExists")(function* (state: State, address: Address): Effect.fn.Return<boolean, never, never> {
+  const account = yield* getAccountOptional(state, address);
+  return account !== null;
+});
 
 /**
  * Checks if an account has non zero nonce or non empty code.
@@ -412,10 +422,16 @@ export function accountExists(state: State, address: Address): boolean {
  * @param address - Address of the account that needs to be checked.
  * @returns True if the account has non zero nonce or non empty code, False otherwise.
  */
-export function accountHasCodeOrNonce(state: State, address: Address): boolean {
-  const account = getAccount(state, address);
-  return account.nonce.value !== 0n || account.code.value.length > 0;
-}
+export const accountHasCodeOrNonce = Effect.fn("accountHasCodeOrNonce")(
+  function* (state: State, address: Address) {
+    const account = yield* getAccount(state, address);
+    return account.nonce.value !== 0n || account.code.value.length > 0;
+  },
+);
+// export function accountHasCodeOrNonce(state: State, address: Address): Effect.Effect<boolean, never, never> {
+//   const account = getAccount(state, address);
+//   return account.nonce.value !== 0n || account.code.value.length > 0;
+// }
 
 /**
  * Checks if an account has storage.
@@ -435,10 +451,10 @@ export function accountHasStorage(state: State, address: Address): boolean {
  * @param address - Address of the account that needs to be checked.
  * @returns True if the account is alive.
  */
-export function isAccountAlive(state: State, address: Address): boolean {
-  const account = getAccountOptional(state, address);
+export const isAccountAlive = Effect.fn("isAccountAlive")(function* (state: State, address: Address): Effect.fn.Return<boolean, never, never> {
+  const account = yield* getAccountOptional(state, address);
   return account !== null && !Equal.equals(account, EMPTY_ACCOUNT);
-}
+});
 
 /**
  * Check whether an account exists in the state and is empty.
@@ -450,13 +466,13 @@ export function isAccountAlive(state: State, address: Address): boolean {
  * @param address - Address of the account to check.
  * @returns True if the account exists and is empty.
  */
-export function accountExistsAndIsEmpty(
+export const accountExistsAndIsEmpty = Effect.fn("accountExistsAndIsEmpty")(function* (
   state: State,
   address: Address,
-): boolean {
-  const account = getAccountOptional(state, address);
+): Effect.fn.Return<boolean, never, never> {
+  const account = yield* getAccountOptional(state, address);
   return account !== null && Equal.equals(account, EMPTY_ACCOUNT);
-}
+});
 
 /**
  * Initializes an account to state if it doesn't exist.
@@ -472,7 +488,7 @@ export const touchAccount = Effect.fn("touchAccount")(function* (
   state: State,
   address: Address,
 ) {
-  if (!accountExists(state, address)) {
+  if (!(yield* accountExists(state, address))) {
     yield* setAccount(state, address, EMPTY_ACCOUNT);
   }
 });
@@ -491,14 +507,14 @@ const modifyState = Effect.fn("modifyState")(function* <E, R>(
   address: Address,
   f: (account: Account) => Effect.Effect<Account, E, R>,
 ) {
-  const account = getAccount(state, address);
+  const account = yield* getAccount(state, address);
   const modifiedAccount = yield* f(account);
   yield* setAccount(state, address, modifiedAccount);
 
   const { Fork } = yield* Effect.promise(() => import("./vm/Fork.js"));
   const fork = yield* Fork;
   if (fork.eip(161)) {
-    const updatedAccount = getAccountOptional(state, address);
+    const updatedAccount = yield* getAccountOptional(state, address);
     const accountExistsAndIsEmpty =
       updatedAccount !== null &&
       updatedAccount.nonce.value === 0n &&
@@ -528,7 +544,7 @@ export const moveEther = Effect.fn("moveEther")(function* (
   yield* modifyState(state, senderAddress, (sender) =>
     Effect.gen(function* () {
       if (sender.balance.value < amount.value) {
-        yield* Effect.die(
+        return yield* Effect.die(
           new Error(
             "unreachable, tried to update balance of account with insufficient balance",
           ),
@@ -560,9 +576,10 @@ export const setAccountBalance = Effect.fn("setAccountBalance")(function* (
   address: Address,
   amount: U256,
 ) {
+  const account = yield* getAccount(state, address);
   yield* annotateSafe({
     address: address,
-    "balance.before": getAccount(state, address).balance,
+    "balance.before": account.balance,
     "balance.after": amount,
   });
   return yield* modifyState(state, address, (account) =>
@@ -724,7 +741,7 @@ export const destroyTouchedEmptyAccounts = Effect.fn(
   "destroyTouchedEmptyAccounts",
 )(function* (state: State, touchedAccounts: Iterable<Address>) {
   for (const address of touchedAccounts) {
-    if (accountExistsAndIsEmpty(state, address)) {
+    if (yield* accountExistsAndIsEmpty(state, address)) {
       yield* destroyAccount(state, address);
     }
   }

@@ -111,7 +111,7 @@ export const balance: Effect.Effect<void, EthereumException, Evm | Fork> =
     }
 
     // OPERATION
-    const account = State.getAccount(evm.message.blockEnv.state, addr);
+    const account = yield* State.getAccount(evm.message.blockEnv.state, addr);
     yield* evm.stack.push(account.balance);
 
     // PROGRAM COUNTER
@@ -445,7 +445,7 @@ export const extcodesize: Effect.Effect<void, EthereumException, Evm | Fork> =
     }
 
     // OPERATION
-    const account = State.getAccount(evm.message.blockEnv.state, addr);
+    const account = yield* State.getAccount(evm.message.blockEnv.state, addr);
     const codeSize = new U256({ value: BigInt(account.code.value.length) });
     yield* evm.stack.push(codeSize);
 
@@ -512,7 +512,7 @@ export const extcodecopy: Effect.Effect<void, EthereumException, Evm | Fork> =
     );
     newMemory.set(memory);
 
-    const account = State.getAccount(evm.message.blockEnv.state, addr);
+    const account = yield* State.getAccount(evm.message.blockEnv.state, addr);
     const value = bufferRead(account.code, codeStartIndex, size);
     const destStart = Number(memoryStartIndex.value);
     newMemory.set(value.value, destStart);
@@ -590,7 +590,7 @@ export const returndatacopy: Effect.Effect<void, EthereumException, Evm> =
       returnDataStart.value + sizeUint.value >
       BigInt(returnData.value.length)
     ) {
-      yield* Effect.fail(
+      return yield* Effect.fail(
         new OutOfBoundsReadError({ message: "Return data copy out of bounds" }),
       );
     }
@@ -652,7 +652,10 @@ export const extcodehash: Effect.Effect<void, EthereumException, Evm | Fork> =
     }
 
     // OPERATION
-    const account = State.getAccountOptional(evm.message.blockEnv.state, addr);
+    const account = yield* State.getAccountOptional(
+      evm.message.blockEnv.state,
+      addr,
+    );
 
     let codehash: U256;
     if (account === null) {
@@ -685,7 +688,7 @@ export const selfbalance: Effect.Effect<void, EthereumException, Evm> =
     yield* Gas.chargeGas(Gas.GAS_FAST_STEP);
 
     // OPERATION
-    const account = State.getAccount(
+    const account = yield* State.getAccount(
       evm.message.blockEnv.state,
       evm.message.currentTarget,
     );

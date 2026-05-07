@@ -121,8 +121,9 @@ export const prepareMessage: (
     let codeAddress: Address | undefined;
 
     if (!tx.to) {
+      const originAccount = yield* State.getAccount(blockEnv.state, txEnv.origin);
       const nonce =
-        State.getAccount(blockEnv.state, txEnv.origin).nonce.value - 1n;
+        originAccount.nonce.value - 1n;
       currentTarget = computeContractAddress(
         txEnv.origin,
         new Uint({ value: nonce }),
@@ -132,9 +133,10 @@ export const prepareMessage: (
       code = tx.data;
       codeAddress = undefined;
     } else {
+
       currentTarget = tx.to;
       msgData = tx.data;
-      code = State.getAccount(blockEnv.state, tx.to).code;
+      code = yield* State.getAccount(blockEnv.state, tx.to).pipe(Effect.map((account) => account.code));
       codeAddress = tx.to;
     }
 

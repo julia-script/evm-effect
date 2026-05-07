@@ -620,7 +620,7 @@ describe("StateTest", () => {
           for (const { key: address } of post.state) {
             const addrHex = address.value.value.toHex();
             expectedAddrs.add(addrHex);
-            const exists = State.accountExists(blockEnv.state, address);
+            const exists = yield* State.accountExists(blockEnv.state, address);
             if (!exists) {
               yield* Console.log(`  MISSING in actual: 0x${addrHex}`);
             }
@@ -692,7 +692,7 @@ describe("StateTest", () => {
           }
 
           for (const { key: address, value: expectedAccount } of post.state) {
-            const actualAccount = State.getAccount(blockEnv.state, address);
+            const actualAccount = yield* State.getAccount(blockEnv.state, address);
             yield* Console.log(
               "- Address: ",
               `0x${new Uint8Array(address.value.value).toHex()}`,
@@ -741,11 +741,11 @@ describe("StateTest", () => {
               key: slot,
               value: expectedValueBytes,
             } of expectedAccount.storage) {
-              const actualValue = `0x${State.getStorage(
+              const actualValue = `0x${(yield* State.getStorage(
                 blockEnv.state,
                 address,
                 new Bytes32({ value: slot.value }),
-              )
+              ))
                 .toBeBytes32()
                 .value.toHex()}`;
               const expectedValue = `0x${new Bytes32({
@@ -1134,7 +1134,7 @@ describe("BlockchainTest", () => {
           key: address,
           value: expectedAccount,
         } of fixture.postState) {
-          const actualAccount = State.getAccount(chain.state, address);
+          const actualAccount = yield* State.getAccount(chain.state, address);
 
           // Check nonce
           if (actualAccount.nonce.value !== expectedAccount.nonce.value) {
@@ -1171,7 +1171,7 @@ describe("BlockchainTest", () => {
             key: slot,
             value: expectedValue,
           } of expectedAccount.storage) {
-            const actualValue = State.getStorage(
+            const actualValue = yield* State.getStorage(
               chain.state,
               address,
               new Bytes32({ value: slot.value }),

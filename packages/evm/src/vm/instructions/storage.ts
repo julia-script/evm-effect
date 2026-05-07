@@ -53,7 +53,7 @@ export const sload: Effect.Effect<void, EthereumException, Evm | Fork> =
 
     // OPERATION
     const blockEnv = evm.message.blockEnv;
-    const value = State.getStorage(
+    const value = yield* State.getStorage(
       blockEnv.state,
       evm.message.currentTarget,
       key,
@@ -84,7 +84,7 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
     // Check if we have enough gas (must have more than call stipend)
     const gasLeft = evm.gasLeft;
     if (gasLeft <= Gas.GAS_CALL_STIPEND.value) {
-      yield* Effect.fail(
+      return yield* Effect.fail(
         new OutOfGasError({ message: "Insufficient gas for SSTORE" }),
       );
     }
@@ -98,7 +98,7 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
       currentTarget,
       key,
     );
-    const currentValue = State.getStorage(state, currentTarget, key);
+    const currentValue = yield* State.getStorage(state, currentTarget, key);
 
     const fork = yield* Fork;
     let gasCost = new Uint({ value: 0n });
@@ -325,7 +325,7 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
 
     // Check if we're in a static context
     if (evm.message.isStatic) {
-      yield* Effect.fail(
+      return yield* Effect.fail(
         new WriteInStaticContext({
           message: "Cannot modify storage in static context",
         }),
@@ -393,7 +393,7 @@ export const tstore: Effect.Effect<void, EthereumException, Evm | Fork> =
 
     // Check if we're in a static context
     if (evm.message.isStatic) {
-      yield* Effect.fail(
+      return yield* Effect.fail(
         new WriteInStaticContext({
           message: "Cannot modify transient storage in static context",
         }),
