@@ -60,15 +60,11 @@ export class TransactionEnvironment extends Schema.TaggedClass<TransactionEnviro
   transientStorage: Schema.instanceOf(State.TransientStorage),
   blobVersionedHashes: Schema.Array(Bytes32),
   authorizations: Schema.Array(Authorization),
-  indexInBlock: Schema.OptionFromSelf(Uint),
-  txHash: Schema.OptionFromSelf(Bytes32),
+  indexInBlock: Schema.Option(Uint),
+  txHash: Schema.Option(Bytes32),
 }) {}
 
-export type test =
-  typeof SuspendedEvm extends Schema.suspend<Evm, infer T, never> ? T : never;
-const SuspendedEvm = Schema.suspend(
-  (): Schema.Schema<Evm, Evm> => Schema.instanceOf(Evm),
-);
+
 /**
  * Items that are used by contract creation or message call (call-level).
  *

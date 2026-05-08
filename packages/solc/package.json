@@ -38,7 +38,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@effect/platform": "catalog:",
     "@evm-effect/crypto": "workspace:*",
     "@evm-effect/ethereum-types": "workspace:*",
     "@noble/hashes": "catalog:",

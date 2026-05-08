@@ -9,8 +9,8 @@
  */
 
 import * as path from "node:path";
-import { FileSystem } from "@effect/platform";
-import { BunContext, BunRuntime } from "@effect/platform-bun";
+import { FileSystem } from "effect/FileSystem";
+import { BunRuntime, BunFileSystem } from "@effect/platform-bun";
 import {
   Array as Arr,
   Console,
@@ -105,7 +105,7 @@ type TestFileResult = {
  */
 const processTestFile = (filePath: string, fileName: string) =>
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
+    const fs = yield* FileSystem;
     const content = yield* fs.readFileString(filePath);
     const { runs, isLegacy } = parseFileContent(content);
 
@@ -226,7 +226,7 @@ const printResults = (
  * Main program
  */
 const program = Effect.gen(function* () {
-  const fs = yield* FileSystem.FileSystem;
+  const fs = yield* FileSystem;
 
   // Check if directory exists
   const exists = yield* fs.exists(cachedTestStatusDir);
@@ -245,14 +245,13 @@ const program = Effect.gen(function* () {
       filePath: path.join(cachedTestStatusDir, fileName),
     })),
     Arr.map(({ fileName, filePath }) =>
-      pipe(
-        fs.stat(filePath),
+      fs.stat(filePath).pipe(
         Effect.map((stat) => ({
           fileName,
           filePath,
           isFile: stat.type === "File",
         })),
-        Effect.catchAll(() =>
+        Effect.catch(() =>
           Effect.succeed({ fileName, filePath, isFile: false }),
         ),
       ),
@@ -268,7 +267,7 @@ const program = Effect.gen(function* () {
     Arr.map(({ filePath, fileName }) =>
       pipe(
         processTestFile(filePath, fileName),
-        Effect.catchAll(
+        Effect.catch(
           (): Effect.Effect<TestFileResult> =>
             Effect.succeed({
               shortHash: fileName,
@@ -303,7 +302,7 @@ const program = Effect.gen(function* () {
     // Sort by most recent failure first
     Arr.sort(
       Order.mapInput(
-        Order.reverse(Order.string),
+        (self: string, that: string) => (self < that ? -1 : 1),
         (t: FailedTest) => t.lastRun.timestamp,
       ),
     ),
@@ -313,4 +312,4 @@ const program = Effect.gen(function* () {
 });
 
 // Run the program
-BunRuntime.runMain(program.pipe(Effect.provide(BunContext.layer)));
+BunRuntime.runMain(program.pipe(Effect.provide(BunFileSystem.layer)));

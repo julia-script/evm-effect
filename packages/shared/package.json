@@ -45,17 +45,8 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@effect/experimental": "catalog:",
-    "@effect/opentelemetry": "^0.58.0",
-    "@effect/platform": "catalog:",
+    "@effect/opentelemetry": "catalog:",
     "@effect/platform-bun": "catalog:",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.206.0",
-    "@opentelemetry/exporter-zipkin": "^2.1.0",
-    "@opentelemetry/sdk-logs": "^0.206.0",
-    "@opentelemetry/sdk-metrics": "^2.1.0",
-    "@opentelemetry/sdk-trace-base": "^2.1.0",
-    "@opentelemetry/sdk-trace-node": "^2.1.0",
-    "@opentelemetry/sdk-trace-web": "^2.1.0",
     "effect": "catalog:",
     "fast-check": "catalog:",
     "superjson": "^2.2.2",

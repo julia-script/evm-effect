@@ -1,4 +1,4 @@
-import { Data, Effect, Hash, ParseResult, Schema } from "effect";
+import { Data, Hash } from "effect";
 
 export class Entry<K, V> {
   constructor(
@@ -88,51 +88,51 @@ export class HashMap<K, V> extends Data.TaggedClass("HashMap")<{
   }
 }
 
-export const HashMapFromSelf = <
-  K extends Schema.Schema.All,
-  V extends Schema.Schema.All,
->(
-  _key: K,
-  _value: V,
-): HashMapFromSelf<K, V> =>
-  Schema.instanceOf(HashMap<K["Encoded"], V["Encoded"]>);
-export type HashMapFromSelf<
-  K extends Schema.Schema.All,
-  V extends Schema.Schema.All,
-> = Schema.Schema<HashMap<K["Encoded"], V["Encoded"]>>;
-export const HashMapFromRecord = <KType, KEncoded, VType, VEncoded>(
-  key: Schema.Schema<KType, KEncoded>,
-  value: Schema.Schema<VType, VEncoded>,
-) => {
-  const from = Schema.Record({
-    key: Schema.encodedSchema(key),
-    value: Schema.encodedSchema(value),
-  });
-  const to = HashMapFromSelf(Schema.typeSchema(key), Schema.typeSchema(value));
-  return Schema.transformOrFail(from, to, {
-    strict: false,
-    decode: (fromA) => {
-      return ParseResult.decodeUnknown(Schema.Array(Schema.Tuple(key, value)))(
-        Object.entries(fromA),
-      ).pipe(
-        Effect.map((entries) => {
-          const hashMap = HashMap.empty<KType, VType>();
-          for (let i = 0; i < entries.length; i++) {
-            const key = entries[i][0];
-            const value = entries[i][1];
-            hashMap.set(key, value);
-          }
-          return hashMap;
-        }),
-      );
-    },
-    encode: (toI) => {
-      const entries = [...toI.entries()].map(
-        (entry) => [entry.key, entry.value] as const,
-      );
-      return ParseResult.encodeUnknown(Schema.Array(Schema.Tuple(key, value)))(
-        entries,
-      ).pipe(Effect.map((entries) => Object.fromEntries(entries)));
-    },
-  });
-};
+// export const HashMapFromSelf = <
+//   K extends Schema.Top,
+//   V extends Schema.Top,
+// >(
+//   _key: K,
+//   _value: V,
+// ): HashMapFromSelf<K, V> =>
+//   Schema.instanceOf(HashMap<K["Encoded"], V["Encoded"]>);
+// export type HashMapFromSelf<
+//   K extends Schema.Top,
+//   V extends Schema.Top,
+// > = Schema.Schema<HashMap<K["Encoded"], V["Encoded"]>>;
+// export const HashMapFromRecord = <KType, KEncoded, VType, VEncoded>(
+//   key: Schema.Schema<KType, KEncoded>,
+//   value: Schema.Schema<VType, VEncoded>,
+// ) => {
+//   const from = Schema.Record({
+//     key: Schema.encodedSchema(key),
+//     value: Schema.encodedSchema(value),
+//   });
+//   const to = HashMapFromSelf(Schema.typeSchema(key), Schema.typeSchema(value));
+//   return Schema.transformOrFail(from, to, {
+//     strict: false,
+//     decode: (fromA) => {
+//       return ParseResult.decodeUnknown(Schema.Array(Schema.Tuple(key, value)))(
+//         Object.entries(fromA),
+//       ).pipe(
+//         Effect.map((entries) => {
+//           const hashMap = HashMap.empty<KType, VType>();
+//           for (let i = 0; i < entries.length; i++) {
+//             const key = entries[i][0];
+//             const value = entries[i][1];
+//             hashMap.set(key, value);
+//           }
+//           return hashMap;
+//         }),
+//       );
+//     },
+//     encode: (toI) => {
+//       const entries = [...toI.entries()].map(
+//         (entry) => [entry.key, entry.value] as const,
+//       );
+//       return ParseResult.encodeUnknown(Schema.Array(Schema.Tuple(key, value)))(
+//         entries,
+//       ).pipe(Effect.map((entries) => Object.fromEntries(entries)));
+//     },
+//   });
+// };
