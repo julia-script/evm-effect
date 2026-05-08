@@ -1,0 +1,59 @@
+{
+  "name": "@evm-effect/rpc",
+  "version": "0.0.1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julia-script/evm-effect.git",
+    "directory": "packages/shared"
+  },
+  "bugs": {
+    "url": "https://github.com/julia-script/evm-effect/issues"
+  },
+  "homepage": "https://github.com/julia-script/evm-effect/tree/main/packages/shared",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "dev": "tsc -b tsconfig.build.json --watch",
+    "clean": "rm -rf build",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@effect/cluster": "^0.58.2",
+    "@effect/platform-bun": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "@effect/rpc": "^0.75.1",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.206.0",
+    "@opentelemetry/exporter-zipkin": "^2.1.0",
+    "@opentelemetry/sdk-logs": "^0.206.0",
+    "@opentelemetry/sdk-metrics": "^2.1.0",
+    "@opentelemetry/sdk-trace-base": "^2.1.0",
+    "@opentelemetry/sdk-trace-node": "^2.1.0",
+    "@opentelemetry/sdk-trace-web": "^2.1.0",
+    "effect": "catalog:",
+    "fast-check": "catalog:",
+    "superjson": "^2.2.2",
+    "ts-dedent": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}
