@@ -1,5 +1,16 @@
 # @evm-effect/evm
 
+## 0.0.19
+
+### Patch Changes
+
+- [`0e0778c`](https://github.com/julia-script/evm-effect/commit/0e0778c8c4e183bc77511165ff619c1522b9ffae) Thanks [@julia-script](https://github.com/julia-script)! - Improve `decodeTo` handling for unions and object structs in RLP decoding. Update Block withdrawals default to use constructor defaults and simplify header RLP encoding.
+
+- Updated dependencies [[`0e0778c`](https://github.com/julia-script/evm-effect/commit/0e0778c8c4e183bc77511165ff619c1522b9ffae)]:
+  - @evm-effect/rlp@0.1.10
+  - @evm-effect/crypto@0.2.8
+  - @evm-effect/solc@0.2.5
+
 ## 0.0.18
 
 ### Patch Changes
