@@ -1,5 +1,18 @@
 # @evm-effect/evm
 
+## 0.0.18
+
+### Patch Changes
+
+- [`48cf21f`](https://github.com/julia-script/evm-effect/commit/48cf21fb3ab964a370e103d7eca36879930678b1) Thanks [@julia-script](https://github.com/julia-script)! - Migrate the workspace to Effect 4.x (core APIs, `Schema`, and related Effect modules), not only schema definitions. Touches domain types, RLP, crypto transactions, shared utilities, solc JSON schemas, and the EVM (including tests and examples). Removes obsolete schema helpers and aligns decoding/encoding and fixture schemas with the updated stack.
+
+- Updated dependencies [[`48cf21f`](https://github.com/julia-script/evm-effect/commit/48cf21fb3ab964a370e103d7eca36879930678b1)]:
+  - @evm-effect/crypto@0.2.7
+  - @evm-effect/ethereum-types@0.0.7
+  - @evm-effect/rlp@0.1.9
+  - @evm-effect/shared@0.0.7
+  - @evm-effect/solc@0.2.4
+
 ## 0.0.17
 
 ### Patch Changes
