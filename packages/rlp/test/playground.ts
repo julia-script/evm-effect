@@ -1,7 +1,7 @@
 import { Address, Bytes, U8 } from "@evm-effect/ethereum-types";
 import { Int, U64, U256, Uint } from "@evm-effect/ethereum-types/numeric";
 import { Result, Schema } from "effect";
-import { decodeTo, encodeTo } from "../src/index.ts";
+import { decodeTo, encodeTo } from "../src/index.js";
 
 /**
  * Authorization for EIP-7702 set code transactions.
@@ -43,7 +43,10 @@ const account = Account.make({
   code: new Bytes({ value: new Uint8Array([1, 2, 3]) }),
   authorization: authorization,
 });
-const encoded = encodeTo(Account, account);
-const decoded = decodeTo(Account, Result.getOrThrow(encoded));
-console.log(decoded);
+const Something = Schema.TaggedStruct("Something", {
+  something: Schema.Array(Schema.Union([Bytes, Account])),
+});
+const encoded = encodeTo(Something, Something.make({ something: [account] }));
+const _decoded = decodeTo(Something, Result.getOrThrow(encoded));
+// console.log(encoded.success);
 // const _encodedAccount = accounteEncoder(account);

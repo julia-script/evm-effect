@@ -12,6 +12,7 @@ import { RlpDecodeError } from "./exceptions.js";
 import type { Simple } from "./types.ts";
 import {
   BYTES_CLASSES_BY_TAG,
+  getConcretes,
   getIdentifierAnnotation,
   isExtended,
   UINT_CLASSES_BY_TAG,
@@ -79,6 +80,7 @@ const hydrateDeclaration = (ast: AST.Objects, input: Simple): unknown => {
 
 const hydrateExtended = (ast: AST.AST, input: Simple): unknown => {
   assertBytes(input);
+  // console.log(ast);
   const identifier = AST.resolveIdentifier(ast);
   if (!identifier) {
     throw new RlpDecodeError({ message: "Unreachable", path: [] });
@@ -131,91 +133,94 @@ const hydrateLiterals = (ast: AST.Literal, input: Simple): unknown => {
   }
 };
 
-// const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
-//   const concretes = getConcretes(ast);
+const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
+  const concretes = getConcretes(ast);
 
-//   // Handle unions with multiple concrete types by discriminating based on input type
-//   if (concretes.length > 1) {
-//     const isInputArray = Array.isArray(input);
+  // Handle unions with multiple concrete types by discriminating based on input type
+  if (concretes.length > 1) {
+    const isInputArray = Array.isArray(input);
 
-//     // Find a type that matches the input structure
-//     for (const concreteType of concretes) {
-//       const normalized = normalize(concreteType);
-//       const identifier = getIdentifierAnnotation(normalized);
+    // Find a type that matches the input structure
+    for (const concreteType of concretes) {
+      const normalized = concreteType;
+      const identifier = getIdentifierAnnotation(normalized);
 
-//       // If input is bytes (not array), prefer Bytes types
-//       if (!isInputArray) {
-//         if (
-//           identifier &&
-//           (identifier === "Bytes" || identifier.startsWith("Bytes"))
-//         ) {
-//           return hydrateAst(concreteType, input);
-//         }
-//       }
+      // If input is bytes (not array), prefer Bytes types
+      if (!isInputArray) {
+        if (
+          identifier &&
+          (identifier === "Bytes" || identifier.startsWith("Bytes"))
+        ) {
+          return hydrateAst(concreteType, input);
+        }
+      }
 
-//       // If input is array, prefer struct/declaration types (not Bytes)
-//       if (isInputArray) {
-//         if (AST.isDeclaration(normalized) ) {
-//           // Skip Bytes-like types for array input
-//           if (
-//             !identifier ||
-//             (!identifier.startsWith("Bytes") && identifier !== "Address")
-//           ) {
-//             return hydrateAst(concreteType, input);
-//           }
-//           // Check if it's a struct (has property signatures indicating it expects a list)
-//           if (!isExtended(normalized)) {
-//             return hydrateAst(concreteType, input);
-//           }
-//         }
-//       }
-//     }
+      // If input is array, prefer struct/declaration types (not Bytes)
+      if (isInputArray) {
+        // check for structs
+        if (AST.isObjects(normalized)) {
+          return hydrateDeclaration(normalized, input);
+        }
 
-//     return hydrateAst(concretes[0], input);
-//   }
+        if (AST.isDeclaration(normalized)) {
+          // Skip Bytes-like types for array input
+          if (
+            !identifier ||
+            (!identifier.startsWith("Bytes") && identifier !== "Address")
+          ) {
+            return hydrateAst(concreteType, input);
+          }
+          // Check if it's a struct (has property signatures indicating it expects a list)
+          if (!isExtended(normalized)) {
+            return hydrateAst(concreteType, input);
+          }
+        }
+      }
+    }
 
-//   if (ast.types.length !== 2 && concretes.length !== 1) {
-//     throw new RlpDecodeError({
-//       message:
-//         "Unions are not supported for decoding as there is no way to translate the received bytes into the concrete type",
-//       path: [],
-//     });
-//   }
-//   // if only one is concrete, we treat it as an optional value
-//   if (input) {
-//     assertBytes(input);
+    return hydrateAst(concretes[0], input);
+  }
 
-//     if (input.value.length === 0) {
-//       const concreteNormalized = normalize(concretes[0]);
-//       if (
-//         AST.isDeclaration(concreteNormalized)  &&
-//         isExtended(concreteNormalized)
-//       ) {
-//         const identifier = AST.resolveIdentifier(concreteNormalized);
-//         if (
-//           identifier &&
-//           UINT_CLASSES_BY_TAG[
-//             identifier as keyof typeof UINT_CLASSES_BY_TAG
-//           ]
-//         ) {
-//           // This is a numeric type - hydrate as 0
-//           return hydrateAst(concretes[0], input);
-//         }
-//       }
+  if (ast.types.length !== 2 && concretes.length !== 1) {
+    throw new RlpDecodeError({
+      message:
+        "Unions are not supported for decoding as there is no way to translate the received bytes into the concrete type",
+      path: [],
+    });
+  }
+  // if only one is concrete, we treat it as an optional value
+  if (input) {
+    assertBytes(input);
 
-//       const notConcrete = ast.types.find(
-//         (type) => type !== concretes[0],
-//       ) as AST.AST;
-//       if (AST.isUndefined(notConcrete)) {
-//         return undefined;
-//       }
-//       if (AST.isLiteral(notConcrete)) return notConcrete.literal;
-//       return undefined;
-//     }
-//   }
+    if (input.value.length === 0) {
+      const concreteNormalized = concretes[0];
+      if (
+        AST.isDeclaration(concreteNormalized) &&
+        isExtended(concreteNormalized)
+      ) {
+        const identifier = AST.resolveIdentifier(concreteNormalized);
+        if (
+          identifier &&
+          UINT_CLASSES_BY_TAG[identifier as keyof typeof UINT_CLASSES_BY_TAG]
+        ) {
+          // This is a numeric type - hydrate as 0
+          return hydrateAst(concretes[0], input);
+        }
+      }
 
-//   return hydrateAst(concretes[0], input);
-// };
+      const notConcrete = ast.types.find(
+        (type) => type !== concretes[0],
+      ) as AST.AST;
+      if (AST.isUndefined(notConcrete)) {
+        return undefined;
+      }
+      if (AST.isLiteral(notConcrete)) return notConcrete.literal;
+      return undefined;
+    }
+  }
+
+  return hydrateAst(concretes[0], input);
+};
 
 const hydrateTuple = (ast: AST.Arrays, input: Simple): unknown => {
   assertArray(input);
@@ -240,8 +245,6 @@ const hydrateTuple = (ast: AST.Arrays, input: Simple): unknown => {
   return fields;
 };
 const hydrateAst = (ast: AST.AST, input: Simple): unknown => {
-  // ast = normalize(ast);
-
   switch (ast._tag) {
     case "String":
       assertBytes(input);
@@ -277,6 +280,10 @@ const hydrateAst = (ast: AST.AST, input: Simple): unknown => {
       });
       // return hydrateDeclaration(ast, input);
     }
+    case "Objects":
+      return hydrateDeclaration(ast, input);
+    case "Union":
+      return hydrateUnion(ast, input);
     case "Arrays":
       return hydrateTuple(ast, input);
     default:

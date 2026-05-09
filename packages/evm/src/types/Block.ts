@@ -89,7 +89,7 @@ export const Block = Schema.TaggedStruct("Block", {
   transactions: Schema.Array(Schema.Union([Bytes, LegacyTransaction])),
   ommers: Schema.Array(Header),
   withdrawals: Schema.Array(Withdrawal).pipe(
-    Schema.withDecodingDefaultType(Effect.succeed([])),
+    Schema.withConstructorDefault(Effect.succeed([])),
   ),
 });
 
@@ -149,7 +149,7 @@ export const encodeHeader = (header: Header): Bytes => {
     }
   }
 
-  return rlp.encode(fields as Extended);
+  return rlp.encode(fields);
 };
 
 /**
