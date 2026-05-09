@@ -1,5 +1,12 @@
 # @evm-effect/solc
 
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @evm-effect/crypto@0.2.8
+
 ## 0.2.4
 
 ### Patch Changes

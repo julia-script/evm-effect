@@ -23,13 +23,13 @@
         "knip": "^5.88.1",
         "msgpackr": "^1.11.12",
         "tsx": "^4.21.0",
-        "turbo": "^2.9.10",
+        "turbo": "^2.9.11",
         "typescript": "^5.9.3",
       },
     },
     "packages/crypto": {
       "name": "@evm-effect/crypto",
-      "version": "0.2.7",
+      "version": "0.2.8",
       "dependencies": {
         "@evm-effect/ethereum-types": "workspace:*",
         "@evm-effect/rlp": "workspace:*",
@@ -65,7 +65,7 @@
     },
     "packages/evm": {
       "name": "@evm-effect/evm",
-      "version": "0.0.18",
+      "version": "0.0.19",
       "dependencies": {
         "@effect/platform-bun": "catalog:",
         "@evm-effect/crypto": "workspace:*",
@@ -89,7 +89,7 @@
     },
     "packages/examples": {
       "name": "@evm-effect/examples",
-      "version": "0.0.18",
+      "version": "0.0.19",
       "dependencies": {
         "@evm-effect/crypto": "workspace:*",
         "@evm-effect/ethereum-types": "workspace:*",
@@ -104,7 +104,7 @@
     },
     "packages/rlp": {
       "name": "@evm-effect/rlp",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "dependencies": {
         "@evm-effect/ethereum-types": "workspace:*",
         "effect": "catalog:",
@@ -135,7 +135,7 @@
     },
     "packages/solc": {
       "name": "@evm-effect/solc",
-      "version": "0.2.4",
+      "version": "0.2.5",
       "dependencies": {
         "@evm-effect/crypto": "workspace:*",
         "@evm-effect/ethereum-types": "workspace:*",
