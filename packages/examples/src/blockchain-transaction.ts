@@ -188,9 +188,9 @@ const program = Effect.gen(function* () {
   // 10. Print final state
   yield* Console.log("\n--- Final State ---");
 
-  const aliceAccount = State.getAccount(blockchain.state, alice);
-  const bobAccount = State.getAccount(blockchain.state, bob);
-  const coinbaseAccount = State.getAccount(blockchain.state, coinbase);
+  const aliceAccount = yield* State.getAccount(blockchain.state, alice);
+  const bobAccount = yield* State.getAccount(blockchain.state, bob);
+  const coinbaseAccount = yield* State.getAccount(blockchain.state, coinbase);
 
   // Expected: 10 ETH - 1 ETH (transfer) - 0.00021 ETH (gas) = 8.99979 ETH
   yield* Console.log("Alice:");
@@ -223,6 +223,9 @@ function formatEth(wei: bigint): string {
 }
 
 // Run the program with London fork (simpler, no system contracts required)
-const runtimeLayer = Layer.merge(Fork.london(), Logger.pretty);
+const runtimeLayer = Layer.merge(
+  Fork.london(),
+  Logger.layer([Logger.consolePretty({})]),
+);
 
 Effect.runPromise(program.pipe(Effect.provide(runtimeLayer)));

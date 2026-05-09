@@ -8,7 +8,7 @@
 
 import { type Address, Bytes, U256, Uint } from "@evm-effect/ethereum-types";
 import { HashSet } from "@evm-effect/shared/hashset";
-import { Data, Effect, Option, Ref } from "effect";
+import { Data, Effect, Option, Ref, Result } from "effect";
 import { SYSTEM_ADDRESS, SYSTEM_TRANSACTION_GAS } from "../constants.js";
 import {
   type EthereumException,
@@ -110,22 +110,22 @@ const processSystemTransaction = (
       parentEvm: Option.none(),
     });
 
-    const evmResult = yield* processMessage(systemMessage).pipe(Effect.either);
+    const evmResult = yield* processMessage(systemMessage).pipe(Effect.result);
 
-    if (evmResult._tag === "Left") {
+    if (Result.isFailure(evmResult)) {
       return new MessageCallOutput({
         gasLeft: new Uint({ value: 0n }),
         refundCounter: new U256({ value: 0n }),
         logs: [],
         accountsToDelete: HashSet.empty(),
         touchedAccounts: HashSet.empty(),
-        error: Option.some(evmResult.left),
+        error: Option.some(evmResult.failure),
         returnData: new Bytes({ value: new Uint8Array(0) }),
       });
     }
 
-    const evm = evmResult.right;
-    const evmError = yield* evm.error;
+    const evm = evmResult.success;
+    const evmError = yield* Ref.get(evm.error);
     let logs: readonly Log[] = [];
     let accountsToDelete: HashSet<Address> = HashSet.empty();
     let touchedAccounts: HashSet<Address> = HashSet.empty();

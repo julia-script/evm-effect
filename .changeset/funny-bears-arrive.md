@@ -1,5 +1,10 @@
 ---
+"@evm-effect/crypto": patch
+"@evm-effect/ethereum-types": patch
 "@evm-effect/evm": patch
+"@evm-effect/rlp": patch
+"@evm-effect/shared": patch
+"@evm-effect/solc": patch
 ---
 
-Fix Effect-based account lookup call sites in transaction and VM execution paths so account existence, liveness, and CREATE collision checks use yielded booleans and preserve expected state transitions.
+Migrate the workspace to Effect 4.x (core APIs, `Schema`, and related Effect modules), not only schema definitions. Touches domain types, RLP, crypto transactions, shared utilities, solc JSON schemas, and the EVM (including tests and examples). Removes obsolete schema helpers and aligns decoding/encoding and fixture schemas with the updated stack.

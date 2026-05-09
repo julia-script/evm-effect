@@ -5,11 +5,11 @@
 import { Schema } from "effect";
 
 export const yulExpr = Schema.suspend(
-  (): Schema.Schema<YulExpressionEncoded> => YulExpressionSchema,
+  (): Schema.Codec<YulExpressionEncoded> => YulExpressionSchema,
 );
 
 export const yulStmt = Schema.suspend(
-  (): Schema.Schema<YulStatementEncoded> => YulStatementSchema,
+  (): Schema.Codec<YulStatementEncoded> => YulStatementSchema,
 );
 
 export interface YulLiteralEncoded {
@@ -25,7 +25,12 @@ export const YulLiteral = Schema.Struct({
   nodeType: Schema.Literal("YulLiteral"),
   src: Schema.String,
   nativeSrc: Schema.String,
-  kind: Schema.Literal("number", "bool", "string"),
+  kind: Schema.Union([
+    Schema.Literal("number"),
+    Schema.Literal("bool"),
+    Schema.Literal("string"),
+  ]),
+
   type: Schema.optional(Schema.String),
   value: Schema.optional(Schema.String),
   hexValue: Schema.optional(Schema.String),
@@ -63,11 +68,11 @@ export type YulExpressionEncoded =
   | YulLiteralEncoded
   | YulIdentifierEncoded
   | YulFunctionCallEncoded;
-export const YulExpressionSchema = Schema.Union(
+export const YulExpressionSchema = Schema.Union([
   YulLiteral,
   YulIdentifier,
   YulFunctionCall,
-);
+]);
 
 export interface YulTypedNameEncoded {
   nodeType: "YulTypedName";
@@ -188,7 +193,7 @@ export const YulCase = Schema.Struct({
   nodeType: Schema.Literal("YulCase"),
   src: Schema.String,
   nativeSrc: Schema.String,
-  value: Schema.Union(Schema.Literal("default"), YulLiteral),
+  value: Schema.Union([Schema.Literal("default"), YulLiteral]),
   body: YulBlock,
 });
 
@@ -284,7 +289,7 @@ export type YulStatementEncoded =
   | YulLeaveEncoded;
 // | YulStatementCatchallEncoded;
 
-export const YulStatementSchema = Schema.Union(
+export const YulStatementSchema = Schema.Union([
   YulBlock,
   YulExpressionStatement,
   YulAssignment,
@@ -296,7 +301,7 @@ export const YulStatementSchema = Schema.Union(
   YulBreak,
   YulContinue,
   YulLeave,
-);
+]);
 
 export interface YulDataEncoded {
   nodeType: "YulData";
@@ -329,8 +334,8 @@ export const YulObjectSchema = Schema.Struct({
   code: YulCode,
   subObjects: Schema.Array(
     Schema.suspend(
-      (): Schema.Schema<YulObjectEncoded | YulDataEncoded> =>
-        Schema.Union(YulObjectSchema, YulData),
+      (): Schema.Codec<YulObjectEncoded | YulDataEncoded> =>
+        Schema.Union([YulObjectSchema, YulData]),
     ),
   ),
 });

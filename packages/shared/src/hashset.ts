@@ -40,9 +40,9 @@ export class HashSet<V> extends Data.TaggedClass("HashSet")<{
   }
 }
 
-export const HashSetFromSelf = <V extends Schema.Schema.All>(
+export const HashSetFromSelf = <V extends Schema.Top>(
   _value: V,
-): HashSetFromSelf<V> => Schema.instanceOf(HashSet<V["Encoded"]>);
-export type HashSetFromSelf<V extends Schema.Schema.All> = Schema.Schema<
+): HashSetFromSelf<V> => Schema.instanceOf(HashSet<Schema.Schema.Type<V>>);
+export type HashSetFromSelf<V extends Schema.Top> = Schema.Schema<
   HashSet<Schema.Schema.Type<V>>
 >;

@@ -59,10 +59,9 @@ export const setDelegation = Effect.fn("setDelegation")(function* (
       continue;
     }
     const baseKey = `message.txEnv.authorizations.${index}.recoverAuthority`;
-    const authority = yield* recoverAuthority(auth).pipe(
-      Effect.option,
-      Effect.map(Option.getOrNull),
-    );
+    const authority = yield* recoverAuthority(auth)
+      .asEffect()
+      .pipe(Effect.option, Effect.map(Option.getOrNull));
     if (!authority) {
       yield* annotateSafe({
         [`${baseKey}.error`]: "Invalid signature",
@@ -110,7 +109,7 @@ export const setDelegation = Effect.fn("setDelegation")(function* (
     yield* State.setCode(state, authority, codeToSet);
     yield* State.incrementNonce(state, authority);
     if (i % 1000 === 0 && i > 0) {
-      yield* Effect.yieldNow();
+      yield* Effect.yieldNow;
     }
 
     index++;
@@ -119,6 +118,10 @@ export const setDelegation = Effect.fn("setDelegation")(function* (
     return yield* Effect.fail(
       new InvalidBlock({ message: "Invalid type 4 transaction: no target" }),
     );
-  message.code = Code.from(yield* State.getAccount(state, message.codeAddress).pipe(Effect.map((account) => account.code)));
+  message.code = Code.from(
+    yield* State.getAccount(state, message.codeAddress).pipe(
+      Effect.map((account) => account.code),
+    ),
+  );
   return new U256({ value: refundCounter });
 });

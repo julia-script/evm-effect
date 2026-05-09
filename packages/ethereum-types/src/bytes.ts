@@ -1,5 +1,5 @@
 import { bufferFromHex, bufferToHex } from "@evm-effect/shared/bytes";
-import { Either, Equal, Hash, Schema } from "effect";
+import { Equal, Hash, Result, Schema } from "effect";
 import { EvmTypeError } from "./exceptions.js";
 import {
   type Byteish,
@@ -12,7 +12,7 @@ import {
  * Variable-length byte array
  */
 export class Bytes extends Schema.TaggedClass<Bytes>("Bytes")("Bytes", {
-  value: Schema.instanceOf(Uint8Array),
+  value: Schema.Uint8Array,
 }) {
   constructor({ value }: { value: Uint8Array }) {
     super({ value: padBuffer(value, value.length) });
@@ -45,15 +45,15 @@ export class Bytes extends Schema.TaggedClass<Bytes>("Bytes")("Bytes", {
     return new Bytes({ value: normalizeToUint8Array(value) });
   }
 
-  static fromHex(hex: string): Either.Either<Bytes, EvmTypeError> {
+  static fromHex(hex: string): Result.Result<Bytes, EvmTypeError> {
     try {
       if (hex.startsWith("0x")) {
         hex = hex.slice(2);
       }
       const bytes = bufferFromHex(hex);
-      return Either.right(new Bytes({ value: bytes }));
+      return Result.succeed(new Bytes({ value: bytes }));
     } catch (_) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({ message: "Invalid hex string", input: hex }),
       );
     }

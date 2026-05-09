@@ -10,7 +10,7 @@ import {
 import rlp from "@evm-effect/rlp";
 import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { HashSet } from "@evm-effect/shared/hashset";
-import { Effect, Either, Option, type Schema } from "effect";
+import { Effect, Option, Result, type Schema } from "effect";
 import type { BlockOutput } from "../blockchain.js";
 import { logsBloom } from "../receipts/bloom.js";
 import * as State from "../state.js";
@@ -85,7 +85,7 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
   );
 
   const encodedIndex = rlp.encode(index);
-  const encodedTx = yield* encodeTransaction(tx).pipe(Effect.orDie);
+  const encodedTx = yield* encodeTransaction(tx).asEffect().pipe(Effect.orDie);
 
   blockOutput.transactionsTrie.set(encodedIndex, encodedTx);
 
@@ -96,7 +96,10 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
   });
   const checkResult = yield* checkTransaction(blockEnv, blockOutput, tx);
   yield* annotateSafe({ checkResult: checkResult });
-  const senderAccount = yield* getAccount(blockEnv.state, checkResult.senderAddress);
+  const senderAccount = yield* getAccount(
+    blockEnv.state,
+    checkResult.senderAddress,
+  );
   yield* annotateSafe({ senderAccount: senderAccount });
 
   const blobGasFee =
@@ -240,7 +243,7 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
     value: blockOutput.blobGasUsed.value + checkResult.txBlobGasUsed.value,
   });
 
-  let encodedReceiptResult: Either.Either<Bytes, unknown>;
+  let encodedReceiptResult: Result.Result<Bytes, unknown>;
   let unencodedReceipt: Receipt | LegacyReceipt;
 
   if (fork.eip(658)) {
@@ -263,10 +266,10 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
     encodedReceiptResult = rlp.encodeTo(LegacyReceipt, receipt);
     unencodedReceipt = receipt;
   }
-  if (Either.isLeft(encodedReceiptResult)) {
+  if (Result.isFailure(encodedReceiptResult)) {
     return yield* Effect.die(new Error("Failed to encode receipt"));
   }
-  const encodedReceiptRlp = encodedReceiptResult.right;
+  const encodedReceiptRlp = encodedReceiptResult.success;
 
   let encodedReceipt: Bytes;
   switch (tx._tag) {
@@ -314,16 +317,16 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
   );
 });
 
-function encodeOrDie<A, I, R>(
-  schema: Schema.Schema<A, I, R>,
+function encodeOrDie<A>(
+  schema: Schema.Schema<A>,
   input: A,
 ): Effect.Effect<Bytes, never, never> {
   const encoded = rlp.encodeTo(schema, input);
 
-  if (Either.isLeft(encoded)) {
-    return Effect.die(encoded.left);
+  if (Result.isFailure(encoded)) {
+    return Effect.die(encoded.failure);
   }
-  return Effect.succeed(encoded.right);
+  return Effect.succeed(encoded.success);
 }
 /**
  * Get the transaction hash from encoded transaction bytes.

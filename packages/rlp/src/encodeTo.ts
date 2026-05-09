@@ -1,20 +1,15 @@
 import { Bytes, Uint } from "@evm-effect/ethereum-types";
-import { SchemaAST as AST, Either, type Schema } from "effect";
+import { type SchemaAST as AST, Result, type Schema } from "effect";
 import type { RlpEncodeError } from "./exceptions.js";
 import { encode } from "./index.js";
-import type { Extended } from "./types.js";
-import {
-  getConcretes,
-  getIdentifierAnnotation,
-  isExtended,
-  normalize,
-} from "./utils.js";
+import type { Extended } from "./types.ts";
+import { getConcretes, isExtended } from "./utils.js";
 
-function extractExtendedFromDeclarationFields(
-  declaration: AST.Declaration | AST.TypeLiteral,
+function extractExtendedFromObjects(
+  declaration: AST.Objects,
   input: unknown,
 ): Extended[] {
-  const it = AST.getPropertySignatures(declaration);
+  const it = declaration.propertySignatures;
   const fields: Extended[] = [];
   for (const signature of it) {
     if (signature.name === "_tag") {
@@ -32,7 +27,7 @@ function extractExtendedFromDeclarationFields(
   return fields;
 }
 function extractExtendedFromTuple(
-  tuple: AST.TupleType,
+  tuple: AST.Arrays,
   input: unknown,
 ): Extended[] {
   const elementsTypes = tuple.elements;
@@ -50,13 +45,13 @@ function extractExtendedFromTuple(
   );
   const additional = input.slice(input.length - additionalTypes.length);
   for (let i = 0; i < elementsTypes.length; i++) {
-    fields.push(extractExtendedFromAst(elementsTypes[i].type, elements[i]));
+    fields.push(extractExtendedFromAst(elementsTypes[i], elements[i]));
   }
   for (const restItem of rest) {
-    fields.push(extractExtendedFromAst(restType.type, restItem));
+    fields.push(extractExtendedFromAst(restType, restItem));
   }
   for (let i = 0; i < additionalTypes.length; i++) {
-    fields.push(extractExtendedFromAst(additionalTypes[i].type, additional[i]));
+    fields.push(extractExtendedFromAst(additionalTypes[i], additional[i]));
   }
   return fields;
 }
@@ -83,6 +78,9 @@ function extractLiteral(ast: AST.Literal): Extended {
     case false:
       return false;
   }
+  if (typeof ast.literal === "string") {
+    return ast.literal;
+  }
   if (typeof ast.literal === "number") {
     if (Number.isSafeInteger(ast.literal) && ast.literal >= 0) {
       return new Uint({ value: BigInt(ast.literal) });
@@ -98,38 +96,45 @@ function extractLiteral(ast: AST.Literal): Extended {
   throw new Error(`Unsupported literal value: ${ast.literal}`);
 }
 function extractExtendedFromAst(ast: AST.AST, input: unknown): Extended {
-  ast = normalize(ast);
   switch (ast._tag) {
-    case "StringKeyword":
+    case "String":
       return input as string;
-    case "BooleanKeyword":
+    case "Boolean":
       return input as boolean;
     case "Literal":
       return extractLiteral(ast);
-    case "TypeLiteral":
     case "Declaration": {
       if (isExtended(ast)) {
         return input as Extended;
       }
-      const identifier = getIdentifierAnnotation(ast);
-      if (identifier?.startsWith("Uint8Array")) {
-        return input as Uint8Array;
-      }
 
-      return extractExtendedFromDeclarationFields(ast, input);
+      const encoding = ast.encoding?.[0]?.to;
+      if (encoding) {
+        return extractExtendedFromAst(encoding, input);
+      }
+      if (ast.typeParameters.length === 0) {
+        if (input instanceof Uint8Array) {
+          return input;
+        }
+      }
+      throw new Error("Don't know how to handle this AST");
     }
+    case "BigInt":
+      return new Uint({ value: input as bigint });
+    case "Objects":
+      return extractExtendedFromObjects(ast, input);
     case "Union":
       return extractFromUnion(ast, input);
-    case "TupleType":
+    case "Arrays":
       return extractExtendedFromTuple(ast, input);
     default:
       throw new Error("Don't know how to handle this AST");
   }
 }
-export function encodeTo<A, I, R>(
-  schema: Schema.Schema<A, I, R>,
+export function encodeTo<A>(
+  schema: Schema.Schema<A>,
   input: A,
-): Either.Either<Bytes, RlpEncodeError> {
+): Result.Result<Bytes, RlpEncodeError> {
   const extended = extractExtendedFromAst(schema.ast, input);
-  return Either.right(encode(extended));
+  return Result.succeed(encode(extended));
 }

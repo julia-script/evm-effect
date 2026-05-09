@@ -1,4 +1,4 @@
-import { Chunk, Effect, Layer, Stream, type StreamEmit } from "effect";
+import { Effect, Fiber, Layer, Stream } from "effect";
 import { content } from "./generated/solcjs.bundle.js";
 import { Solc, SolcWorkerError } from "./index.js";
 import type { CompilerOutput } from "./schemas/output.js";
@@ -75,20 +75,34 @@ export const SolcNext = Effect.fn("SolcNext")(function* ({
     },
   );
 
-  const stream = Stream.async(
-    (emit: StreamEmit.Emit<never, never, JSONRpcResponse, void>) => {
-      worker.onmessage = (event) => {
-        const chunk = Chunk.of(event.data as JSONRpcResponse);
-        emit(Effect.succeed(chunk));
-      };
-      worker.onerror = (event) => {
-        console.error(event, event.message, event.error);
-      };
-      worker.onmessageerror = (event) => {
-        console.error(event);
-      };
-    },
+  const onMessageStream = Stream.fromEventListener<MessageEvent>(
+    worker,
+    "message",
   );
+  const onErrorStream = Stream.fromEventListener<ErrorEvent>(worker, "error");
+  const onMessageErrorStream = Stream.fromEventListener<MessageEvent>(
+    worker,
+    "messageerror",
+  );
+  const stream = Stream.mergeAll<MessageEvent | ErrorEvent, never, never>(
+    [onMessageStream, onErrorStream, onMessageErrorStream],
+    { concurrency: 3 },
+  );
+
+  // const stream = Stream.callback(
+  //   (emit: Queue<Queue>) => {
+  //     worker.onmessage = (event) => {
+  //       const chunk = Chunk.of(event.data as JSONRpcResponse);
+  //       emit(Effect.succeed(chunk));
+  //     };
+  //     worker.onerror = (event) => {
+  //       console.error(event, event.message, event.error);
+  //     };
+  // worker.onmessageerror = (event) => {
+  //   console.error(event);
+  // };
+  //   },
+  // );
   yield* Effect.addFinalizer(() => Effect.succeed(worker.terminate()));
 
   const send = Effect.fn("send")(function* (
@@ -98,20 +112,54 @@ export const SolcNext = Effect.fn("SolcNext")(function* ({
       params: unknown[];
     },
     version: string = "latest",
-  ) {
+  ): Effect.fn.Return<JSONRpcResponse, SolcWorkerError> {
     const fork = yield* stream.pipe(
-      Stream.filter((chunk) => chunk.id === message.id),
+      Stream.filter((event) => {
+        if (event.type === "message") {
+          return (event as MessageEvent).data.id === message.id;
+        }
+        return true;
+      }),
       Stream.take(1),
       Stream.runCollect,
-      Effect.fork,
+      Effect.forkChild,
     );
+    // const fork = yield* stream.pipe(
+    //   Stream.filter((chunk) => chunk.id === message.id),
+    //   Stream.take(1),
+    //   Stream.runCollect,
+    //   Effect.fork,
+    // );
     const url = new URL("/api/solc", location.origin);
     worker.postMessage({
       ...message,
       params: [url.toString(), version, ...message.params],
     });
-    const result = yield* fork;
-    return yield* result.pipe(Chunk.head, Effect.orDie);
+    const exit = yield* Fiber.await(fork).pipe();
+    const [event] = yield* exit
+      .asEffect()
+      .pipe(
+        Effect.mapError(
+          (error) =>
+            new SolcWorkerError({ message: `Failed to await fork: ${error}` }),
+        ),
+      );
+    if (event.type === "message") {
+      return yield* Effect.succeed(
+        (event as MessageEvent).data as JSONRpcResponse,
+      );
+    }
+    if (event.type === "error") {
+      return yield* Effect.fail(
+        new SolcWorkerError((event as ErrorEvent).error),
+      );
+    }
+    if (event.type === "messageerror") {
+      return yield* Effect.fail(
+        new SolcWorkerError((event as MessageEvent).data),
+      );
+    }
+    return yield* Effect.die("Unknown event type");
   });
 
   const id = 0;
@@ -136,6 +184,6 @@ export const SolcNext = Effect.fn("SolcNext")(function* ({
 });
 
 export const setupSolcNextLayer = (config: SolcNextConfig = {}) =>
-  Layer.scoped(Solc, SolcNext(config));
+  Layer.effect(Solc, SolcNext(config));
 
 export const SolcNextLayer = setupSolcNextLayer();

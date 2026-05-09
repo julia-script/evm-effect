@@ -1,5 +1,5 @@
 import { Bytes32, U64, Uint } from "@evm-effect/ethereum-types";
-import { Effect, Either, Option } from "effect";
+import { Effect, Option, Result } from "effect";
 
 import type { BlockChain } from "./blockchain.js";
 import { applyBody, computeRequestsHash } from "./blocks/executor.js";
@@ -53,14 +53,14 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
 
   if (fork.eip(7934)) {
     const encodedBlockResult = encodeBlock(block);
-    if (Either.isLeft(encodedBlockResult)) {
+    if (Result.isFailure(encodedBlockResult)) {
       return yield* Effect.fail(
         new InvalidBlock({
-          message: `Failed to encode block: ${encodedBlockResult.left.message}`,
+          message: `Failed to encode block: ${encodedBlockResult.failure.message}`,
         }),
       );
     }
-    const encodedBlock = encodedBlockResult.right;
+    const encodedBlock = encodedBlockResult.success;
     if (encodedBlock.value.length > MAX_RLP_BLOCK_SIZE) {
       return yield* Effect.fail(
         new InvalidBlock({
@@ -88,13 +88,13 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
     block.transactions,
     block.withdrawals ?? [],
     block.ommers,
-  ).pipe(Effect.either);
+  ).pipe(Effect.result);
 
-  if (Either.isLeft(blockOutputResult)) {
+  if (Result.isFailure(blockOutputResult)) {
     State.rollbackTransaction(blockEnv.state, blockTransientStorage);
-    return yield* Effect.fail(blockOutputResult.left);
+    return yield* Effect.fail(blockOutputResult.failure);
   }
-  const blockOutput = blockOutputResult.right;
+  const blockOutput = blockOutputResult.success;
 
   const failWithRollback = <E>(error: E) => {
     State.rollbackTransaction(blockEnv.state, blockTransientStorage);
@@ -106,24 +106,24 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
     blockOutput.transactionsTrie,
     Option.none(),
   );
-  if (Either.isLeft(transactionsRootResult)) {
+  if (Result.isFailure(transactionsRootResult)) {
     return yield* failWithRollback(
       new InvalidBlock({
-        message: `Failed to calculate transactions root: ${transactionsRootResult.left.message}`,
+        message: `Failed to calculate transactions root: ${transactionsRootResult.failure.message}`,
       }),
     );
   }
-  const transactionsRoot = transactionsRootResult.right;
+  const transactionsRoot = transactionsRootResult.success;
 
   const receiptRootResult = root(blockOutput.receiptsTrie, Option.none());
-  if (Either.isLeft(receiptRootResult)) {
+  if (Result.isFailure(receiptRootResult)) {
     return yield* failWithRollback(
       new InvalidBlock({
-        message: `Failed to calculate receipt root: ${receiptRootResult.left.message}`,
+        message: `Failed to calculate receipt root: ${receiptRootResult.failure.message}`,
       }),
     );
   }
-  const receiptRoot = receiptRootResult.right;
+  const receiptRoot = receiptRootResult.success;
 
   const blockLogsBloom = logsBloom(blockOutput.blockLogs);
 
@@ -131,14 +131,14 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
     blockOutput.withdrawalsTrie,
     Option.none(),
   );
-  if (Either.isLeft(withdrawalsRootResult)) {
+  if (Result.isFailure(withdrawalsRootResult)) {
     return yield* failWithRollback(
       new InvalidBlock({
-        message: `Failed to calculate withdrawals root: ${withdrawalsRootResult.left.message}`,
+        message: `Failed to calculate withdrawals root: ${withdrawalsRootResult.failure.message}`,
       }),
     );
   }
-  const withdrawalsRoot = withdrawalsRootResult.right;
+  const withdrawalsRoot = withdrawalsRootResult.success;
 
   const requestsHash = yield* computeRequestsHash(blockOutput.requests);
 

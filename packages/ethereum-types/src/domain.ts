@@ -6,7 +6,7 @@
  */
 
 import { bufferFromHex, bufferToHex } from "@evm-effect/shared/bytes";
-import { Either, Equal, Hash, Schema } from "effect";
+import { Equal, Hash, Result, Schema } from "effect";
 import type { Bytes32 } from "./bytes.js";
 import { Bytes, Bytes20, type Bytes256 } from "./bytes.js";
 import { EvmTypeError } from "./exceptions.js";
@@ -55,34 +55,36 @@ export class Address extends Schema.TaggedClass<Address>("Address")("Address", {
   /**
    * Create an address from raw bytes (must be exactly 20 bytes)
    */
-  static fromBytes(bytes: Uint8Array): Either.Either<Address, EvmTypeError> {
+  static fromBytes(bytes: Uint8Array): Result.Result<Address, EvmTypeError> {
     if (bytes.length !== 20) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({
           message: `Address must be exactly 20 bytes, got ${bytes.length}`,
         }),
       );
     }
-    return Either.right(new Address({ value: new Bytes20({ value: bytes }) }));
+    return Result.succeed(
+      new Address({ value: new Bytes20({ value: bytes }) }),
+    );
   }
 
   /**
    * Create an address from a hex string
    */
-  static fromHex(hex: string): Either.Either<Address, EvmTypeError> {
+  static fromHex(hex: string): Result.Result<Address, EvmTypeError> {
     const bytesResult = Bytes.fromHex(hex);
-    if (Either.isLeft(bytesResult)) {
-      return Either.left(bytesResult.left);
+    if (Result.isFailure(bytesResult)) {
+      return Result.fail(bytesResult.failure);
     }
-    const bytes = bytesResult.right;
+    const bytes = bytesResult.success;
     if (bytes.value.length !== 20) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({
           message: `Address must be exactly 20 bytes, got ${bytes.value.length}`,
         }),
       );
     }
-    return Either.right(
+    return Result.succeed(
       new Address({ value: new Bytes20({ value: bytes.value }) }),
     );
   }

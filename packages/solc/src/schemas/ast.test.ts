@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { Schema } from "effect";
 import solc from "solc";
-import { decodeOutput } from "./helpers.js";
-import { type CompilerOutput, isSolcSourceUnitAst } from "./output.js";
+import { CompilerOutput, isSolcSourceUnitAst } from "./output.js";
+
+const decodeOutput = Schema.decodeUnknownSync(CompilerOutput);
 
 const astOutputSelection = {
   "*": {

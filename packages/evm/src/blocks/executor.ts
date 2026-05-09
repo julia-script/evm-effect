@@ -15,7 +15,7 @@ import {
   Uint,
 } from "@evm-effect/ethereum-types";
 import rlp from "@evm-effect/rlp";
-import { Effect, Either, Equal } from "effect";
+import { Effect, Equal, Result } from "effect";
 import { type BlockOutput, emptyBlockOutput } from "../blockchain.js";
 import {
   BEACON_ROOTS_ADDRESS,
@@ -150,7 +150,7 @@ export const applyBody = (
  * - Byzantium (EIP-649): 3 ETH
  * - Constantinople and later (EIP-1234): 2 ETH
  */
-const getBlockReward = (fork: Fork["Type"]): Uint => {
+const getBlockReward = (fork: Fork["Service"]): Uint => {
   if (fork.eip(1234)) {
     return BLOCK_REWARD_CONSTANTINOPLE;
   }
@@ -358,57 +358,57 @@ const decodeTransaction = (
         if (txType === 1) {
           const payload = new Bytes({ value: tx.value.slice(1) });
           const decoded = rlp.decodeTo(AccessListTransaction, payload);
-          if (Either.isLeft(decoded)) {
+          if (Result.isFailure(decoded)) {
             return yield* Effect.fail(
               new InvalidBlock({
-                message: `Failed to decode access list transaction: ${decoded.left.message}`,
+                message: `Failed to decode access list transaction: ${decoded.failure.message}`,
               }),
             );
           }
-          return decoded.right;
+          return decoded.success;
         } else if (txType === 2) {
           const payload = new Bytes({ value: tx.value.slice(1) });
           const decoded = rlp.decodeTo(FeeMarketTransaction, payload);
-          if (Either.isLeft(decoded)) {
+          if (Result.isFailure(decoded)) {
             return yield* Effect.fail(
               new InvalidBlock({
-                message: `Failed to decode fee market transaction: ${decoded.left.message}`,
+                message: `Failed to decode fee market transaction: ${decoded.failure.message}`,
               }),
             );
           }
-          return decoded.right;
+          return decoded.success;
         } else if (txType === 3) {
           const payload = new Bytes({ value: tx.value.slice(1) });
           const decoded = rlp.decodeTo(BlobTransaction, payload);
-          if (Either.isLeft(decoded)) {
+          if (Result.isFailure(decoded)) {
             return yield* Effect.fail(
               new InvalidBlock({
-                message: `Failed to decode blob transaction: ${decoded.left.message}`,
+                message: `Failed to decode blob transaction: ${decoded.failure.message}`,
               }),
             );
           }
-          return decoded.right;
+          return decoded.success;
         } else if (txType === 4) {
           const payload = new Bytes({ value: tx.value.slice(1) });
           const decoded = rlp.decodeTo(SetCodeTransaction, payload);
-          if (Either.isLeft(decoded)) {
+          if (Result.isFailure(decoded)) {
             return yield* Effect.fail(
               new InvalidBlock({
-                message: `Failed to decode set code transaction: ${decoded.left.message}`,
+                message: `Failed to decode set code transaction: ${decoded.failure.message}`,
               }),
             );
           }
-          return decoded.right;
+          return decoded.success;
         } else {
           const decoded = rlp.decodeTo(LegacyTransaction, tx);
-          if (Either.isLeft(decoded)) {
+          if (Result.isFailure(decoded)) {
             return yield* Effect.fail(
               new InvalidBlock({
-                message: `Failed to decode legacy transaction: ${decoded.left.message}`,
+                message: `Failed to decode legacy transaction: ${decoded.failure.message}`,
               }),
             );
           }
-          return decoded.right;
+          return decoded.success;
         }
       }
     }
@@ -476,37 +476,37 @@ const parseDepositRequests = (
           if (receiptType === 1) {
             const payload = new Bytes({ value: receipt.value.slice(1) });
             const decoded = rlp.decodeTo(Receipt, payload);
-            if (Either.isLeft(decoded)) {
+            if (Result.isFailure(decoded)) {
               continue;
             }
-            decodedReceipt = decoded.right;
+            decodedReceipt = decoded.success;
           } else if (receiptType === 2) {
             const payload = new Bytes({ value: receipt.value.slice(1) });
             const decoded = rlp.decodeTo(Receipt, payload);
-            if (Either.isLeft(decoded)) {
+            if (Result.isFailure(decoded)) {
               continue;
             }
-            decodedReceipt = decoded.right;
+            decodedReceipt = decoded.success;
           } else if (receiptType === 3) {
             const payload = new Bytes({ value: receipt.value.slice(1) });
             const decoded = rlp.decodeTo(Receipt, payload);
-            if (Either.isLeft(decoded)) {
+            if (Result.isFailure(decoded)) {
               continue;
             }
-            decodedReceipt = decoded.right;
+            decodedReceipt = decoded.success;
           } else if (receiptType === 4) {
             const payload = new Bytes({ value: receipt.value.slice(1) });
             const decoded = rlp.decodeTo(Receipt, payload);
-            if (Either.isLeft(decoded)) {
+            if (Result.isFailure(decoded)) {
               continue;
             }
-            decodedReceipt = decoded.right;
+            decodedReceipt = decoded.success;
           } else {
             const decoded = rlp.decodeTo(Receipt, receipt);
-            if (Either.isLeft(decoded)) {
+            if (Result.isFailure(decoded)) {
               continue;
             }
-            decodedReceipt = decoded.right;
+            decodedReceipt = decoded.success;
           }
           break;
         }

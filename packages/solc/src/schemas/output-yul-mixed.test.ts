@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { Schema } from "effect";
 import solc from "solc";
-import { decodeInput, decodeOutput } from "./helpers.js";
-import type { CompilerInput } from "./input.js";
-import type { CompilerOutput } from "./output.js";
+import { CompilerInput } from "./input.js";
+import { CompilerOutput } from "./output.js";
+
+const decodeOutput = Schema.decodeUnknownSync(CompilerOutput);
+const decodeInput = Schema.decodeUnknownSync(CompilerInput);
 
 function collectYulNodeTypes(value: unknown): Set<string> {
   const out = new Set<string>();

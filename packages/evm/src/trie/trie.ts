@@ -6,7 +6,7 @@
 
 import { keccak256 } from "@evm-effect/crypto";
 import {
-  Address,
+  type Address,
   type AnyBytes,
   Bytes,
   Bytes32,
@@ -15,7 +15,7 @@ import {
 } from "@evm-effect/ethereum-types";
 import rlp, { type Extended } from "@evm-effect/rlp";
 import { HashMap } from "@evm-effect/shared/hashmap";
-import { Data, Either, Equal, Match, Option } from "effect";
+import { Data, Equal, Match, Option, Result } from "effect";
 import { isTagged } from "effect/Predicate";
 import { Withdrawal } from "../types/Block.js";
 import { Receipt } from "../types/Receipt.js";
@@ -87,7 +87,12 @@ export type ExtensionNode = {
   keySegment: Bytes;
   subnode: Extended;
 };
-export const ExtensionNode = Data.tagged<ExtensionNode>("ExtensionNode");
+export const ExtensionNode = (
+  extensionNode: Omit<ExtensionNode, "_tag">,
+): ExtensionNode => ({
+  _tag: "ExtensionNode",
+  ...extensionNode,
+});
 
 type BranchNode = {
   _tag: "BranchNode";
@@ -132,19 +137,19 @@ function encodeNode(
     Match.tags({
       Account: (account) => {
         if (Option.isNone(storageRoot)) {
-          return Either.left(
+          return Result.fail(
             new TrieError({
               message: "Storage root is required for account encoding",
             }),
           );
         }
-        return Either.right(account.encode(storageRoot.value));
+        return Result.succeed(account.encode(storageRoot.value));
       },
       LegacyTransaction: (legacyTransaction) => {
         return rlp
           .encodeTo(LegacyTransaction, legacyTransaction)
           .pipe(
-            Either.mapLeft(
+            Result.mapError(
               (error) => new TrieError({ message: error.message }),
             ),
           );
@@ -153,7 +158,7 @@ function encodeNode(
         return rlp
           .encodeTo(AccessListTransaction, accessListTransaction)
           .pipe(
-            Either.mapLeft(
+            Result.mapError(
               (error) => new TrieError({ message: error.message }),
             ),
           );
@@ -162,7 +167,7 @@ function encodeNode(
         return rlp
           .encodeTo(FeeMarketTransaction, feeMarketTransaction)
           .pipe(
-            Either.mapLeft(
+            Result.mapError(
               (error) => new TrieError({ message: error.message }),
             ),
           );
@@ -171,7 +176,7 @@ function encodeNode(
         return rlp
           .encodeTo(BlobTransaction, blobTransaction)
           .pipe(
-            Either.mapLeft(
+            Result.mapError(
               (error) => new TrieError({ message: error.message }),
             ),
           );
@@ -180,7 +185,7 @@ function encodeNode(
         return rlp
           .encodeTo(SetCodeTransaction, setCodeTransaction)
           .pipe(
-            Either.mapLeft(
+            Result.mapError(
               (error) => new TrieError({ message: error.message }),
             ),
           );
@@ -189,7 +194,7 @@ function encodeNode(
         return rlp
           .encodeTo(Receipt, receipt)
           .pipe(
-            Either.mapLeft(
+            Result.mapError(
               (error) => new TrieError({ message: error.message }),
             ),
           );
@@ -198,19 +203,19 @@ function encodeNode(
         return rlp
           .encodeTo(Withdrawal, withdrawal)
           .pipe(
-            Either.mapLeft(
+            Result.mapError(
               (error) => new TrieError({ message: error.message }),
             ),
           );
       },
       U256: (u256) => {
-        return Either.right(rlp.encode(u256));
+        return Result.succeed(rlp.encode(u256));
       },
       Bytes: (bytes) => {
-        return Either.right(bytes);
+        return Result.succeed(bytes);
       },
       Address: (address) => {
-        return Either.right(new Bytes({ value: address.value.value }));
+        return Result.succeed(new Bytes({ value: address.value.value }));
       },
     }),
     Match.exhaustive,
@@ -270,14 +275,14 @@ function prepareTrie<
     let encoded: Bytes = new Bytes({ value: new Uint8Array(0) });
     if (value instanceof Account) {
       if (Option.isNone(getStorageRoot)) {
-        return Either.left(
+        return Result.fail(
           new TrieError({
             message: "Storage root is required for account encoding",
           }),
         );
       }
-      if (!isTagged(preimage, Address._tag)) {
-        return Either.left(new TrieError({ message: "Key is not an address" }));
+      if (!isTagged(preimage, "Address")) {
+        return Result.fail(new TrieError({ message: "Key is not an address" }));
       }
 
       const storageRoot = getStorageRoot.value(preimage);
@@ -285,23 +290,23 @@ function prepareTrie<
         value,
         Option.some(new Bytes({ value: storageRoot.value })),
       );
-      if (Either.isLeft(encodedValue)) {
-        return Either.left(encodedValue.left);
+      if (Result.isFailure(encodedValue)) {
+        return Result.fail(encodedValue.failure);
       }
-      encoded = encodedValue.right;
+      encoded = encodedValue.success;
     } else {
       const encodedValue = encodeNode(value, Option.none());
-      if (Either.isLeft(encodedValue)) {
-        return Either.left(encodedValue.left);
+      if (Result.isFailure(encodedValue)) {
+        return Result.fail(encodedValue.failure);
       }
-      encoded = encodedValue.right;
+      encoded = encodedValue.success;
     }
     if (encoded.value.length === 0) {
-      return Either.left(new TrieError({ message: "Encoded value is empty" }));
+      return Result.fail(new TrieError({ message: "Encoded value is empty" }));
     }
 
     const keyAsBytes = new Bytes({
-      value: isTagged(preimage, Address._tag)
+      value: isTagged(preimage, "Address")
         ? preimage.value.value
         : preimage.value,
     });
@@ -312,7 +317,7 @@ function prepareTrie<
 
     mapped.set(nibbleKey, encoded);
   }
-  return Either.right(mapped);
+  return Result.succeed(mapped);
 }
 
 const patricialize = (
@@ -388,16 +393,16 @@ export const root = <
 >(
   trie: Trie<K, V, D>,
   getStorageRoot: Option.Option<(address: Address) => Root>,
-): Either.Either<Root, TrieError> => {
+): Result.Result<Root, TrieError> => {
   const obj = prepareTrie(trie, getStorageRoot);
-  if (Either.isLeft(obj)) {
-    return Either.left(obj.left);
+  if (Result.isFailure(obj)) {
+    return Result.fail(obj.failure);
   }
 
-  const rootNode = encodeInternalNode(patricialize(obj.right, 0));
+  const rootNode = encodeInternalNode(patricialize(obj.success, 0));
   const rlpEncoded = rlp.encode(rootNode);
   if (rlpEncoded.value.length < 32) {
-    return Either.right(keccak256(rlpEncoded));
+    return Result.succeed(keccak256(rlpEncoded));
   }
-  return Either.right(new Bytes32({ value: rlpEncoded.value }));
+  return Result.succeed(new Bytes32({ value: rlpEncoded.value }));
 };

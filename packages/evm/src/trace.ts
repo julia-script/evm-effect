@@ -9,11 +9,12 @@ import {
   Layer,
   Match,
   Option,
-  ParseResult,
   Ref,
   Schema,
+  SchemaGetter,
+  SchemaIssue,
 } from "effect";
-import { BigIntFromSelf } from "effect/Schema";
+import { isString } from "effect/Predicate";
 import type { BlockOutput } from "./blockchain.js";
 import type { MessageCallOutput } from "./blocks/system.js";
 import type { EthereumException } from "./exceptions.js";
@@ -70,12 +71,12 @@ export type TransactionEvent = Extract<
 >;
 export type TraceEvent = Exclude<EvmTraceEvent, TransactionEvent>;
 
-export class EvmTracer extends Context.Tag("EvmTracer")<
+export class EvmTracer extends Context.Service<
   EvmTracer,
   {
     readonly trace: (event: EvmTraceEvent) => Effect.Effect<void, never, never>;
   }
->() {
+>()("EvmTracer") {
   static empty = EvmTracer.of({
     trace: () => Effect.succeed(void 0),
   });
@@ -102,136 +103,107 @@ export const evmTrace: (
     yield* maybeTracer.value.trace(event);
   }
 });
-export const evmTraceWith = (evm: Evm["Type"], event: TraceEvent) =>
+export const evmTraceWith = (evm: Evm["Service"], event: TraceEvent) =>
   evmTrace(event).pipe(Effect.provideService(Evm, evm));
 
-class NumberFromHex extends Schema.transformOrFail(
-  Schema.String.annotations({
-    description: "a Hex string to be decoded into a number",
-  }),
-  Schema.Number,
-  {
-    strict: true,
-    decode: (value, _, ast) =>
-      ParseResult.try({
-        try: () => Number.parseInt(value, 16),
-        catch: () =>
-          new ParseResult.Type(
-            ast,
-            value,
-            `Unable to decode ${JSON.stringify(value)} into a number`,
-          ),
+const NumberFromHex = Schema.String.pipe(
+  Schema.decodeTo(Schema.Number, {
+    decode: SchemaGetter.transformOrFail((value) =>
+      Effect.gen(function* () {
+        if (!isString(value)) {
+          return yield* Effect.fail(
+            new SchemaIssue.InvalidValue(Option.some(value)),
+          );
+        }
+        let str: string = value;
+        if (str.startsWith("0x")) {
+          str = str.slice(2);
+        }
+        return yield* Effect.succeed(Number.parseInt(str, 16));
       }),
-    encode: (value, _, ast) => {
-      if (Number.isFinite(value)) {
-        return ParseResult.succeed(`0x${value.toString(16)}`);
-      }
-      return ParseResult.fail(
-        new ParseResult.Type(
-          ast,
-          value,
-          `Unable to encode ${value} into a number`,
-        ),
-      );
-    },
-  },
-).annotations({ identifier: "Number" }) {}
-class AddressFromHex extends Schema.transformOrFail(
-  Schema.String.annotations({
-    description: "a Hex string to be decoded into a address",
-  }),
-  Address,
-  {
-    strict: true,
-    decode: (value, _, ast) =>
-      ParseResult.try({
-        try: () => new Address(value),
-        catch: () =>
-          new ParseResult.Type(
-            ast,
-            value,
-            `Unable to decode ${JSON.stringify(value)} into a address`,
-          ),
+    ),
+    encode: SchemaGetter.transformOrFail((value) =>
+      Effect.gen(function* () {
+        if (Number.isFinite(value)) {
+          return yield* Effect.succeed(`0x${value.toString(16)}`);
+        }
+        return yield* Effect.fail(
+          new SchemaIssue.InvalidValue(Option.some(value)),
+        );
       }),
-    encode: (a) => ParseResult.succeed(`0x${bufferToHex(a.value.value)}`),
-  },
-).annotations({ identifier: "Address" }) {}
-class BigIntFromHex extends Schema.transformOrFail(
-  Schema.String.annotations({
-    description: "a Hex string to be decoded into a bigint",
+    ),
   }),
-  BigIntFromSelf,
-  {
-    strict: true,
-    decode: (value, _, ast) =>
-      ParseResult.try({
-        try: () => BigInt(value),
-        catch: () =>
-          new ParseResult.Type(
-            ast,
-            value,
-            `Unable to decode ${JSON.stringify(value)} into a bigint`,
-          ),
+);
+const AddressFromHex = Schema.String.pipe(
+  Schema.decodeTo(Address, {
+    decode: SchemaGetter.transformOrFail((value) =>
+      Effect.gen(function* () {
+        if (!isString(value)) {
+          return yield* Effect.fail(
+            new SchemaIssue.InvalidValue(Option.some(value)),
+          );
+        }
+        return yield* Effect.succeed(new Address(value));
       }),
+    ),
+    encode: SchemaGetter.transformOrFail((value) =>
+      Effect.gen(function* () {
+        return yield* Effect.succeed(`0x${bufferToHex(value.value.value)}`);
+      }),
+    ),
+  }),
+);
 
-    encode: (a) => ParseResult.succeed(`0x${a.toString(16)}`),
-  },
-).annotations({ identifier: "BigInt" }) {}
+const Uint8ArrayFromHex = Schema.String.pipe(
+  Schema.decodeTo(Schema.Uint8Array, {
+    // strict: true,
+    decode: SchemaGetter.transformOrFail((value) =>
+      Effect.gen(function* () {
+        if (!isString(value)) {
+          return yield* Effect.fail(
+            new SchemaIssue.InvalidValue(Option.some(value)),
+          );
+        }
+        let str: string = value;
 
-class Uint8ArrayFromHex extends Schema.transformOrFail(
-  Schema.String.annotations({
-    description: "a Hex string to be decoded into a Uint8Array",
-  }),
-  Schema.Uint8ArrayFromSelf,
-  {
-    strict: true,
-    decode: (value, _, ast) =>
-      ParseResult.try({
-        try: () =>
-          value.startsWith("0x")
-            ? bufferFromHex(value.slice(2))
-            : bufferFromHex(value),
-        catch: () =>
-          new ParseResult.Type(
-            ast,
-            value,
-            `Unable to decode ${JSON.stringify(value).slice(
-              0,
-              10,
-            )}... into a Uint8Array`,
-          ),
+        if (str.startsWith("0x")) {
+          str = str.slice(2);
+        }
+        // const str = value
+        // return yield* Effect.succeed(bufferFromHex(value));
+        return yield* Effect.try({
+          try: () => bufferFromHex(str),
+          catch: () => new SchemaIssue.InvalidValue(Option.some(value)),
+        });
       }),
-    encode: (value) => ParseResult.succeed(`0x${bufferToHex(value)}`),
-  },
-).annotations({ identifier: "Uint8Array" }) {}
-
-class u256FromHex extends Schema.transformOrFail(
-  Schema.String.annotations({
-    description: "a Hex string to be decoded into a u256",
+    ),
+    encode: SchemaGetter.transformOrFail((value) =>
+      Effect.gen(function* () {
+        return yield* Effect.succeed(`0x${bufferToHex(value)}`);
+      }),
+    ),
   }),
-  U256,
-  {
-    strict: false,
-    decode: (value, _, ast) =>
-      ParseResult.try({
+);
+
+const u256FromHex = Schema.String.pipe(
+  Schema.decodeTo(U256, {
+    decode: SchemaGetter.transformOrFail((value) =>
+      Effect.try({
         try: () => new U256({ value: BigInt(value) }),
-        catch: () =>
-          new ParseResult.Type(
-            ast,
-            value,
-            `Unable to decode ${JSON.stringify(value)} into a bigint`,
-          ),
+        catch: () => new SchemaIssue.InvalidValue(Option.some(value)),
       }),
-
-    encode: (a) => ParseResult.succeed(`0x${a.value.toString(16)}`),
-  },
-).annotations({ identifier: "BigInt" }) {}
+    ),
+    encode: SchemaGetter.transformOrFail((value) =>
+      Effect.succeed(`0x${value.value.toString(16)}`),
+    ),
+  }),
+);
 
 export class Trace extends Schema.Class<Trace>("Trace")({
   pc: Schema.Number,
-  op: Schema.optional(Schema.Union(NumberFromHex, AddressFromHex)),
-  gas: BigIntFromHex,
-  gasCost: BigIntFromHex,
+  op: Schema.optional(Schema.Union([NumberFromHex, AddressFromHex])),
+  gas: Schema.BigIntFromString,
+  gasCost: Schema.BigIntFromString,
   memory: Schema.optional(Uint8ArrayFromHex),
   memSize: Schema.Number,
   stack: Schema.optional(Schema.Array(u256FromHex)),
@@ -244,11 +216,11 @@ export class Trace extends Schema.Class<Trace>("Trace")({
 
 export class FinalTrace extends Schema.Class<FinalTrace>("FinalTrace")({
   output: Uint8ArrayFromHex,
-  gasUsed: BigIntFromHex,
+  gasUsed: Schema.BigIntFromString,
   error: Schema.optional(Schema.String),
 }) {}
 
-const AnyTrace = Schema.Union(Trace, FinalTrace);
+const AnyTrace = Schema.Union([Trace, FinalTrace]);
 type AnyTrace = typeof AnyTrace.Type;
 type Eip3155TracerOptions = {
   traceMemory?: boolean;
@@ -292,7 +264,7 @@ const Eip3155Tracer = Effect.fn("Eip3155Tracer")(function* ({
           return emit(
             lastTrace,
             Effect.suspend(() =>
-              Schema.encode(AnyTrace)(lastTrace).pipe(Effect.orDie),
+              Schema.encodeUnknownEffect(AnyTrace)(event).pipe(Effect.orDie),
             ),
           );
         }

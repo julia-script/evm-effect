@@ -1,11 +1,4 @@
-import {
-  Address,
-  Bytes,
-  Bytes8,
-  U64,
-  U256,
-  Uint,
-} from "@evm-effect/ethereum-types";
+import { Bytes, Bytes8, U64, U256, Uint } from "@evm-effect/ethereum-types";
 import { Schema } from "effect";
 
 const InitialAccount = Schema.Struct({
@@ -22,8 +15,5 @@ export const GenesisConfig = Schema.Struct({
   gasLimit: Uint,
   nonce: Bytes8,
   timestamp: U256,
-  initialAccounts: Schema.HashMap({
-    key: Address,
-    value: InitialAccount,
-  }),
+  initialAccounts: Schema.Record(Schema.String, InitialAccount),
 });

@@ -43,10 +43,7 @@
     "test:downloaded:all": "FIXTURES_PATH=test-fixtures/fixtures TEST_FILTER= bun test test/fixtures.test.ts"
   },
   "dependencies": {
-    "@effect/experimental": "catalog:",
-    "@effect/platform": "catalog:",
     "@effect/platform-bun": "catalog:",
-    "@effect/schema": "^0.75.4",
     "@evm-effect/crypto": "workspace:*",
     "@evm-effect/ethereum-types": "workspace:*",
     "@evm-effect/rlp": "workspace:*",

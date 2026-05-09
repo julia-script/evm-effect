@@ -6,7 +6,7 @@
  */
 
 import { U256 } from "@evm-effect/ethereum-types";
-import { Effect } from "effect";
+import { Effect, Ref } from "effect";
 import type { EthereumException } from "../../exceptions.js";
 import { StackUnderflowError } from "../../exceptions.js";
 import type * as EvmOps from "../evm.js";
@@ -57,7 +57,7 @@ function makePush(
     }
 
     // OPERATION
-    const pc = yield* evm.pc;
+    const pc = yield* Ref.get(evm.pc);
 
     const slice = evm.code.value.slice(pc + 1, pc + 1 + numBytes);
     const dataToPush = U256.fromBeBytes(slice);
@@ -119,12 +119,11 @@ function makeDup(
     yield* Gas.chargeGas(Gas.GAS_VERY_LOW);
 
     // OPERATION
-    const stack = yield* evm.stack.value;
+    const stack = yield* Ref.get(evm.stack.value);
     if (itemNumber >= stack.length) {
-      yield* Effect.fail(
+      return yield* Effect.fail(
         new StackUnderflowError({ message: "Stack underflow" }),
       );
-      return;
     }
 
     const dataToDuplicate = stack[stack.length - 1 - itemNumber];

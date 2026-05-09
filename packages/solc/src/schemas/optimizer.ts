@@ -26,7 +26,7 @@ export type OptimizerDetails = typeof OptimizerDetails.Type;
 
 export const OptimizerSettings = Schema.Struct({
   enabled: Schema.optional(Schema.Boolean),
-  runs: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.nonNegative())),
+  runs: Schema.optional(Schema.Int),
   details: Schema.optional(OptimizerDetails),
 });
 

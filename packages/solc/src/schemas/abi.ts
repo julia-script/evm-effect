@@ -3,36 +3,34 @@
  */
 import { Schema } from "effect";
 
-export const StateMutability = Schema.Literal(
-  "pure",
-  "view",
-  "nonpayable",
-  "payable",
-);
+export const StateMutability = Schema.Union([
+  Schema.Literal("pure"),
+  Schema.Literal("view"),
+  Schema.Literal("nonpayable"),
+  Schema.Literal("payable"),
+]);
 
-export type StateMutabilityEncoded = typeof StateMutability.Encoded;
+export type StateMutability = typeof StateMutability.Type;
 
-const ABIParameterBase = Schema.Struct({
+export interface ABIParameterEncoded {
+  name: string;
+  type: string;
+  internalType?: string | undefined;
+  indexed?: boolean | undefined;
+  components?: readonly ABIParameterEncoded[] | undefined;
+}
+
+export const ABIParameter = Schema.Struct({
   name: Schema.String,
   type: Schema.String,
   internalType: Schema.optional(Schema.String),
   indexed: Schema.optional(Schema.Boolean),
-});
-
-export interface ABIParameter
-  extends Schema.Schema.Type<typeof ABIParameterBase> {
-  readonly components?: ReadonlyArray<ABIParameter> | undefined;
-}
-
-export const ABIParameter: Schema.Schema<ABIParameter> = Schema.suspend(() =>
-  Schema.Struct({
-    ...ABIParameterBase.fields,
-    components: Schema.optional(
-      Schema.suspend(() => Schema.Array(ABIParameter)),
+  components: Schema.optional(
+    Schema.Array(
+      Schema.suspend((): Schema.Codec<ABIParameterEncoded> => ABIParameter),
     ),
-  }),
-);
-
+  ),
+});
 export const ABIFunction = Schema.Struct({
   type: Schema.Literal("function"),
   name: Schema.String,
@@ -40,9 +38,7 @@ export const ABIFunction = Schema.Struct({
   outputs: Schema.Array(ABIParameter),
   stateMutability: StateMutability,
 });
-
 export type ABIFunction = typeof ABIFunction.Type;
-
 export const ABIConstructor = Schema.Struct({
   type: Schema.Literal("constructor"),
   inputs: Schema.Array(ABIParameter),
@@ -50,7 +46,6 @@ export const ABIConstructor = Schema.Struct({
 });
 
 export type ABIConstructor = typeof ABIConstructor.Type;
-
 export const ABIFallback = Schema.Struct({
   type: Schema.Literal("fallback"),
   stateMutability: StateMutability,
@@ -82,14 +77,14 @@ export const ABIError = Schema.Struct({
 
 export type ABIError = typeof ABIError.Type;
 
-export const ABIEntry = Schema.Union(
+export const ABIEntry = Schema.Union([
   ABIFunction,
   ABIConstructor,
   ABIFallback,
   ABIReceive,
   ABIEvent,
   ABIError,
-);
+]);
 
 export type ABIEntry = typeof ABIEntry.Type;
 

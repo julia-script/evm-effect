@@ -2,7 +2,7 @@ import { keccak256 } from "@evm-effect/crypto";
 import { Address, type Hash32 } from "@evm-effect/ethereum-types/domain";
 import { U64, Uint } from "@evm-effect/ethereum-types/numeric";
 import rlp from "@evm-effect/rlp";
-import { Either } from "effect";
+import { Result } from "effect";
 import type { BlockChain } from "../blockchain.js";
 import { Header } from "../types/Block.js";
 export const BASE_FEE_MAX_CHANGE_DENOMINATOR = new Uint({
@@ -59,10 +59,10 @@ export const getLast256BlockHashes = (chain: BlockChain) => {
     Header,
     recentBlocks[recentBlocks.length - 1].header,
   );
-  if (Either.isLeft(encodedHeader)) {
+  if (Result.isFailure(encodedHeader)) {
     throw new Error("unreachable");
   }
-  const mostRecentBlockHash = keccak256(encodedHeader.right);
+  const mostRecentBlockHash = keccak256(encodedHeader.success);
   recentBlockHashes.push(mostRecentBlockHash);
   return recentBlockHashes;
 };

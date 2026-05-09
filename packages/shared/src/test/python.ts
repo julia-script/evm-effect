@@ -8,9 +8,10 @@ import { expect } from "bun:test";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Command } from "@effect/platform";
-import { BunContext } from "@effect/platform-bun";
-import { Chunk, Data, Effect, Either, Stream } from "effect";
+import { BunServices } from "@effect/platform-bun";
+import { Data, Effect, Result, Stream } from "effect";
+import { ChildProcess } from "effect/unstable/process";
+
 import * as fc from "fast-check";
 import { dedent } from "ts-dedent";
 
@@ -85,22 +86,32 @@ export const pythonEval = (code: string, fail = true) =>
       `),
     ].join("\n\n\n");
 
-    const command = Command.make(".venv/bin/python", "-c", completeCode).pipe(
-      Command.workingDirectory(pythonTestEnv),
-      Command.stdout("pipe"),
-      Command.stderr("pipe"),
+    const command = ChildProcess.make(
+      ".venv/bin/python",
+      ["-c", completeCode],
+      {
+        cwd: pythonTestEnv,
+        stderr: "pipe",
+        stdout: "pipe",
+      },
     );
 
-    const run = yield* Command.start(command);
+    const run = yield* command;
 
     const decoder = new TextDecoder();
-    const stdout = yield* Stream.runCollect(run.stdout).pipe(
-      Effect.map(Chunk.map((value) => decoder.decode(value))),
-      Effect.map(Chunk.join("")),
+    const stdout = yield* run.stdout.pipe(
+      Stream.runCollect,
+      Effect.map((value) =>
+        value.map((value) => decoder.decode(value)).join(""),
+      ),
+      // Effect.map(Chunk.map((value) => decoder.decode(value))),
+      // Effect.map(Chunk.join("")),
     );
-    const stderr = yield* Stream.runCollect(run.stderr).pipe(
-      Effect.map(Chunk.map((value) => decoder.decode(value))),
-      Effect.map(Chunk.join("")),
+    const stderr = yield* run.stderr.pipe(
+      Stream.runCollect,
+      Effect.map((value) =>
+        value.map((value) => decoder.decode(value)).join(""),
+      ),
     );
     const exitCode = yield* run.exitCode;
 
@@ -151,7 +162,7 @@ export const pythonEval = (code: string, fail = true) =>
 export interface TestAgainstPythonConfig<TInput, TOutput> {
   name: string;
   arbitrary: fc.Arbitrary<TInput>;
-  tsOperation: (input: TInput) => TOutput | Either.Either<TOutput, Error>;
+  tsOperation: (input: TInput) => TOutput | Result.Result<TOutput, Error>;
   pyCode: (input: TInput) => string;
   parseOutput: (stdout: string) => TOutput;
   numRuns?: number;
@@ -175,12 +186,12 @@ export async function testAgainstPython<TInput, TOutput>(
         let tsError: unknown;
         try {
           const result = config.tsOperation(input);
-          if (Either.isEither(result)) {
-            if (Either.isLeft(result)) {
+          if (Result.isResult(result)) {
+            if (Result.isFailure(result)) {
               tsResult = "error";
-              tsError = result.left;
+              tsError = result.failure;
             } else {
-              tsResult = result.right;
+              tsResult = result.success;
             }
           } else {
             tsResult = result;
@@ -217,7 +228,7 @@ export async function testAgainstPython<TInput, TOutput>(
       });
 
       await Effect.runPromise(
-        program.pipe(Effect.provide(BunContext.layer), Effect.scoped),
+        program.pipe(Effect.provide(BunServices.layer), Effect.scoped),
       );
     }),
   );

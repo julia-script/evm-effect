@@ -25,7 +25,7 @@ export const mstore: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     const valueBytes = value.toBeBytes32().value;
 
     // GAS
-    const memory = yield* evm.memory;
+    const memory = yield* Ref.get(evm.memory);
     const size = new Uint({ value: BigInt(valueBytes.length) });
     const extension = Gas.calculateGasExtendMemory(memory, [
       [startPosition, size],
@@ -70,7 +70,7 @@ export const mstore8: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     const value = yield* evm.stack.pop();
 
     // GAS
-    const memory = yield* evm.memory;
+    const memory = yield* Ref.get(evm.memory);
     const size = new Uint({ value: 1n });
     const extension = Gas.calculateGasExtendMemory(memory, [
       [startPosition, size],
@@ -114,7 +114,7 @@ export const mload: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     const startPosition = yield* evm.stack.pop();
 
     // GAS
-    const memory = yield* evm.memory;
+    const memory = yield* Ref.get(evm.memory);
     const size = new Uint({ value: 32n });
     const extension = Gas.calculateGasExtendMemory(memory, [
       [startPosition, size],
@@ -159,7 +159,7 @@ export const msize: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     yield* Gas.chargeGas(Gas.GAS_BASE);
 
     // OPERATION
-    const memory = yield* evm.memory;
+    const memory = yield* Ref.get(evm.memory);
     const size = new U256({ value: BigInt(memory.length) });
     yield* evm.stack.push(size);
 
@@ -190,7 +190,7 @@ export const mcopy: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     const words = Numeric.ceil32(new Uint({ value: length.value })).value / 32n;
     const copyGasCost = new Uint({ value: Gas.GAS_COPY.value * words });
 
-    const memory = yield* evm.memory;
+    const memory = yield* Ref.get(evm.memory);
     const extension = Gas.calculateGasExtendMemory(memory, [
       [source, length],
       [destination, length],

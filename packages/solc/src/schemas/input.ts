@@ -17,24 +17,31 @@ export const SourceFile = Schema.Struct({
   content: Schema.optional(Schema.String),
   urls: Schema.optional(Schema.Array(Schema.String)),
 }).pipe(
-  Schema.filter(
-    (source) => source.content !== undefined || source.urls !== undefined,
-    {
-      message: () => "source must have either 'content' or 'urls'",
-    },
+  Schema.check(
+    Schema.makeFilter(
+      (source) => source.content !== undefined || source.urls !== undefined,
+      {
+        message: "source must have either 'content' or 'urls'",
+      },
+    ),
   ),
 );
 
 export type SourceFile = typeof SourceFile.Type;
 
 /** Source files map for `language: "Solidity"` (one or more `.sol` inputs), not standalone Yul mode. */
-export const SolidityYulSources = Schema.Record({
-  key: Schema.String.pipe(Schema.minLength(1)),
-  value: SourceFile,
-}).pipe(
-  Schema.filter((sources) => Object.keys(sources).length > 0, {
-    message: () => "sources must not be empty",
-  }),
+export const SolidityYulSources = Schema.Record(
+  Schema.String.pipe(Schema.check(Schema.isMinLength(1))),
+  SourceFile,
+).pipe(
+  Schema.check(
+    Schema.makeFilter(
+      (sources: Record<string, SourceFile>) => Object.keys(sources).length > 0,
+      {
+        message: "sources must not be empty",
+      },
+    ),
+  ),
 );
 
 export const SourceFileAST = Schema.Struct({
@@ -43,13 +50,19 @@ export const SourceFileAST = Schema.Struct({
 
 export type SourceFileAST = typeof SourceFileAST.Type;
 
-export const SolidityASTSources = Schema.Record({
-  key: Schema.String.pipe(Schema.minLength(1)),
-  value: SourceFileAST,
-}).pipe(
-  Schema.filter((sources) => Object.keys(sources).length > 0, {
-    message: () => "sources must not be empty",
-  }),
+export const SolidityASTSources = Schema.Record(
+  Schema.String.pipe(Schema.check(Schema.isMinLength(1))),
+  SourceFileAST,
+).pipe(
+  Schema.check(
+    Schema.makeFilter(
+      (sources: Record<string, SourceFileAST>) =>
+        Object.keys(sources).length > 0,
+      {
+        message: "sources must not be empty",
+      },
+    ),
+  ),
 );
 
 export const SourceFileEVMAssembly = Schema.Struct({
@@ -58,22 +71,13 @@ export const SourceFileEVMAssembly = Schema.Struct({
 
 export type SourceFileEVMAssembly = typeof SourceFileEVMAssembly.Type;
 
-export const EVMAssemblySources = Schema.Record({
-  key: Schema.String.pipe(Schema.minLength(1)),
-  value: SourceFileEVMAssembly,
-}).pipe(
-  Schema.filter((sources) => Object.keys(sources).length === 1, {
-    message: () => "EVMAssembly requires exactly one source file",
-  }),
+export const EVMAssemblySources = Schema.Record(
+  Schema.String.pipe(Schema.check(Schema.isMinLength(1))),
+  SourceFileEVMAssembly,
 );
 
 export const AuxiliaryInput = Schema.Struct({
-  smtlib2responses: Schema.optional(
-    Schema.Record({
-      key: HexString,
-      value: Schema.String,
-    }),
-  ),
+  smtlib2responses: Schema.optional(Schema.Record(HexString, Schema.String)),
 });
 
 export type AuxiliaryInput = typeof AuxiliaryInput.Type;
@@ -93,31 +97,27 @@ export const MetadataSettings = Schema.Struct({
 
 export type MetadataSettings = typeof MetadataSettings.Type;
 
-export const Libraries = Schema.Record({
-  key: Schema.String,
-  value: Schema.Record({
-    key: Schema.String,
-    value: HexString,
-  }),
-});
+export const Libraries = Schema.Record(
+  Schema.String,
+  Schema.Record(Schema.String, HexString),
+);
 
 export type Libraries = typeof Libraries.Type;
 
-export const OutputSelection = Schema.Record({
-  key: Schema.String,
-  value: Schema.Record({
-    key: Schema.String,
-    value: Schema.Array(Schema.String),
-  }),
-});
+export const OutputSelection = Schema.Record(
+  Schema.String,
+  Schema.Record(Schema.String, Schema.Array(Schema.String)),
+);
 
 export type OutputSelection = typeof OutputSelection.Type;
 
 const Remapping = Schema.String.pipe(
-  Schema.minLength(1),
-  Schema.filter((s) => s.includes("="), {
-    message: () => "remapping must contain '=' separator",
-  }),
+  Schema.check(Schema.isMinLength(1)),
+  Schema.check(
+    Schema.makeFilter((s: string) => s.includes("="), {
+      message: "remapping must contain '=' separator",
+    }),
+  ),
 );
 
 export const Settings = Schema.Struct({
@@ -136,13 +136,19 @@ export const Settings = Schema.Struct({
 
 export type Settings = typeof Settings.Type;
 
-const YulSources = Schema.Record({
-  key: Schema.String.pipe(Schema.minLength(1)),
-  value: SourceFile,
-}).pipe(
-  Schema.filter((sources) => Object.keys(sources).length === 1, {
-    message: () => "Yul requires exactly one source file",
-  }),
+const YulSources = Schema.Record(
+  Schema.String.pipe(Schema.check(Schema.isMinLength(1))),
+  SourceFile,
+).pipe(
+  Schema.check(
+    Schema.makeFilter(
+      (sources: Record<string, SourceFile>) =>
+        Object.keys(sources).length === 1,
+      {
+        message: "Yul requires exactly one source file",
+      },
+    ),
+  ),
 );
 
 const CompilerInputSolidity = Schema.Struct({
@@ -173,11 +179,12 @@ const CompilerInputEVMAssembly = Schema.Struct({
   settings: Schema.optional(Settings),
 });
 
-export const CompilerInput = Schema.Union(
+export const CompilerInput = Schema.Union([
   CompilerInputSolidity,
   CompilerInputYul,
   CompilerInputSolidityAST,
   CompilerInputEVMAssembly,
-);
+]);
 
 export type CompilerInput = typeof CompilerInput.Type;
+//     ^?

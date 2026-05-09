@@ -208,17 +208,19 @@ export const checkTransaction = Effect.fn("checkTransaction")(function* (
 
   const txBlobGasUsed = yield* checkBlobGasAvailability(blockOutput, tx);
 
-  const senderAddress = yield* recoverSender(tx).pipe(
-    Effect.mapError(
-      (error) => new InvalidSenderError({ message: error.message }),
-    ),
-    Effect.tap((senderAddress) =>
-      annotateSafe({
-        senderAddress: senderAddress,
-      }),
-    ),
-    Effect.withSpan("Recover Sender Address"),
-  );
+  const senderAddress = yield* recoverSender(tx)
+    .asEffect()
+    .pipe(
+      Effect.mapError(
+        (error) => new InvalidSenderError({ message: error.message }),
+      ),
+      Effect.tap((senderAddress) =>
+        annotateSafe({
+          senderAddress: senderAddress,
+        }),
+      ),
+      Effect.withSpan("Recover Sender Address"),
+    );
 
   const senderAccount = yield* State.getAccount(blockEnv.state, senderAddress);
 

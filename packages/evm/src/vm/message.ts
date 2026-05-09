@@ -11,12 +11,12 @@ import {
   Uint,
 } from "@evm-effect/ethereum-types";
 import { type HashSet, HashSetFromSelf } from "@evm-effect/shared/hashset";
-import { Data, Effect, Option, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 import * as State from "../state.js";
 import { Authorization } from "../types/Account.js";
 import type { Transaction } from "../types/Transaction.js";
 import { computeContractAddress } from "../utils/address.js";
-import { Evm } from "./evm.js";
+import type { Evm } from "./evm.js";
 import { Fork } from "./Fork.js";
 import { Code } from "./runtime.js";
 import { StorageKey } from "./StorageKey.js";
@@ -60,15 +60,10 @@ export class TransactionEnvironment extends Schema.TaggedClass<TransactionEnviro
   transientStorage: Schema.instanceOf(State.TransientStorage),
   blobVersionedHashes: Schema.Array(Bytes32),
   authorizations: Schema.Array(Authorization),
-  indexInBlock: Schema.OptionFromSelf(Uint),
-  txHash: Schema.OptionFromSelf(Bytes32),
+  indexInBlock: Schema.Option(Uint),
+  txHash: Schema.Option(Bytes32),
 }) {}
 
-export type test =
-  typeof SuspendedEvm extends Schema.suspend<Evm, infer T, never> ? T : never;
-const SuspendedEvm = Schema.suspend(
-  (): Schema.Schema<Evm, Evm> => Schema.instanceOf(Evm),
-);
 /**
  * Items that are used by contract creation or message call (call-level).
  *
@@ -92,9 +87,12 @@ export type Message = {
   accessedAddresses: HashSet<Address>;
   accessedStorageKeys: HashSet<StorageKey>;
   disablePrecompiles: boolean;
-  parentEvm: Option.Option<Evm["Type"]>;
+  parentEvm: Option.Option<Evm["Service"]>;
 };
-export const Message = Data.tagged<Message>("Message");
+export const Message = (message: Omit<Message, "_tag">): Message => ({
+  _tag: "Message",
+  ...message,
+});
 
 export const prepareMessage: (
   blockEnv: BlockEnvironment,
@@ -121,9 +119,11 @@ export const prepareMessage: (
     let codeAddress: Address | undefined;
 
     if (!tx.to) {
-      const originAccount = yield* State.getAccount(blockEnv.state, txEnv.origin);
-      const nonce =
-        originAccount.nonce.value - 1n;
+      const originAccount = yield* State.getAccount(
+        blockEnv.state,
+        txEnv.origin,
+      );
+      const nonce = originAccount.nonce.value - 1n;
       currentTarget = computeContractAddress(
         txEnv.origin,
         new Uint({ value: nonce }),
@@ -133,10 +133,11 @@ export const prepareMessage: (
       code = tx.data;
       codeAddress = undefined;
     } else {
-
       currentTarget = tx.to;
       msgData = tx.data;
-      code = yield* State.getAccount(blockEnv.state, tx.to).pipe(Effect.map((account) => account.code));
+      code = yield* State.getAccount(blockEnv.state, tx.to).pipe(
+        Effect.map((account) => account.code),
+      );
       codeAddress = tx.to;
     }
 

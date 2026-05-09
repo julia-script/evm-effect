@@ -80,10 +80,12 @@ import {
   signTransaction,
   type Transaction,
 } from "@evm-effect/crypto/transactions";
+import { Address } from "@evm-effect/ethereum-types";
 import { Bytes32 } from "@evm-effect/ethereum-types/bytes";
 import { U8, U64, U256, Uint } from "@evm-effect/ethereum-types/numeric";
 import rlp from "@evm-effect/rlp";
-import { Console, Effect, Either, Match, Schema } from "effect";
+import { bufferFromHex } from "@evm-effect/shared/bytes";
+import { Console, Effect, Match, Result, Schema } from "effect";
 import { BlockChain, emptyBlockOutput } from "../src/blockchain.js";
 import { computeBlockHash } from "../src/blocks/validator.js";
 import { stateTransition } from "../src/fork.js";
@@ -303,24 +305,25 @@ describe("StateTest", () => {
         const fork = yield* Fork;
         yield* Console.log(`Fork: ${fork.name}`);
 
-        for (const { key, value } of fixture.pre) {
-          yield* State.setAccount(
-            state,
-            key,
-            new Account({
-              nonce: value.nonce,
-              balance: new U256({ value: value.balance.value }),
-              code: value.code,
-            }),
-          );
+        for (const [addrStr, value] of Object.entries(fixture.pre)) {
+          const addr = new Address({ value: bufferFromHex(addrStr) });
+          const account = new Account({
+            nonce: value.nonce,
+            balance: new U256({ value: value.balance.value }),
+            code: value.code,
+          });
+          yield* State.setAccount(state, addr, account);
 
           if (value.storage) {
-            for (const storageEntry of value.storage) {
-              const keyBytes = new Bytes32({ value: storageEntry.key.value });
+            for (const [storageKeyStr, storageValue] of Object.entries(
+              value.storage,
+            )) {
+              const keyBytes = new Bytes32({
+                value: bufferFromHex(storageKeyStr),
+              });
+              const valueU256 = U256.fromBeBytes(storageValue.value);
 
-              const valueU256 = U256.fromBeBytes(storageEntry.value.value);
-
-              yield* State.setStorage(state, key, keyBytes, valueU256);
+              yield* State.setStorage(state, addr, keyBytes, valueU256);
             }
           }
         }
@@ -568,16 +571,16 @@ describe("StateTest", () => {
           block_output,
           transaction,
           new Uint({ value: BigInt(0) }),
-        ).pipe(Effect.either);
+        ).pipe(Effect.result);
         if (post.expectException) {
-          if (Either.isRight(processTransactionResult)) {
+          if (Result.isSuccess(processTransactionResult)) {
             return yield* Effect.fail(
               new Error(
                 `Expected exception ${post.expectException} but transaction succeeded`,
               ),
             );
           }
-          const actualError = processTransactionResult.left;
+          const actualError = processTransactionResult.failure;
           const { matches, actualException, expectedOptions } =
             matchesExpectedException(actualError, post.expectException);
 
@@ -617,12 +620,15 @@ describe("StateTest", () => {
         if (testFailed) {
           yield* Console.log("\n=== ACCOUNT EXISTENCE COMPARISON ===");
           const expectedAddrs = new Set<string>();
-          for (const { key: address } of post.state) {
-            const addrHex = address.value.value.toHex();
+          for (const [address] of Object.entries(post.state)) {
+            const addrHex = address.toLowerCase();
             expectedAddrs.add(addrHex);
-            const exists = yield* State.accountExists(blockEnv.state, address);
+            const exists = yield* State.accountExists(
+              blockEnv.state,
+              new Address({ value: bufferFromHex(address) }),
+            );
             if (!exists) {
-              yield* Console.log(`  MISSING in actual: 0x${addrHex}`);
+              yield* Console.log(`  MISSING in actual: ${addrHex}`);
             }
           }
           yield* Console.log("====================================\n");
@@ -639,16 +645,16 @@ describe("StateTest", () => {
           const senderAddr = fixture.transaction.sender;
           let estimatedGasFromBalance: bigint | undefined;
           if (gasPrice !== undefined && gasPrice > 0n) {
-            for (const { key: addr, value: preAcct } of fixture.pre) {
+            for (const [addrString, preAcct] of Object.entries(fixture.pre)) {
+              const addr = new Address({ value: bufferFromHex(addrString) });
               if (addr.toHex() === senderAddr?.toHex()) {
-                for (const {
-                  key: postAddr,
-                  value: expectedAcct,
-                } of post.state) {
-                  if (
-                    postAddr.value.value.toHex() ===
-                    senderAddr.value.value.toHex()
-                  ) {
+                for (const [postAddrStr, expectedAcct] of Object.entries(
+                  post.state,
+                )) {
+                  const postAddr = new Address({
+                    value: bufferFromHex(postAddrStr),
+                  });
+                  if (postAddr.toHex() === senderAddr?.toHex()) {
                     const preBalance = preAcct.balance.value;
                     const expectedPostBalance = expectedAcct.balance.value;
                     const txValue = fixture.transaction.value?.value ?? 0n;
@@ -678,9 +684,7 @@ describe("StateTest", () => {
             if (gasDiff !== 0n) {
               yield* Console.log(
                 "\x1b[33m%s\x1b[0m",
-                `Difference: ${
-                  gasDiff > 0n ? "+" : ""
-                }${gasDiff} (may be due to value transfer, EIP-1559 pricing, or refunds)`,
+                `Difference: ${gasDiff > 0n ? "+" : ""}${gasDiff}`,
               );
             } else {
               yield* Console.log(
@@ -691,12 +695,12 @@ describe("StateTest", () => {
             yield* Console.log("========================================\n");
           }
 
-          for (const { key: address, value: expectedAccount } of post.state) {
-            const actualAccount = yield* State.getAccount(blockEnv.state, address);
-            yield* Console.log(
-              "- Address: ",
-              `0x${new Uint8Array(address.value.value).toHex()}`,
+          for (const [address, expectedAccount] of Object.entries(post.state)) {
+            const actualAccount = yield* State.getAccount(
+              blockEnv.state,
+              new Address({ value: bufferFromHex(address) }),
             );
+            yield* Console.log("- Address: ", `${address}`);
             if (actualAccount.nonce.value !== expectedAccount.nonce.value) {
               yield* Console.log(
                 "\x1b[31m%s\x1b[0m",
@@ -731,34 +735,31 @@ describe("StateTest", () => {
             ) {
               yield* Console.log(
                 "\x1b[31m%s\x1b[0m",
-                `    Code mismatch: expected ${expectedAccount.code.value.toHex()}, actual ${actualAccount.code.value.toHex()}`,
+                `    Code mismatch: expected ${expectedAccount.code.toHex()}, actual ${actualAccount.code.toHex()}`,
               );
             } else {
               yield* Console.log(`    Code match`);
             }
 
-            for (const {
-              key: slot,
-              value: expectedValueBytes,
-            } of expectedAccount.storage) {
-              const actualValue = `0x${(yield* State.getStorage(
+            for (const [slot, expectedValueBytes] of Object.entries(
+              expectedAccount.storage,
+            )) {
+              const actualValue = (yield* State.getStorage(
                 blockEnv.state,
-                address,
-                new Bytes32({ value: slot.value }),
+                new Address({ value: bufferFromHex(address) }),
+                new Bytes32({ value: bufferFromHex(slot) }),
               ))
                 .toBeBytes32()
-                .value.toHex()}`;
-              const expectedValue = `0x${new Bytes32({
+                .toHex();
+              const expectedValue = new Bytes32({
                 value: expectedValueBytes.value,
-              }).value.toHex()}`;
+              }).toHex();
               if (actualValue !== expectedValue) {
                 yield* Console.log(
                   "\x1b[31m%s\x1b[0m",
                   `    Storage mismatch:`,
                 );
-                yield* Console.log(
-                  `          Slot:     0x${slot.value.toHex()}`,
-                );
+                yield* Console.log(`          Slot:     ${slot}`);
                 yield* Console.log(`          Expected: ${expectedValue}`);
                 yield* Console.log(`          Actual:   ${actualValue}`);
               } else {
@@ -784,9 +785,8 @@ describe("StateTest", () => {
         await Effect.gen(function* () {
           yield* Effect.log(`Running test case: ${testCaseIndex.id}`);
           yield* Effect.log(testCaseRaw);
-          const fixturesSource = yield* Schema.decodeUnknown(StateTestFix, {
-            exact: true,
-          })(testCaseRaw);
+          const fixturesSource =
+            yield* Schema.decodeUnknownEffect(StateTestFix)(testCaseRaw);
           for (const fixture of flattenStateTestFixtures(fixturesSource)) {
             const fork = yield* resolveFork(fixture.fork);
             yield* runStateTest(fixture).pipe(Effect.provide(fork));
@@ -870,10 +870,10 @@ describe("BlockchainTest", () => {
 
         // STEP 2: Initialize state from fixture.pre and calculate genesis state root
         const state = State.empty();
-        for (const { key: address, value: account } of fixture.pre) {
+        for (const [address, account] of Object.entries(fixture.pre)) {
           yield* State.setAccount(
             state,
-            address,
+            new Address({ value: bufferFromHex(address) }),
             new Account({
               nonce: account.nonce,
               balance: new U256({ value: account.balance.value }),
@@ -881,10 +881,16 @@ describe("BlockchainTest", () => {
             }),
           );
 
-          for (const { key: slot, value: storageValue } of account.storage) {
-            const keyBytes = new Bytes32({ value: slot.value });
+          for (const [slot, storageValue] of Object.entries(account.storage)) {
+            const keyBytes = new Bytes32({ value: bufferFromHex(slot) });
             const valueU256 = U256.fromBeBytes(storageValue.value);
-            yield* State.setStorage(state, address, keyBytes, valueU256);
+
+            yield* State.setStorage(
+              state,
+              new Address({ value: bufferFromHex(address) }),
+              keyBytes,
+              valueU256,
+            );
           }
         }
         const calculatedGenesisStateRoot = State.stateRoot(state);
@@ -963,13 +969,15 @@ describe("BlockchainTest", () => {
 
           // 7.2: Attempt to decode RLP
           const decodeResult = yield* decodeBlock(block.rlp).pipe(
-            Effect.either,
+            Effect.result,
           );
 
-          if (Either.isLeft(decodeResult)) {
+          if (Result.isFailure(decodeResult)) {
             // Decode failed
             if (!expectsException) {
-              yield* Console.log(`Block decode failed: ${decodeResult.left}`);
+              yield* Console.log(
+                `Block decode failed: ${decodeResult.failure}`,
+              );
               return yield* Effect.fail(
                 new Error("Block decode failed but no exception expected"),
               );
@@ -1014,7 +1022,7 @@ describe("BlockchainTest", () => {
             break;
           }
 
-          const decodedBlock = decodeResult.right;
+          const decodedBlock = decodeResult.success;
 
           // For transition forks, resolve the appropriate fork based on block timestamp
           const blockForkLayer = isTransitionFork(fixture.network)
@@ -1027,19 +1035,19 @@ describe("BlockchainTest", () => {
           // 7.3: Attempt to apply block
           const applyResult = yield* stateTransition(chain, decodedBlock).pipe(
             Effect.provide(blockForkLayer),
-            Effect.either,
+            Effect.result,
           );
 
-          if (Either.isLeft(applyResult)) {
+          if (Result.isFailure(applyResult)) {
             // Apply failed
             if (!expectsException) {
-              yield* Console.log(`Block apply failed: ${applyResult.left}`);
+              yield* Console.log(`Block apply failed: ${applyResult.failure}`);
               return yield* Effect.fail(
-                new Error(`Block apply failed: ${applyResult.left}`),
+                new Error(`Block apply failed: ${applyResult.failure}`),
               );
             }
             // Expected exception - verify it matches
-            const actualError = applyResult.left;
+            const actualError = applyResult.failure;
             const { matches, actualException, expectedOptions } =
               matchesExpectedException(actualError, block.expectException);
 
@@ -1096,7 +1104,7 @@ describe("BlockchainTest", () => {
             );
           }
 
-          chain = applyResult.right;
+          chain = applyResult.success;
 
           // Compute the actual block hash from the processed block header
           const lastBlock = chain.blocks[chain.blocks.length - 1];
@@ -1130,16 +1138,18 @@ describe("BlockchainTest", () => {
         // Note: We only check accounts listed in postState here for detailed error messages.
         // Any extra/missing accounts would already cause a state root mismatch in stateTransition,
         // which validates computed state root against block.header.stateRoot.
-        for (const {
-          key: address,
-          value: expectedAccount,
-        } of fixture.postState) {
-          const actualAccount = yield* State.getAccount(chain.state, address);
+        for (const [address, expectedAccount] of Object.entries(
+          fixture.postState,
+        )) {
+          const actualAccount = yield* State.getAccount(
+            chain.state,
+            new Address({ value: bufferFromHex(address) }),
+          );
 
           // Check nonce
           if (actualAccount.nonce.value !== expectedAccount.nonce.value) {
             yield* Console.log(
-              `Account ${address.toHex()} nonce mismatch: actual=${
+              `Account ${address} nonce mismatch: actual=${
                 actualAccount.nonce.value
               }, expected=${expectedAccount.nonce.value}`,
             );
@@ -1149,7 +1159,7 @@ describe("BlockchainTest", () => {
           // Check balance
           if (actualAccount.balance.value !== expectedAccount.balance.value) {
             yield* Console.log(
-              `Account ${address.toHex()} balance mismatch: actual=${
+              `Account ${address} balance mismatch: actual=${
                 actualAccount.balance.value
               }, expected=${expectedAccount.balance.value}`,
             );
@@ -1162,19 +1172,18 @@ describe("BlockchainTest", () => {
           const actualCodeHex = actualAccount.code.value.toHex();
           const expectedCodeHex = expectedAccount.code.value.toHex();
           if (actualCodeHex !== expectedCodeHex) {
-            yield* Console.log(`Account ${address.toHex()} code mismatch`);
+            yield* Console.log(`Account ${address} code mismatch`);
           }
           expect(actualCodeHex).toBe(expectedCodeHex);
 
           // Check storage (only slots listed in expected - extra slots cause state root mismatch)
-          for (const {
-            key: slot,
-            value: expectedValue,
-          } of expectedAccount.storage) {
+          for (const [slot, expectedValue] of Object.entries(
+            expectedAccount.storage,
+          )) {
             const actualValue = yield* State.getStorage(
               chain.state,
-              address,
-              new Bytes32({ value: slot.value }),
+              new Address({ value: bufferFromHex(address) }),
+              new Bytes32({ value: bufferFromHex(slot) }),
             );
             const actualValueHex = actualValue.toBeBytes32().value.toHex();
             // Pad expected value to 32 bytes (64 hex chars) for proper comparison
@@ -1184,7 +1193,7 @@ describe("BlockchainTest", () => {
 
             if (actualValueHex !== expectedValueHex) {
               yield* Console.log(
-                `Account ${address.toHex()} storage[${slot.value.toHex()}] mismatch: actual=${actualValueHex}, expected=${expectedValueHex}`,
+                `Account ${address} storage[${slot}] mismatch: actual=${actualValueHex}, expected=${expectedValueHex}`,
               );
             }
             expect(actualValueHex).toBe(expectedValueHex);
@@ -1196,7 +1205,7 @@ describe("BlockchainTest", () => {
         await Effect.gen(function* () {
           yield* Effect.log(`Running test case: ${testCaseIndex.id}`);
           const fixture =
-            yield* Schema.decodeUnknown(BlockchainTest)(testCaseRaw);
+            yield* Schema.decodeUnknownEffect(BlockchainTest)(testCaseRaw);
           yield* runBlockchainTest(fixture);
         }).pipe(runWithTestLogger);
         // Mark as passed - afterEach will handle the caching
