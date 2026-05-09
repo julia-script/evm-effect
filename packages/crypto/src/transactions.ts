@@ -27,7 +27,7 @@ import { hmac } from "@noble/hashes/hmac.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import type { ECDSASignOpts } from "@noble/secp256k1";
 import * as secp256k1 from "@noble/secp256k1";
-import { Data, Effect, Either, Match, Schema } from "effect";
+import { Data, Effect, Match, Result, Schema } from "effect";
 import { keccak256 } from "./keccak256.js";
 
 secp256k1.hashes.hmacSha256 = (key, msg) => hmac(sha256, key, msg);
@@ -63,6 +63,12 @@ export const Access = Schema.TaggedStruct("Access", {
 });
 export type Access = (typeof Access)["Type"];
 
+const defaultU256 = U256.pipe(
+  Schema.withConstructorDefault(Effect.succeed(U256.constant(0n))),
+);
+const defaultU8 = U8.pipe(
+  Schema.withConstructorDefault(Effect.succeed(U8.constant(0n))),
+);
 /**
  * Legacy transaction (pre-EIP-2718).
  *
@@ -74,9 +80,9 @@ export const LegacyTransaction = Schema.TaggedStruct("LegacyTransaction", {
   to: Schema.optional(Address),
   value: U256,
   data: Bytes,
-  v: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
-  r: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
-  s: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
+  v: defaultU256,
+  r: defaultU256,
+  s: defaultU256,
 });
 export type LegacyTransaction = (typeof LegacyTransaction)["Type"];
 /**
@@ -97,9 +103,9 @@ export const AccessListTransaction = Schema.TaggedStruct(
     value: U256,
     data: Bytes,
     accessList: Schema.Array(Access),
-    yParity: Schema.optionalWith(U8, { default: () => U8.constant(0n) }),
-    r: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
-    s: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
+    yParity: defaultU8,
+    r: defaultU256,
+    s: defaultU256,
   },
 );
 export type AccessListTransaction = (typeof AccessListTransaction)["Type"];
@@ -118,9 +124,9 @@ export const FeeMarketTransaction = Schema.TaggedStruct(
     value: U256,
     data: Bytes,
     accessList: Schema.Array(Access),
-    yParity: Schema.optionalWith(U8, { default: () => U8.constant(0n) }),
-    r: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
-    s: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
+    yParity: defaultU8,
+    r: defaultU256,
+    s: defaultU256,
   },
 );
 export type FeeMarketTransaction = (typeof FeeMarketTransaction)["Type"];
@@ -139,9 +145,9 @@ export const BlobTransaction = Schema.TaggedStruct("BlobTransaction", {
   accessList: Schema.Array(Access),
   maxFeePerBlobGas: U256,
   blobVersionedHashes: Schema.Array(Bytes32),
-  yParity: Schema.optionalWith(U8, { default: () => U8.constant(0n) }),
-  r: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
-  s: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
+  yParity: defaultU8,
+  r: defaultU256,
+  s: defaultU256,
 });
 export type BlobTransaction = (typeof BlobTransaction)["Type"];
 
@@ -159,33 +165,33 @@ export const SetCodeTransaction = Schema.TaggedStruct("SetCodeTransaction", {
   data: Bytes,
   accessList: Schema.Array(Access),
   authorizations: Schema.Array(Authorization),
-  yParity: Schema.optionalWith(U8, { default: () => U8.constant(0n) }),
-  r: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
-  s: Schema.optionalWith(U256, { default: () => U256.constant(0n) }),
+  yParity: defaultU8,
+  r: defaultU256,
+  s: defaultU256,
 });
 export type SetCodeTransaction = (typeof SetCodeTransaction)["Type"];
 
-export const Transaction = Schema.Union(
+export const Transaction = Schema.Union([
   LegacyTransaction,
   AccessListTransaction,
   FeeMarketTransaction,
   BlobTransaction,
   SetCodeTransaction,
-);
+]);
 
 export type Transaction = (typeof Transaction)["Type"];
 
 export const encodeTransaction = (
   transaction: Transaction,
-): Either.Either<Bytes | LegacyTransaction, RlpEncodeError> => {
+): Result.Result<Bytes | LegacyTransaction, RlpEncodeError> => {
   switch (transaction._tag) {
     case "LegacyTransaction":
-      return Either.right(transaction);
+      return Result.succeed(transaction);
     case "AccessListTransaction":
       return rlp
         .encodeTo(AccessListTransaction, transaction)
         .pipe(
-          Either.map(
+          Result.map(
             (bytes) =>
               new Bytes({ value: new Uint8Array([0x01, ...bytes.value]) }),
           ),
@@ -194,7 +200,7 @@ export const encodeTransaction = (
       return rlp
         .encodeTo(FeeMarketTransaction, transaction)
         .pipe(
-          Either.map(
+          Result.map(
             (bytes) =>
               new Bytes({ value: new Uint8Array([0x02, ...bytes.value]) }),
           ),
@@ -203,7 +209,7 @@ export const encodeTransaction = (
       return rlp
         .encodeTo(BlobTransaction, transaction)
         .pipe(
-          Either.map(
+          Result.map(
             (bytes) =>
               new Bytes({ value: new Uint8Array([0x03, ...bytes.value]) }),
           ),
@@ -212,7 +218,7 @@ export const encodeTransaction = (
       return rlp
         .encodeTo(SetCodeTransaction, transaction)
         .pipe(
-          Either.map(
+          Result.map(
             (bytes) =>
               new Bytes({ value: new Uint8Array([0x04, ...bytes.value]) }),
           ),
@@ -222,9 +228,9 @@ export const encodeTransaction = (
 
 export const decodeTransaction = (
   transaction: LegacyTransaction | Bytes,
-): Either.Either<Transaction, RlpDecodeError> => {
+): Result.Result<Transaction, RlpDecodeError> => {
   if (transaction._tag === "LegacyTransaction") {
-    return Either.right(transaction);
+    return Result.succeed(transaction);
   }
   switch (transaction.value[0]) {
     case 0x01:
@@ -233,30 +239,30 @@ export const decodeTransaction = (
           AccessListTransaction,
           new Bytes({ value: transaction.value.slice(1) }),
         )
-        .pipe(Either.map((transaction) => transaction));
+        .pipe(Result.map((transaction) => transaction));
     case 0x02:
       return rlp
         .decodeTo(
           FeeMarketTransaction,
           new Bytes({ value: transaction.value.slice(1) }),
         )
-        .pipe(Either.map((transaction) => transaction));
+        .pipe(Result.map((transaction) => transaction));
     case 0x03:
       return rlp
         .decodeTo(
           BlobTransaction,
           new Bytes({ value: transaction.value.slice(1) }),
         )
-        .pipe(Either.map((transaction) => transaction));
+        .pipe(Result.map((transaction) => transaction));
     case 0x04:
       return rlp
         .decodeTo(
           SetCodeTransaction,
           new Bytes({ value: transaction.value.slice(1) }),
         )
-        .pipe(Either.map((transaction) => transaction));
+        .pipe(Result.map((transaction) => transaction));
     default:
-      return Either.left(
+      return Result.fail(
         new RlpDecodeError({ message: "Unknown transaction type", path: [] }),
       );
   }
@@ -416,8 +422,8 @@ export const recoverFromSignature = ({
   });
 export const recoverPublicKey = (
   tx: Transaction,
-): Either.Either<Bytes, FailedToRecoverPublicKeyError> => {
-  return Either.try({
+): Result.Result<Bytes, FailedToRecoverPublicKeyError> => {
+  return Result.try({
     try: () => {
       let recoveryBit = 0;
       if (tx._tag === "LegacyTransaction") {
@@ -485,7 +491,7 @@ export const getAddressFromPrivateKey = (privateKey: Bytes32) => {
 };
 
 export const recoverSender = (tx: Transaction) => {
-  return recoverPublicKey(tx).pipe(Either.map(publicKeyToAddress));
+  return recoverPublicKey(tx).pipe(Result.map(publicKeyToAddress));
 };
 
 export const signHash = ({
@@ -552,7 +558,7 @@ export const recoverAuthority = (authorization: Authorization) => {
   }
 
   if (r.value <= 0n || r.value >= SECP256K1N) {
-    return Either.left(
+    return Result.fail(
       new FailedToRecoverPublicKeyError({
         message: "Invalid r value in authorization",
       }),
@@ -560,7 +566,7 @@ export const recoverAuthority = (authorization: Authorization) => {
   }
 
   if (s.value <= 0n || s.value > SECP256K1N / 2n) {
-    return Either.left(
+    return Result.fail(
       new FailedToRecoverPublicKeyError({
         message: "Invalid s value in authorization",
       }),

@@ -1,7 +1,7 @@
 import { keccak256 } from "@evm-effect/crypto";
 import { Address, Bytes, Bytes32, U64, Uint } from "@evm-effect/ethereum-types";
 import { encode } from "@evm-effect/rlp";
-import { Effect, Either } from "effect";
+import { Effect, Result } from "effect";
 import { Fork } from "./vm/Fork.js";
 
 // ============================================================================
@@ -40,7 +40,7 @@ export const BLOCK_REWARD_CONSTANTINOPLE = new Uint({
  * Maximum change denominator for base fee adjustments.
  * Used in EIP-1559 base fee calculation.
  */
-export const BASE_FEE_MAX_CHANGE_DENOMINATOR = Either.getOrThrow(
+export const BASE_FEE_MAX_CHANGE_DENOMINATOR = Result.getOrThrow(
   Uint.fromNumber(8),
 );
 
@@ -48,26 +48,26 @@ export const BASE_FEE_MAX_CHANGE_DENOMINATOR = Either.getOrThrow(
  * Elasticity multiplier for gas limit calculations.
  * Used to determine gas target from gas limit.
  */
-export const ELASTICITY_MULTIPLIER = Either.getOrThrow(Uint.fromNumber(2));
+export const ELASTICITY_MULTIPLIER = Result.getOrThrow(Uint.fromNumber(2));
 
 /**
  * Gas limit adjustment factor between blocks.
  * Maximum factor by which gas limit can change between blocks.
  */
-export const GAS_LIMIT_ADJUSTMENT_FACTOR = Either.getOrThrow(
+export const GAS_LIMIT_ADJUSTMENT_FACTOR = Result.getOrThrow(
   Uint.fromNumber(1024),
 );
 
 /**
  * Minimum gas limit for any block.
  */
-export const GAS_LIMIT_MINIMUM = Either.getOrThrow(Uint.fromNumber(5000));
+export const GAS_LIMIT_MINIMUM = Result.getOrThrow(Uint.fromNumber(5000));
 
 /**
  * Gas allocated for system transactions.
  * Used for beacon root storage and history storage operations.
  */
-export const SYSTEM_TRANSACTION_GAS = Either.getOrThrow(
+export const SYSTEM_TRANSACTION_GAS = Result.getOrThrow(
   Uint.fromNumber(30000000),
 );
 
@@ -123,12 +123,12 @@ export const VERSIONED_HASH_VERSION_KZG = new Uint8Array([0x01]);
 /**
  * Gas consumed per blob.
  */
-export const GAS_PER_BLOB = Either.getOrThrow(U64.fromNumber(2 ** 17)); // 131072
+export const GAS_PER_BLOB = Result.getOrThrow(U64.fromNumber(2 ** 17)); // 131072
 
 /**
  * Target number of blobs per block for blob gas pricing.
  */
-export const BLOB_SCHEDULE_TARGET = Either.getOrThrow(U64.fromNumber(6));
+export const BLOB_SCHEDULE_TARGET = Result.getOrThrow(U64.fromNumber(6));
 
 /**
  * Target blob gas per block for blob gas pricing.
@@ -143,17 +143,17 @@ export const TARGET_BLOB_GAS_PER_BLOCK = Effect.gen(function* () {
 /**
  * Base cost for blob gas pricing.
  */
-export const BLOB_BASE_COST = Either.getOrThrow(Uint.fromNumber(2 ** 13)); // 8192
+export const BLOB_BASE_COST = Result.getOrThrow(Uint.fromNumber(2 ** 13)); // 8192
 
 /**
  * Maximum blob schedule value for gas pricing.
  */
-export const BLOB_SCHEDULE_MAX = Either.getOrThrow(U64.fromNumber(9));
+export const BLOB_SCHEDULE_MAX = Result.getOrThrow(U64.fromNumber(9));
 
 /**
  * Minimum blob gas price.
  */
-export const MIN_BLOB_GASPRICE = Either.getOrThrow(Uint.fromNumber(1));
+export const MIN_BLOB_GASPRICE = Result.getOrThrow(Uint.fromNumber(1));
 
 /**
  * Update fraction for blob base fee calculations (denominator in exponential).
@@ -173,7 +173,7 @@ export const BLOB_BASE_FEE_UPDATE_FRACTION = Effect.gen(function* () {
  * System address used as the caller for system transactions.
  * Address: 0xfffffffffffffffffffffffffffffffffffffffe
  */
-export const SYSTEM_ADDRESS = Either.getOrThrow(
+export const SYSTEM_ADDRESS = Result.getOrThrow(
   Address.fromHex("0xfffffffffffffffffffffffffffffffffffffffe"),
 );
 
@@ -181,7 +181,7 @@ export const SYSTEM_ADDRESS = Either.getOrThrow(
  * Address of the beacon roots contract.
  * Address: 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02
  */
-export const BEACON_ROOTS_ADDRESS = Either.getOrThrow(
+export const BEACON_ROOTS_ADDRESS = Result.getOrThrow(
   Address.fromHex("0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02"),
 );
 
@@ -189,7 +189,7 @@ export const BEACON_ROOTS_ADDRESS = Either.getOrThrow(
  * Address of the withdrawal request predeploy contract.
  * Address: 0x00000961Ef480Eb55e80D19ad83579A64c007002
  */
-export const WITHDRAWAL_REQUEST_PREDEPLOY_ADDRESS = Either.getOrThrow(
+export const WITHDRAWAL_REQUEST_PREDEPLOY_ADDRESS = Result.getOrThrow(
   Address.fromHex("0x00000961Ef480Eb55e80D19ad83579A64c007002"),
 );
 
@@ -197,7 +197,7 @@ export const WITHDRAWAL_REQUEST_PREDEPLOY_ADDRESS = Either.getOrThrow(
  * Address of the consolidation request predeploy contract.
  * Address: 0x0000BBdDc7CE488642fb579F8B00f3a590007251
  */
-export const CONSOLIDATION_REQUEST_PREDEPLOY_ADDRESS = Either.getOrThrow(
+export const CONSOLIDATION_REQUEST_PREDEPLOY_ADDRESS = Result.getOrThrow(
   Address.fromHex("0x0000BBdDc7CE488642fb579F8B00f3a590007251"),
 );
 
@@ -205,7 +205,7 @@ export const CONSOLIDATION_REQUEST_PREDEPLOY_ADDRESS = Either.getOrThrow(
  * Address of the history storage contract.
  * Address: 0x0000F90827F1C53a10cb7A02335B175320002935
  */
-export const HISTORY_STORAGE_ADDRESS = Either.getOrThrow(
+export const HISTORY_STORAGE_ADDRESS = Result.getOrThrow(
   Address.fromHex("0x0000F90827F1C53a10cb7A02335B175320002935"),
 );
 
@@ -217,38 +217,38 @@ export const HISTORY_STORAGE_ADDRESS = Either.getOrThrow(
  * Base cost of a transaction in gas units.
  * This is the minimum amount of gas required for any transaction.
  */
-export const TX_BASE_COST = Either.getOrThrow(Uint.fromNumber(21000));
+export const TX_BASE_COST = Result.getOrThrow(Uint.fromNumber(21000));
 
 /**
  * Minimum gas cost per byte of calldata as per EIP-7623.
  * Used to calculate the floor gas cost for transactions.
  */
-export const FLOOR_CALLDATA_COST = Either.getOrThrow(Uint.fromNumber(10));
+export const FLOOR_CALLDATA_COST = Result.getOrThrow(Uint.fromNumber(10));
 
 /**
  * Standard gas cost per byte of calldata as per EIP-7623.
  * Used to calculate the standard calldata cost.
  */
-export const STANDARD_CALLDATA_TOKEN_COST = Either.getOrThrow(
+export const STANDARD_CALLDATA_TOKEN_COST = Result.getOrThrow(
   Uint.fromNumber(4),
 );
 
 /**
  * Additional gas cost for creating a new contract.
  */
-export const TX_CREATE_COST = Either.getOrThrow(Uint.fromNumber(32000));
+export const TX_CREATE_COST = Result.getOrThrow(Uint.fromNumber(32000));
 
 /**
  * Gas cost for including an address in the access list of a transaction.
  */
-export const TX_ACCESS_LIST_ADDRESS_COST = Either.getOrThrow(
+export const TX_ACCESS_LIST_ADDRESS_COST = Result.getOrThrow(
   Uint.fromNumber(2400),
 );
 
 /**
  * Gas cost for including a storage key in the access list of a transaction.
  */
-export const TX_ACCESS_LIST_STORAGE_KEY_COST = Either.getOrThrow(
+export const TX_ACCESS_LIST_STORAGE_KEY_COST = Result.getOrThrow(
   Uint.fromNumber(1900),
 );
 
@@ -290,7 +290,7 @@ export const CONSOLIDATION_REQUEST_TYPE = new Bytes({
  * Address of the deposit contract.
  * Address: 0x00000000219ab540356cbb839cbe05303d7705fa
  */
-export const DEPOSIT_CONTRACT_ADDRESS = Either.getOrThrow(
+export const DEPOSIT_CONTRACT_ADDRESS = Result.getOrThrow(
   Address.fromHex("0x00000000219ab540356cbb839cbe05303d7705fa"),
 );
 

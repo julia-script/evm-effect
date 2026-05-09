@@ -227,7 +227,10 @@ const program = Effect.gen(function* () {
   yield* Console.log("Contract deployed at:", contractAddress.toHex());
 
   // 10. Verify the deployed code
-  const deployedAccount = State.getAccount(blockchain.state, contractAddress);
+  const deployedAccount = yield* State.getAccount(
+    blockchain.state,
+    contractAddress,
+  );
   yield* Console.log("Deployed code:", deployedAccount.code.toHex());
   yield* Console.log(
     "Deployed code length:",
@@ -258,7 +261,7 @@ const program = Effect.gen(function* () {
   yield* Console.log("Chain length:", blockchain.length);
 
   // 12. Show deployer's remaining balance
-  const deployerAccount = State.getAccount(blockchain.state, deployer);
+  const deployerAccount = yield* State.getAccount(blockchain.state, deployer);
   yield* Console.log("\nDeployer:");
   yield* Console.log(
     "  Balance:",
@@ -277,6 +280,9 @@ function formatEth(wei: bigint): string {
 }
 
 // Run with London fork
-const runtimeLayer = Layer.merge(Fork.london(), Logger.pretty);
+const runtimeLayer = Layer.merge(
+  Fork.london(),
+  Logger.layer([Logger.consolePretty({})]),
+);
 
 Effect.runPromise(program.pipe(Effect.provide(runtimeLayer)));

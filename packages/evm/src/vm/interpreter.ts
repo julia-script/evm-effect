@@ -57,7 +57,7 @@ export const MAX_INIT_CODE_SIZE = 2 * MAX_CODE_SIZE;
  * @param childEvm - The child EVM to incorporate
  */
 export const incorporateChildOnSuccess = Effect.fn("incorporateChildOnSuccess")(
-  function* (evm: Evm["Type"], childEvm: Evm["Type"]) {
+  function* (evm: Evm["Service"], childEvm: Evm["Service"]) {
     const childGasLeft = childEvm.gasLeft;
     const childLogs = yield* Ref.get(childEvm.logs);
     const childRefundCounter = yield* Ref.get(childEvm.refundCounter);
@@ -106,7 +106,7 @@ export const incorporateChildOnSuccess = Effect.fn("incorporateChildOnSuccess")(
  * @param childEvm - The child EVM to incorporate
  */
 export const incorporateChildOnError = Effect.fn("incorporateChildOnError")(
-  function* (evm: Evm["Type"], childEvm: Evm["Type"]) {
+  function* (evm: Evm["Service"], childEvm: Evm["Service"]) {
     evm.setGasLeft(evm.gasLeft + childEvm.gasLeft);
   },
 );
@@ -210,6 +210,7 @@ const executeLoop: () => Effect.Effect<void, EthereumException, Evm | Fork> =
   Effect.fn("executeLoop")(function* () {
     const evm = yield* Evm;
     const fork = yield* Fork;
+
     let i = 0;
     while (evm.running) {
       const pc = yield* Ref.get(evm.pc);
@@ -232,7 +233,7 @@ const executeLoop: () => Effect.Effect<void, EthereumException, Evm | Fork> =
 
       i++;
       if (i % 100000 === 0) {
-        yield* Effect.yieldNow();
+        yield* Effect.yieldNow;
       }
     }
     yield* evmTrace(EvmStop({ op: Ops.STOP }));
@@ -384,7 +385,7 @@ export const processCreateMessage = Effect.fn("processCreateMessage")(
 
         State.commitTransaction(state, transientStorage);
       }).pipe(
-        Effect.catchAll((deployError) =>
+        Effect.catch((deployError) =>
           Effect.gen(function* () {
             State.rollbackTransaction(state, transientStorage);
             evm.setGasLeft(0n);
@@ -409,11 +410,13 @@ export const processMessageCall = Effect.fn("processMessageCall")(function* (
 ) {
   const blockEnv = message.blockEnv;
   let refundCounter = new U256({ value: 0n });
-  let evm: Evm["Type"];
+  let evm: Evm["Service"];
   if (!message.target) {
     const isCollision =
-      (yield* State.accountHasCodeOrNonce(blockEnv.state, message.currentTarget)) ||
-      State.accountHasStorage(blockEnv.state, message.currentTarget);
+      (yield* State.accountHasCodeOrNonce(
+        blockEnv.state,
+        message.currentTarget,
+      )) || State.accountHasStorage(blockEnv.state, message.currentTarget);
     if (isCollision) {
       return yield* Effect.succeed(
         new MessageCallOutput({
@@ -457,12 +460,14 @@ export const processMessageCall = Effect.fn("processMessageCall")(function* (
     evm = yield* processMessage(message);
   }
 
-  const evmError = yield* evm.error;
+  const evmError = yield* Ref.get(evm.error);
   let logs: readonly Log[] = [];
   let accountsToDelete: HashSet<Address> = HashSet.empty();
   let touchedAccounts: HashSet<Address> = HashSet.empty();
 
-  if (yield* State.accountExistsAndIsEmpty(blockEnv.state, message.currentTarget)) {
+  if (
+    yield* State.accountExistsAndIsEmpty(blockEnv.state, message.currentTarget)
+  ) {
     evm.touchedAccounts.add(message.currentTarget);
   }
 

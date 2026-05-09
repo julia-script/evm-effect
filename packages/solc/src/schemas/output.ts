@@ -46,18 +46,13 @@ export const CompilerError = Schema.Struct({
 export type CompilerError = typeof CompilerError.Type;
 
 export const AuxiliaryInputRequested = Schema.Struct({
-  smtlib2queries: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.String,
-    }),
-  ),
+  smtlib2queries: Schema.optional(Schema.Record(Schema.String, Schema.String)),
 });
 
 export type AuxiliaryInputRequested = typeof AuxiliaryInputRequested.Type;
 
 /** Root AST for a `sources[file]` entry: Solidity `SourceUnit` or generated / Yul `YulBlock`. */
-export const SourceFileAst = Schema.Union(SolcAst, YulBlock);
+export const SourceFileAst = Schema.Union([SolcAst, YulBlock]);
 
 export type SourceFileAst = typeof SourceFileAst.Type;
 
@@ -109,12 +104,7 @@ export const StorageLayoutType = Schema.Struct({
 
 export const StorageLayout = Schema.Struct({
   storage: Schema.Array(StorageLayoutEntry),
-  types: Schema.NullOr(
-    Schema.Record({
-      key: Schema.String,
-      value: StorageLayoutType,
-    }),
-  ),
+  types: Schema.NullOr(Schema.Record(Schema.String, StorageLayoutType)),
 });
 
 export type StorageLayout = typeof StorageLayout.Type;
@@ -136,20 +126,14 @@ export const ContractOutput = Schema.Struct({
 
 export type ContractOutput = typeof ContractOutput.Type;
 
-export const ContractsOutput = Schema.Record({
-  key: Schema.String,
-  value: Schema.Record({
-    key: Schema.String,
-    value: ContractOutput,
-  }),
-});
+export const ContractsOutput = Schema.Record(
+  Schema.String,
+  Schema.Record(Schema.String, ContractOutput),
+);
 
 export type ContractsOutput = typeof ContractsOutput.Type;
 
-export const SourcesOutput = Schema.Record({
-  key: Schema.String,
-  value: SourceOutput,
-});
+export const SourcesOutput = Schema.Record(Schema.String, SourceOutput);
 
 export type SourcesOutput = typeof SourcesOutput.Type;
 

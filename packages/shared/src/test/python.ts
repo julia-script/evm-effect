@@ -8,16 +8,12 @@ import { expect } from "bun:test";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ChildProcess } from "effect/unstable/process";
 import { BunServices } from "@effect/platform-bun";
-import { Data, Effect, Stream, Result} from "effect";
-
+import { Data, Effect, Result, Stream } from "effect";
+import { ChildProcess } from "effect/unstable/process";
 
 import * as fc from "fast-check";
 import { dedent } from "ts-dedent";
-
-
-
 
 fc.configureGlobal({ numRuns: 20, timeout: 1000 });
 
@@ -90,24 +86,32 @@ export const pythonEval = (code: string, fail = true) =>
       `),
     ].join("\n\n\n");
 
-    const command = ChildProcess.make(".venv/bin/python", ["-c", completeCode], {
-      cwd: pythonTestEnv,
-      stderr: "pipe",
-      stdout: "pipe",
-    });
+    const command = ChildProcess.make(
+      ".venv/bin/python",
+      ["-c", completeCode],
+      {
+        cwd: pythonTestEnv,
+        stderr: "pipe",
+        stdout: "pipe",
+      },
+    );
 
-    const run = yield* command
+    const run = yield* command;
 
     const decoder = new TextDecoder();
     const stdout = yield* run.stdout.pipe(
       Stream.runCollect,
-      Effect.map((value) => value.map((value) => decoder.decode(value)).join("")),
+      Effect.map((value) =>
+        value.map((value) => decoder.decode(value)).join(""),
+      ),
       // Effect.map(Chunk.map((value) => decoder.decode(value))),
       // Effect.map(Chunk.join("")),
     );
     const stderr = yield* run.stderr.pipe(
       Stream.runCollect,
-      Effect.map((value) => value.map((value) => decoder.decode(value)).join("")),
+      Effect.map((value) =>
+        value.map((value) => decoder.decode(value)).join(""),
+      ),
     );
     const exitCode = yield* run.exitCode;
 

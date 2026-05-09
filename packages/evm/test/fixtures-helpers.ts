@@ -213,8 +213,8 @@ export const resolveForkForTimestamp = (
 export const withTestLogger = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   effect.pipe(
     VERBOSE
-      ? Effect.provide(Logger.pretty)
-      : Effect.provide(Logger.remove(Logger.defaultLogger)),
+      ? Effect.provide(Logger.layer([Logger.consolePretty({})]))
+      : Effect.provide(Logger.layer([])),
   );
 
 /**

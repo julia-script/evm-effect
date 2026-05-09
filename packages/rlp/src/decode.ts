@@ -4,15 +4,15 @@ import {
   fromBeBytes,
   Uint,
 } from "@evm-effect/ethereum-types";
-import { Either } from "effect";
+import { Result } from "effect";
 import { RlpDecodeError } from "./exceptions.js";
-import type { Simple } from "./types.js";
+import type { Simple } from "./types.ts";
 export const decode = (
   input: AnyBytes | Uint8Array,
-): Either.Either<Simple, RlpDecodeError> => {
+): Result.Result<Simple, RlpDecodeError> => {
   const buffer = input instanceof Uint8Array ? input : input.value;
   if (buffer.length === 0) {
-    return Either.left(
+    return Result.fail(
       new RlpDecodeError({ message: "Cannot decode empty input", path: [] }),
     );
   }
@@ -25,40 +25,40 @@ export const decode = (
 const decodeToBytes = (
   buffer: Uint8Array,
   path: string[],
-): Either.Either<Bytes, RlpDecodeError> => {
+): Result.Result<Bytes, RlpDecodeError> => {
   if (buffer.length === 1 && buffer[0] < 0x80) {
-    return Either.right(new Bytes({ value: buffer }));
+    return Result.succeed(new Bytes({ value: buffer }));
   }
   if (buffer[0] <= 0xb7) {
     const lenRawData = buffer[0] - 0x80;
     if (lenRawData < 0) {
-      return Either.left(
+      return Result.fail(
         new RlpDecodeError({ message: "negative length", path: [] }),
       );
     }
     if (lenRawData >= buffer.length) {
-      return Either.left(
+      return Result.fail(
         new RlpDecodeError({ message: "truncated", path: [] }),
       );
     }
     const rawData = buffer.slice(1, 1 + lenRawData);
     if (lenRawData === 1 && rawData[0] < 0x80) {
-      return Either.left(
+      return Result.fail(
         new RlpDecodeError({
           message: "non-canonical encoding: single byte should not be prefixed",
           path: [],
         }),
       );
     }
-    return Either.right(new Bytes({ value: rawData }));
+    return Result.succeed(new Bytes({ value: rawData }));
   }
 
   const decodedDataStartIdx = 1 + buffer[0] - 0xb7;
   if (decodedDataStartIdx - 1 >= buffer.length) {
-    return Either.left(new RlpDecodeError({ message: "truncated", path }));
+    return Result.fail(new RlpDecodeError({ message: "truncated", path }));
   }
   if (buffer[1] === 0) {
-    return Either.left(
+    return Result.fail(
       new RlpDecodeError({
         message: "non-canonical encoding: single byte should not be prefixed",
         path,
@@ -70,17 +70,17 @@ const decodeToBytes = (
     new Bytes({ value: buffer.slice(1, decodedDataStartIdx) }),
     Uint,
   );
-  if (Either.isLeft(eitherLenDecodedData)) {
-    return Either.left(
+  if (Result.isFailure(eitherLenDecodedData)) {
+    return Result.fail(
       new RlpDecodeError({
         message: "non-canonical encoding: single byte should not be prefixed",
         path,
       }),
     );
   }
-  const lenDecodedData = Number(eitherLenDecodedData.right.value);
+  const lenDecodedData = Number(eitherLenDecodedData.success.value);
   if (lenDecodedData < 0x38) {
-    return Either.left(
+    return Result.fail(
       new RlpDecodeError({
         message: "non-canonical encoding: single byte should not be prefixed",
         path,
@@ -89,31 +89,31 @@ const decodeToBytes = (
   }
   const decodedDataEndIdx = decodedDataStartIdx + lenDecodedData;
   if (decodedDataEndIdx - 1 >= buffer.length) {
-    return Either.left(new RlpDecodeError({ message: "truncated", path }));
+    return Result.fail(new RlpDecodeError({ message: "truncated", path }));
   }
-  return Either.right(
+  return Result.succeed(
     new Bytes({ value: buffer.slice(decodedDataStartIdx, decodedDataEndIdx) }),
   );
 };
 const decodeToSequence = (
   buffer: Uint8Array,
   path: string[],
-): Either.Either<Simple[], RlpDecodeError> => {
+): Result.Result<Simple[], RlpDecodeError> => {
   let joinedEncodings: Uint8Array;
 
   if (buffer[0] <= 0xf7) {
     const lenJoinedEncodings = buffer[0] - 0xc0;
     if (lenJoinedEncodings >= buffer.length) {
-      return Either.left(new RlpDecodeError({ message: "truncated", path }));
+      return Result.fail(new RlpDecodeError({ message: "truncated", path }));
     }
     joinedEncodings = buffer.slice(1, 1 + lenJoinedEncodings);
   } else {
     const joinedEncodingsStartIdx = 1 + buffer[0] - 0xf7;
     if (joinedEncodingsStartIdx - 1 >= buffer.length) {
-      return Either.left(new RlpDecodeError({ message: "truncated", path }));
+      return Result.fail(new RlpDecodeError({ message: "truncated", path }));
     }
     if (buffer[1] === 0) {
-      return Either.left(
+      return Result.fail(
         new RlpDecodeError({
           message: "non-canonical encoding: leading zero in length",
           path,
@@ -124,14 +124,14 @@ const decodeToSequence = (
       new Bytes({ value: buffer.slice(1, joinedEncodingsStartIdx) }),
       Uint,
     );
-    if (Either.isLeft(eitherLenJoinedEncodings)) {
-      return Either.left(
+    if (Result.isFailure(eitherLenJoinedEncodings)) {
+      return Result.fail(
         new RlpDecodeError({ message: "invalid length encoding", path }),
       );
     }
-    const lenJoinedEncodings = Number(eitherLenJoinedEncodings.right.value);
+    const lenJoinedEncodings = Number(eitherLenJoinedEncodings.success.value);
     if (lenJoinedEncodings < 0x38) {
-      return Either.left(
+      return Result.fail(
         new RlpDecodeError({
           message: "non-canonical encoding: length too short",
           path,
@@ -140,7 +140,7 @@ const decodeToSequence = (
     }
     const joinedEncodingsEndIdx = joinedEncodingsStartIdx + lenJoinedEncodings;
     if (joinedEncodingsEndIdx - 1 >= buffer.length) {
-      return Either.left(new RlpDecodeError({ message: "truncated", path }));
+      return Result.fail(new RlpDecodeError({ message: "truncated", path }));
     }
     joinedEncodings = buffer.slice(
       joinedEncodingsStartIdx,
@@ -153,7 +153,7 @@ const decodeToSequence = (
 const decodeJoinedEncodings = (
   buffer: Uint8Array,
   path: string[],
-): Either.Either<Simple[], RlpDecodeError> => {
+): Result.Result<Simple[], RlpDecodeError> => {
   const decodedSequence: Simple[] = [];
   let itemStartIdx = 0;
 
@@ -162,34 +162,34 @@ const decodeJoinedEncodings = (
       buffer.slice(itemStartIdx),
       path,
     );
-    if (Either.isLeft(eitherEncodedItemLength)) {
-      return Either.left(eitherEncodedItemLength.left);
+    if (Result.isFailure(eitherEncodedItemLength)) {
+      return Result.fail(eitherEncodedItemLength.failure);
     }
-    const encodedItemLength = eitherEncodedItemLength.right;
+    const encodedItemLength = eitherEncodedItemLength.success;
     if (itemStartIdx + encodedItemLength - 1 >= buffer.length) {
-      return Either.left(new RlpDecodeError({ message: "truncated", path }));
+      return Result.fail(new RlpDecodeError({ message: "truncated", path }));
     }
     const encodedItem = buffer.slice(
       itemStartIdx,
       itemStartIdx + encodedItemLength,
     );
     const eitherDecoded = decode(encodedItem);
-    if (Either.isLeft(eitherDecoded)) {
-      return Either.left(eitherDecoded.left);
+    if (Result.isFailure(eitherDecoded)) {
+      return Result.fail(eitherDecoded.failure);
     }
-    decodedSequence.push(eitherDecoded.right);
+    decodedSequence.push(eitherDecoded.success);
     itemStartIdx += encodedItemLength;
   }
 
-  return Either.right(decodedSequence);
+  return Result.succeed(decodedSequence);
 };
 
 const decodeItemLength = (
   buffer: Uint8Array,
   path: string[],
-): Either.Either<number, RlpDecodeError> => {
+): Result.Result<number, RlpDecodeError> => {
   if (buffer.length <= 0) {
-    return Either.left(
+    return Result.fail(
       new RlpDecodeError({ message: "Cannot decode empty input", path }),
     );
   }
@@ -206,7 +206,7 @@ const decodeItemLength = (
     // We return 1 here, as the end formula
     // 1 + length_length + decoded_data_length would be invalid for
     // this case.
-    return Either.right(1);
+    return Result.succeed(1);
   }
   // This occurs only when the raw_data is a byte stream with length < 56
   // and doesn't fall into the above cases
@@ -218,10 +218,10 @@ const decodeItemLength = (
   else if (firstRlpByte <= 0xbf) {
     lengthLength = firstRlpByte - 0xb7;
     if (lengthLength >= buffer.length) {
-      return Either.left(new RlpDecodeError({ message: "truncated", path }));
+      return Result.fail(new RlpDecodeError({ message: "truncated", path }));
     }
     if (buffer[1] === 0) {
-      return Either.left(
+      return Result.fail(
         new RlpDecodeError({
           message: "non-canonical encoding: leading zero in length",
           path,
@@ -232,12 +232,12 @@ const decodeItemLength = (
       new Bytes({ value: buffer.slice(1, 1 + lengthLength) }),
       Uint,
     );
-    if (Either.isLeft(eitherLength)) {
-      return Either.left(
+    if (Result.isFailure(eitherLength)) {
+      return Result.fail(
         new RlpDecodeError({ message: "invalid length encoding", path }),
       );
     }
-    decodedDataLength = Number(eitherLength.right.value);
+    decodedDataLength = Number(eitherLength.success.value);
   }
   // This occurs only when the raw_data is a sequence of objects with
   // length(concatenation of encoding of each object) < 56
@@ -249,10 +249,10 @@ const decodeItemLength = (
   else if (firstRlpByte <= 0xff) {
     lengthLength = firstRlpByte - 0xf7;
     if (lengthLength >= buffer.length) {
-      return Either.left(new RlpDecodeError({ message: "truncated", path }));
+      return Result.fail(new RlpDecodeError({ message: "truncated", path }));
     }
     if (buffer[1] === 0) {
-      return Either.left(
+      return Result.fail(
         new RlpDecodeError({
           message: "non-canonical encoding: leading zero in length",
           path,
@@ -263,13 +263,13 @@ const decodeItemLength = (
       new Bytes({ value: buffer.slice(1, 1 + lengthLength) }),
       Uint,
     );
-    if (Either.isLeft(eitherLength)) {
-      return Either.left(
+    if (Result.isFailure(eitherLength)) {
+      return Result.fail(
         new RlpDecodeError({ message: "invalid length encoding", path }),
       );
     }
-    decodedDataLength = Number(eitherLength.right.value);
+    decodedDataLength = Number(eitherLength.success.value);
   }
 
-  return Either.right(1 + lengthLength + decodedDataLength);
+  return Result.succeed(1 + lengthLength + decodedDataLength);
 };

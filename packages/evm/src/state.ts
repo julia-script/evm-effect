@@ -23,7 +23,7 @@ import {
 import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { HashMap } from "@evm-effect/shared/hashmap";
 import { HashSet } from "@evm-effect/shared/hashset";
-import { Data, Effect, Either, Equal, Option } from "effect";
+import { Data, Effect, Equal, Option, Result } from "effect";
 import { EMPTY_TRIE_ROOT, Trie, root as trieRoot } from "./trie/trie.js";
 import { type Account, EMPTY_ACCOUNT } from "./vm/types.js";
 
@@ -313,7 +313,11 @@ export const markAccountCreated = Effect.fn("markAccountCreated")(function* (
  * @param key - Key to lookup.
  * @returns Value at the key.
  */
-export const getStorage = Effect.fn("getStorage")(function* (state: State, address: Address, key: Bytes32): Effect.fn.Return<U256, never, never> {
+export const getStorage = Effect.fn("getStorage")(function* (
+  state: State,
+  address: Address,
+  key: Bytes32,
+): Effect.fn.Return<U256, never, never> {
   const trie = state._storageTries.get(address);
   if (!trie) {
     return new U256({ value: 0n });
@@ -376,12 +380,12 @@ function storageRoot(state: State, address: Address): Root {
   }
 
   const rootResult = trieRoot(trie, Option.none());
-  if (Either.isLeft(rootResult)) {
+  if (Result.isFailure(rootResult)) {
     throw new Error(
-      `Failed to calculate storage root: ${rootResult.left.message}`,
+      `Failed to calculate storage root: ${rootResult.failure.message}`,
     );
   }
-  return rootResult.right;
+  return rootResult.success;
 }
 
 /**
@@ -395,12 +399,12 @@ export function stateRoot(state: State): Root {
     state._mainTrie,
     Option.some((address: Address) => storageRoot(state, address)),
   );
-  if (Either.isLeft(rootResult)) {
+  if (Result.isFailure(rootResult)) {
     throw new Error(
-      `Failed to calculate state root: ${rootResult.left.message}`,
+      `Failed to calculate state root: ${rootResult.failure.message}`,
     );
   }
-  return rootResult.right;
+  return rootResult.success;
 }
 
 /**
@@ -410,7 +414,10 @@ export function stateRoot(state: State): Root {
  * @param address - Address of the account that needs to be checked.
  * @returns True if account exists in the state trie, False otherwise
  */
-export const accountExists = Effect.fn("accountExists")(function* (state: State, address: Address): Effect.fn.Return<boolean, never, never> {
+export const accountExists = Effect.fn("accountExists")(function* (
+  state: State,
+  address: Address,
+): Effect.fn.Return<boolean, never, never> {
   const account = yield* getAccountOptional(state, address);
   return account !== null;
 });
@@ -451,7 +458,10 @@ export function accountHasStorage(state: State, address: Address): boolean {
  * @param address - Address of the account that needs to be checked.
  * @returns True if the account is alive.
  */
-export const isAccountAlive = Effect.fn("isAccountAlive")(function* (state: State, address: Address): Effect.fn.Return<boolean, never, never> {
+export const isAccountAlive = Effect.fn("isAccountAlive")(function* (
+  state: State,
+  address: Address,
+): Effect.fn.Return<boolean, never, never> {
   const account = yield* getAccountOptional(state, address);
   return account !== null && !Equal.equals(account, EMPTY_ACCOUNT);
 });
@@ -466,13 +476,15 @@ export const isAccountAlive = Effect.fn("isAccountAlive")(function* (state: Stat
  * @param address - Address of the account to check.
  * @returns True if the account exists and is empty.
  */
-export const accountExistsAndIsEmpty = Effect.fn("accountExistsAndIsEmpty")(function* (
-  state: State,
-  address: Address,
-): Effect.fn.Return<boolean, never, never> {
-  const account = yield* getAccountOptional(state, address);
-  return account !== null && Equal.equals(account, EMPTY_ACCOUNT);
-});
+export const accountExistsAndIsEmpty = Effect.fn("accountExistsAndIsEmpty")(
+  function* (
+    state: State,
+    address: Address,
+  ): Effect.fn.Return<boolean, never, never> {
+    const account = yield* getAccountOptional(state, address);
+    return account !== null && Equal.equals(account, EMPTY_ACCOUNT);
+  },
+);
 
 /**
  * Initializes an account to state if it doesn't exist.
@@ -644,9 +656,11 @@ export const setCode = Effect.fn("setCode")(function* (
  * @param key - Key of the storage slot.
  * @returns The original value.
  */
-export const getStorageOriginal = Effect.fn("getStorageOriginal", {
-  captureStackTrace: true,
-})(function* (state: State, address: Address, key: Bytes32) {
+export const getStorageOriginal = Effect.fn("getStorageOriginal")(function* (
+  state: State,
+  address: Address,
+  key: Bytes32,
+) {
   if (state.createdAccounts.has(address)) {
     return new U256({ value: 0n });
   }

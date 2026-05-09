@@ -10,7 +10,7 @@
 
 import { keccak256 } from "@evm-effect/crypto";
 import { Bytes, Bytes256, fromBeBytes, Uint } from "@evm-effect/ethereum-types";
-import { Either } from "effect";
+import { Result } from "effect";
 import type { Log } from "../types/Receipt.js";
 
 /**
@@ -32,7 +32,7 @@ export const addToBloom = (bloom: Uint8Array, bloomEntry: Bytes): void => {
 
   for (const idx of [0, 2, 4]) {
     const bitToSet =
-      Either.getOrThrow(
+      Result.getOrThrow(
         fromBeBytes(
           new Bytes({ value: hashed.value.slice(idx, idx + 2) }),
           Uint,

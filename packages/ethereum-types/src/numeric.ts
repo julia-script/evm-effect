@@ -1,4 +1,4 @@
-import { Effect, Either, Equal, Hash, Match, Schema } from "effect";
+import { Equal, Hash, Match, Result, Schema } from "effect";
 import { EvmTypeError } from "./exceptions.js";
 
 const wrap = (value: bigint, byteLength: bigint) => {
@@ -7,7 +7,7 @@ const wrap = (value: bigint, byteLength: bigint) => {
 export class U8 extends Schema.TaggedClass<U8>("U8")(
   "U8",
   {
-    value: Schema.BigIntFromSelf,
+    value: Schema.BigInt,
   },
   {
     pretty:
@@ -24,40 +24,37 @@ export class U8 extends Schema.TaggedClass<U8>("U8")(
   clone(): U8 {
     return new U8({ value: this.value });
   }
-  static from(input: Uintish): Either.Either<U8, EvmTypeError> {
-    return Either.flatMap(Uint.from(input), (value) =>
+  static from(input: Uintish): Result.Result<U8, EvmTypeError> {
+    return Result.flatMap(Uint.from(input), (value) =>
       U8.fromBigInt(value.value),
     );
   }
   static constant(input: Uintish): U8 {
-    return Either.getOrThrow(U8.from(input));
-  }
-  static fromEffect<E, R>(input: Effect.Effect<Uintish, E, R>) {
-    return input.pipe(Effect.flatMap(U8.from));
+    return Result.getOrThrow(U8.from(input));
   }
 
-  static fromNumber(input: number): Either.Either<U8, EvmTypeError> {
+  static fromNumber(input: number): Result.Result<U8, EvmTypeError> {
     if (input < 0 || input > U8.MAX_VALUE) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({
           message: `U8 value ${input} is out of range`,
           input,
         }),
       );
     }
-    return Either.right(new U8({ value: BigInt(input) }));
+    return Result.succeed(new U8({ value: BigInt(input) }));
   }
 
-  static fromBigInt(input: bigint): Either.Either<U8, EvmTypeError> {
+  static fromBigInt(input: bigint): Result.Result<U8, EvmTypeError> {
     if (input < 0n || input > U8.MAX_VALUE) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({
           message: `U8 value ${input} is out of range`,
           input,
         }),
       );
     }
-    return Either.right(new U8({ value: input }));
+    return Result.succeed(new U8({ value: input }));
   }
   static zero = U8.fromBigInt(0n);
 }
@@ -82,38 +79,36 @@ export class U64 extends Schema.TaggedClass<U64>("U64")(
   clone(): U64 {
     return new U64({ value: this.value });
   }
-  static from(input: Uintish): Either.Either<U64, EvmTypeError> {
-    return Either.flatMap(Uint.from(input), (value) =>
+  static from(input: Uintish): Result.Result<U64, EvmTypeError> {
+    return Result.flatMap(Uint.from(input), (value) =>
       U64.fromBigInt(value.value),
     );
   }
   static constant(input: Uintish): U64 {
-    return Either.getOrThrow(U64.from(input));
+    return Result.getOrThrow(U64.from(input));
   }
-  static fromEffect<E, R>(input: Effect.Effect<Uintish, E, R>) {
-    return input.pipe(Effect.flatMap(U64.from));
-  }
-  static fromNumber(input: number): Either.Either<U64, EvmTypeError> {
+
+  static fromNumber(input: number): Result.Result<U64, EvmTypeError> {
     if (input < 0 || input > U64.MAX_VALUE) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({
           message: `U64 value ${input} is out of range`,
           input,
         }),
       );
     }
-    return Either.right(new U64({ value: BigInt(input) }));
+    return Result.succeed(new U64({ value: BigInt(input) }));
   }
-  static fromBigInt(input: bigint): Either.Either<U64, EvmTypeError> {
+  static fromBigInt(input: bigint): Result.Result<U64, EvmTypeError> {
     if (input < 0n || input > U64.MAX_VALUE) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({
           message: `U64 value ${input} is out of range`,
           input,
         }),
       );
     }
-    return Either.right(new U64({ value: input }));
+    return Result.succeed(new U64({ value: input }));
   }
   static zero = U64.fromBigInt(0n);
 }
@@ -121,7 +116,7 @@ export class U64 extends Schema.TaggedClass<U64>("U64")(
 export class U256 extends Schema.TaggedClass<U256>("U256")(
   "U256",
   {
-    value: Schema.BigIntFromSelf,
+    value: Schema.BigInt,
   },
   {
     pretty:
@@ -151,38 +146,36 @@ export class U256 extends Schema.TaggedClass<U256>("U256")(
     return Number(this.value & 0xffffffffn);
   }
 
-  static from(input: Uintish): Either.Either<U256, EvmTypeError> {
-    return Either.flatMap(Uint.from(input), (value) =>
+  static from(input: Uintish): Result.Result<U256, EvmTypeError> {
+    return Result.flatMap(Uint.from(input), (value) =>
       U256.fromBigInt(value.value),
     );
   }
   static constant(input: Uintish): U256 {
-    return Either.getOrThrow(U256.from(input));
+    return Result.getOrThrow(U256.from(input));
   }
-  static fromEffect<E, R>(input: Effect.Effect<Uintish, E, R>) {
-    return input.pipe(Effect.flatMap(U256.from));
-  }
-  static fromNumber(input: number): Either.Either<U256, EvmTypeError> {
+
+  static fromNumber(input: number): Result.Result<U256, EvmTypeError> {
     if (input < 0 || input > U256.MAX_VALUE) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({
           message: `U256 value ${input} is out of range`,
           input,
         }),
       );
     }
-    return Either.right(new U256({ value: BigInt(input) }));
+    return Result.succeed(new U256({ value: BigInt(input) }));
   }
-  static fromBigInt(input: bigint): Either.Either<U256, EvmTypeError> {
+  static fromBigInt(input: bigint): Result.Result<U256, EvmTypeError> {
     if (input < 0n || input > U256.MAX_VALUE) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({
           message: `U256 value ${input} is out of range`,
           input,
         }),
       );
     }
-    return Either.right(new U256({ value: input }));
+    return Result.succeed(new U256({ value: input }));
   }
   static zero = U256.fromBigInt(0n);
 
@@ -356,7 +349,7 @@ type Uintish = bigint | number | U256 | U64 | U8 | Uint;
 export class Uint extends Schema.TaggedClass<Uint>("Uint")(
   "Uint",
   {
-    value: Schema.BigIntFromSelf,
+    value: Schema.BigInt,
   },
   {
     pretty:
@@ -372,7 +365,7 @@ export class Uint extends Schema.TaggedClass<Uint>("Uint")(
     return new Uint({ value: this.value });
   }
 
-  static from(input: Uintish): Either.Either<Uint, EvmTypeError> {
+  static from(input: Uintish): Result.Result<Uint, EvmTypeError> {
     return Match.value(input).pipe(
       Match.when(Match.number, (value) => Uint.fromNumber(value)),
       Match.when(Match.bigint, (value) => Uint.fromBigInt(value)),
@@ -386,32 +379,30 @@ export class Uint extends Schema.TaggedClass<Uint>("Uint")(
   }
 
   static constant(input: Uintish): Uint {
-    return Either.getOrThrow(Uint.from(input));
+    return Result.getOrThrow(Uint.from(input));
   }
-  static fromEffect<E, R>(input: Effect.Effect<Uintish, E, R>) {
-    return input.pipe(Effect.flatMap(Uint.from));
-  }
-  static fromNumber(input: number): Either.Either<Uint, EvmTypeError> {
+
+  static fromNumber(input: number): Result.Result<Uint, EvmTypeError> {
     if (input < 0) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({
           message: `Uint value ${input} is out of range`,
           input,
         }),
       );
     }
-    return Either.right(new Uint({ value: BigInt(input) }));
+    return Result.succeed(new Uint({ value: BigInt(input) }));
   }
-  static fromBigInt(input: bigint): Either.Either<Uint, EvmTypeError> {
+  static fromBigInt(input: bigint): Result.Result<Uint, EvmTypeError> {
     if (input < 0n) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({
           message: `Uint value ${input} is out of range`,
           input,
         }),
       );
     }
-    return Either.right(new Uint({ value: input }));
+    return Result.succeed(new Uint({ value: input }));
   }
 
   static fromBeBytes(bytes: Uint8Array | ArrayLike<number>): Uint {
@@ -446,17 +437,17 @@ const CLASS_BY_TAG = {
 // ============================================================================
 
 /**
- * Checked addition - returns Either.left on overflow
+ * Checked addition - returns Result.failure on overflow
  */
 export function add<T extends FixedUnsigned>(
   a: T,
   b: T,
-): Either.Either<T, EvmTypeError> {
+): Result.Result<T, EvmTypeError> {
   const CLASS = CLASS_BY_TAG[a._tag];
   const result = a.value + b.value;
 
   if (result > CLASS.MAX_VALUE) {
-    return Either.left(
+    return Result.fail(
       new EvmTypeError({
         message: `${a._tag} addition overflow: ${a.value} + ${b.value}`,
         input: { a: a.value, b: b.value },
@@ -464,7 +455,7 @@ export function add<T extends FixedUnsigned>(
     );
   }
 
-  return Either.right(new CLASS({ value: result }) as T);
+  return Result.succeed(new CLASS({ value: result }) as T);
 }
 
 /**
@@ -478,16 +469,16 @@ export function addWrap<T extends FixedUnsigned>(a: T, b: T): T {
 }
 
 /**
- * Checked subtraction - returns Either.left on underflow
+ * Checked subtraction - returns Result.failure on underflow
  */
 export function sub<T extends FixedUnsigned>(
   a: T,
   b: T,
-): Either.Either<T, EvmTypeError> {
+): Result.Result<T, EvmTypeError> {
   const CLASS = CLASS_BY_TAG[a._tag];
 
   if (a.value < b.value) {
-    return Either.left(
+    return Result.fail(
       new EvmTypeError({
         message: `${a._tag} subtraction underflow: ${a.value} - ${b.value}`,
         input: { a: a.value, b: b.value },
@@ -495,7 +486,7 @@ export function sub<T extends FixedUnsigned>(
     );
   }
 
-  return Either.right(new CLASS({ value: a.value - b.value }) as T);
+  return Result.succeed(new CLASS({ value: a.value - b.value }) as T);
 }
 
 /**
@@ -509,17 +500,17 @@ export function subWrap<T extends FixedUnsigned>(a: T, b: T): T {
 }
 
 /**
- * Checked multiplication - returns Either.left on overflow
+ * Checked multiplication - returns Result.failure on overflow
  */
 export function mul<T extends FixedUnsigned>(
   a: T,
   b: T,
-): Either.Either<T, EvmTypeError> {
+): Result.Result<T, EvmTypeError> {
   const CLASS = CLASS_BY_TAG[a._tag];
   const result = a.value * b.value;
 
   if (result > CLASS.MAX_VALUE) {
-    return Either.left(
+    return Result.fail(
       new EvmTypeError({
         message: `${a._tag} multiplication overflow: ${a.value} * ${b.value}`,
         input: { a: a.value, b: b.value },
@@ -527,7 +518,7 @@ export function mul<T extends FixedUnsigned>(
     );
   }
 
-  return Either.right(new CLASS({ value: result }) as T);
+  return Result.succeed(new CLASS({ value: result }) as T);
 }
 
 /**
@@ -779,20 +770,20 @@ export function toBigInt<T extends AnyUint>(a: T): bigint {
 }
 
 /**
- * Convert to number - returns Either.left if value exceeds Number.MAX_SAFE_INTEGER
+ * Convert to number - returns Result.failure if value exceeds Number.MAX_SAFE_INTEGER
  */
 export function toNumber<T extends AnyUint>(
   a: T,
-): Either.Either<number, EvmTypeError> {
+): Result.Result<number, EvmTypeError> {
   if (a.value > BigInt(Number.MAX_SAFE_INTEGER)) {
-    return Either.left(
+    return Result.fail(
       new EvmTypeError({
         message: `Value ${a.value} exceeds Number.MAX_SAFE_INTEGER`,
         input: a.value,
       }),
     );
   }
-  return Either.right(Number(a.value));
+  return Result.succeed(Number(a.value));
 }
 
 // ============================================================================
@@ -817,7 +808,7 @@ export {
 export function fromBeBytes<T extends AnyUintClass>(
   bytes: AnyBytes,
   targetClass: T,
-): Either.Either<InstanceType<T>, EvmTypeError> {
+): Result.Result<InstanceType<T>, EvmTypeError> {
   let result = 0n;
   for (let i = 0; i < bytes.value.length; i++) {
     result = (result << 8n) | BigInt(bytes.value[i]);
@@ -826,7 +817,7 @@ export function fromBeBytes<T extends AnyUintClass>(
   if ("MAX_VALUE" in targetClass) {
     const maxValue = targetClass.MAX_VALUE;
     if (maxValue !== undefined && result > maxValue) {
-      return Either.left(
+      return Result.fail(
         new EvmTypeError({
           message: `Value ${result} exceeds ${targetClass.name}.MAX_VALUE`,
           input: bytes.value,
@@ -834,7 +825,7 @@ export function fromBeBytes<T extends AnyUintClass>(
       );
     }
   }
-  return Either.right(new targetClass({ value: result }) as InstanceType<T>);
+  return Result.succeed(new targetClass({ value: result }) as InstanceType<T>);
 }
 
 /**
@@ -843,14 +834,14 @@ export function fromBeBytes<T extends AnyUintClass>(
 export function fromLeBytes<T extends FixedUnsigned>(
   bytes: AnyBytes,
   targetClass: typeof U256 | typeof U64 | typeof U8,
-): Either.Either<T, EvmTypeError> {
+): Result.Result<T, EvmTypeError> {
   let result = 0n;
   for (let i = bytes.value.length - 1; i >= 0; i--) {
     result = (result << 8n) | BigInt(bytes.value[i]);
   }
   const maxValue = targetClass.MAX_VALUE;
   if (result > maxValue) {
-    return Either.left(
+    return Result.fail(
       new EvmTypeError({
         message: `Value ${result} exceeds ${targetClass.name}.MAX_VALUE`,
         input: bytes.value,
@@ -858,7 +849,7 @@ export function fromLeBytes<T extends FixedUnsigned>(
     );
   }
 
-  return Either.right(new targetClass({ value: result }) as T);
+  return Result.succeed(new targetClass({ value: result }) as T);
 }
 
 // ============================================================================
@@ -911,7 +902,7 @@ export function toSigned<T extends FixedUnsigned>(a: T): bigint {
  */
 export function ulen(
   value: Uint8Array | unknown[],
-): Either.Either<Uint, EvmTypeError> {
+): Result.Result<Uint, EvmTypeError> {
   return Uint.fromBigInt(BigInt(value.length));
 }
 

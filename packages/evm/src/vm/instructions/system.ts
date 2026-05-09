@@ -52,7 +52,7 @@ import { Code } from "../runtime.js";
  * Returns delegation info and access gas cost
  */
 const accessDelegation = Effect.fn("accessDelegation")(function* (
-  evm: Evm["Type"],
+  evm: Evm["Service"],
   address: Address,
 ): Effect.fn.Return<[boolean, Address, Bytes, Uint], never, Evm | Fork> {
   const fork = yield* Fork;
@@ -150,7 +150,7 @@ const genericCall = (
     });
 
     const childEvm = yield* processMessage(childMessage);
-    const childError = yield* childEvm.error;
+    const childError = yield* Ref.get(childEvm.error);
     const childOutput = yield* Ref.get(childEvm.output);
 
     if (Option.isSome(childError)) {
@@ -442,7 +442,9 @@ export const selfdestruct: Effect.Effect<void, EthereumException, Evm | Fork> =
         });
       }
     } else if (fork.eip(150)) {
-      if (!(yield* State.accountExists(evm.message.blockEnv.state, beneficiary))) {
+      if (
+        !(yield* State.accountExists(evm.message.blockEnv.state, beneficiary))
+      ) {
         gasCost = new Uint({
           value: gasCost.value + Gas.GAS_SELF_DESTRUCT_NEW_ACCOUNT.value,
         });

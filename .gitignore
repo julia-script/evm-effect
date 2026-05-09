@@ -16,7 +16,7 @@ scratchpad/*
 .env.development.local
 .env.test.local
 .env.production.local
-.llms
+.llms/
 .history
 .venv
 __pycache__/
@@ -30,4 +30,5 @@ execution-specs/
 
 test-output/
 generated/
+
 

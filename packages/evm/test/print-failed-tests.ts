@@ -9,8 +9,7 @@
  */
 
 import * as path from "node:path";
-import { FileSystem } from "effect/FileSystem";
-import { BunRuntime, BunFileSystem } from "@effect/platform-bun";
+import { BunFileSystem, BunRuntime } from "@effect/platform-bun";
 import {
   Array as Arr,
   Console,
@@ -20,6 +19,7 @@ import {
   pipe,
   Schema,
 } from "effect";
+import { FileSystem } from "effect/FileSystem";
 
 // Schema for test run metadata
 const TestRunMetadata = Schema.Struct({

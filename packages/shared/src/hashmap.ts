@@ -1,4 +1,4 @@
-import { Data, Hash } from "effect";
+import { Data, Hash, Schema } from "effect";
 
 export class Entry<K, V> {
   constructor(
@@ -88,20 +88,16 @@ export class HashMap<K, V> extends Data.TaggedClass("HashMap")<{
   }
 }
 
-// export const HashMapFromSelf = <
-//   K extends Schema.Top,
-//   V extends Schema.Top,
-// >(
-//   _key: K,
-//   _value: V,
-// ): HashMapFromSelf<K, V> =>
-//   Schema.instanceOf(HashMap<K["Encoded"], V["Encoded"]>);
+export const HashMapFromSelf = <K extends Schema.Top, V extends Schema.Top>(
+  _key: K,
+  _value: V,
+) => Schema.instanceOf(HashMap<K["Encoded"], V["Encoded"]>);
 // export type HashMapFromSelf<
 //   K extends Schema.Top,
 //   V extends Schema.Top,
 // > = Schema.Schema<HashMap<K["Encoded"], V["Encoded"]>>;
 // export const HashMapFromRecord = <KType, KEncoded, VType, VEncoded>(
-//   key: Schema.Schema<KType, KEncoded>,
+//   key: Schema.Top<KType, KEncoded>,
 //   value: Schema.Schema<VType, VEncoded>,
 // ) => {
 //   const from = Schema.Record({

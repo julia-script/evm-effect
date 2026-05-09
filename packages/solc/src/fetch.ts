@@ -1,5 +1,5 @@
-import { HttpClient, HttpClientResponse } from "@effect/platform";
 import { Data, Effect, Schema } from "effect";
+import { HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 const ResponseSchema = Schema.Struct({
   builds: Schema.Array(
@@ -13,10 +13,7 @@ const ResponseSchema = Schema.Struct({
       urls: Schema.Array(Schema.URL),
     }),
   ),
-  releases: Schema.Record({
-    key: Schema.String,
-    value: Schema.String,
-  }),
+  releases: Schema.Record(Schema.String, Schema.String),
   latestRelease: Schema.String,
 });
 

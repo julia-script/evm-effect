@@ -24,23 +24,10 @@ export type UserDocError = typeof UserDocError.Type;
 export const UserDoc = Schema.Struct({
   version: Schema.optional(Schema.Number),
   kind: Schema.optional(Schema.Literal("user")),
-  methods: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: UserDocMethod,
-    }),
-  ),
-  events: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: UserDocEvent,
-    }),
-  ),
+  methods: Schema.optional(Schema.Record(Schema.String, UserDocMethod)),
+  events: Schema.optional(Schema.Record(Schema.String, UserDocEvent)),
   errors: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.Array(UserDocError),
-    }),
+    Schema.Record(Schema.String, Schema.Array(UserDocError)),
   ),
   notice: Schema.optional(Schema.String),
 });
@@ -49,60 +36,25 @@ export type UserDoc = typeof UserDoc.Type;
 
 export const DevDocMethod = Schema.Struct({
   details: Schema.optional(Schema.String),
-  params: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.String,
-    }),
-  ),
-  returns: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.String,
-    }),
-  ),
-  custom: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.Unknown,
-    }),
-  ),
+  params: Schema.optional(Schema.Record(Schema.String, Schema.String)),
+  returns: Schema.optional(Schema.Record(Schema.String, Schema.String)),
+  custom: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
 });
 
 export type DevDocMethod = typeof DevDocMethod.Type;
 
 export const DevDocEvent = Schema.Struct({
   details: Schema.optional(Schema.String),
-  params: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.String,
-    }),
-  ),
-  custom: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.Unknown,
-    }),
-  ),
+  params: Schema.optional(Schema.Record(Schema.String, Schema.String)),
+  custom: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
 });
 
 export type DevDocEvent = typeof DevDocEvent.Type;
 
 export const DevDocError = Schema.Struct({
   details: Schema.optional(Schema.String),
-  params: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.String,
-    }),
-  ),
-  custom: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.Unknown,
-    }),
-  ),
+  params: Schema.optional(Schema.Record(Schema.String, Schema.String)),
+  custom: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
 });
 
 export type DevDocError = typeof DevDocError.Type;
@@ -110,12 +62,7 @@ export type DevDocError = typeof DevDocError.Type;
 export const DevDocStateVariable = Schema.Struct({
   details: Schema.optional(Schema.String),
   returns: Schema.optional(Schema.String),
-  custom: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.Unknown,
-    }),
-  ),
+  custom: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
 });
 
 export type DevDocStateVariable = typeof DevDocStateVariable.Type;
@@ -126,36 +73,15 @@ export const DevDoc = Schema.Struct({
   author: Schema.optional(Schema.String),
   details: Schema.optional(Schema.String),
   title: Schema.optional(Schema.String),
-  methods: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: DevDocMethod,
-    }),
-  ),
-  events: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: DevDocEvent,
-    }),
-  ),
+  methods: Schema.optional(Schema.Record(Schema.String, DevDocMethod)),
+  events: Schema.optional(Schema.Record(Schema.String, DevDocEvent)),
   errors: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.Array(DevDocError),
-    }),
+    Schema.Record(Schema.String, Schema.Array(DevDocError)),
   ),
   stateVariables: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: DevDocStateVariable,
-    }),
+    Schema.Record(Schema.String, DevDocStateVariable),
   ),
-  custom: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.Unknown,
-    }),
-  ),
+  custom: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
 });
 
 export type DevDoc = typeof DevDoc.Type;

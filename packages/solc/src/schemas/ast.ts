@@ -3,7 +3,7 @@
  * Node kinds align with `libsolidity/ast/ASTJsonImporter.cpp`.
  */
 import { Schema } from "effect";
-import { StateMutability, type StateMutabilityEncoded } from "./abi.js";
+import { StateMutability } from "./abi.js";
 import { YulBlock, type YulBlockEncoded } from "./yul-ast.js";
 
 /** `typeDescriptions` on many expression/type nodes */
@@ -15,51 +15,55 @@ export const TypeDescriptions = Schema.Struct({
 export type TypeDescriptionsEncoded = typeof TypeDescriptions.Type;
 
 export type OptionalDocEncoded = string | AstNodeEncoded;
-export const OptionalDoc = Schema.Union(
+export const OptionalDoc = Schema.Union([
   Schema.String,
-  Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
-);
+  Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
+]);
 
-export const Visibility = Schema.Literal(
-  "default",
-  "private",
-  "internal",
-  "public",
-  "external",
-);
+export const Visibility = Schema.Union([
+  Schema.Literal("default"),
+  Schema.Literal("private"),
+  Schema.Literal("internal"),
+  Schema.Literal("public"),
+  Schema.Literal("external"),
+]);
 export type VisibilityEncoded = typeof Visibility.Encoded;
-export const VariableMutability = Schema.Literal(
-  "constant",
-  "mutable",
-  "immutable",
-);
+export const VariableMutability = Schema.Union([
+  Schema.Literal("constant"),
+  Schema.Literal("mutable"),
+  Schema.Literal("immutable"),
+]);
 export type VariableMutabilityEncoded = typeof VariableMutability.Encoded;
-export const ContractKind = Schema.Literal("interface", "contract", "library");
+export const ContractKind = Schema.Union([
+  Schema.Literal("interface"),
+  Schema.Literal("contract"),
+  Schema.Literal("library"),
+]);
 export type ContractKindEncoded = typeof ContractKind.Encoded;
 
-export const FunctionKind = Schema.Literal(
-  "constructor",
-  "function",
-  "fallback",
-  "receive",
-  "freeFunction",
-);
+export const FunctionKind = Schema.Union([
+  Schema.Literal("constructor"),
+  Schema.Literal("function"),
+  Schema.Literal("fallback"),
+  Schema.Literal("receive"),
+  Schema.Literal("freeFunction"),
+]);
 export type FunctionKindEncoded = typeof FunctionKind.Encoded;
-export const LiteralKind = Schema.Literal(
-  "number",
-  "string",
-  "unicodeString",
-  "hexString",
-  "bool",
-);
+export const LiteralKind = Schema.Union([
+  Schema.Literal("number"),
+  Schema.Literal("string"),
+  Schema.Literal("unicodeString"),
+  Schema.Literal("hexString"),
+  Schema.Literal("bool"),
+]);
 export type LiteralKindEncoded = typeof LiteralKind.Encoded;
-export const StorageLocation = Schema.Literal(
-  "default",
-  "storage",
-  "memory",
-  "calldata",
-  "transient",
-);
+export const StorageLocation = Schema.Union([
+  Schema.Literal("default"),
+  Schema.Literal("storage"),
+  Schema.Literal("memory"),
+  Schema.Literal("calldata"),
+  Schema.Literal("transient"),
+]);
 export type StorageLocationEncoded = typeof StorageLocation.Encoded;
 // --- Declarations & directive nodes ---
 
@@ -81,7 +85,7 @@ export interface ImportSymbolAliasEncoded {
   local: string | null;
 }
 export const ImportSymbolAlias = Schema.Struct({
-  foreign: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  foreign: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   local: Schema.NullOr(Schema.String),
 });
 
@@ -133,18 +137,18 @@ export const ContractDefinition = Schema.Struct({
   name: Schema.String,
   nameLocation: Schema.String,
   documentation: Schema.optional(
-    Schema.suspend((): Schema.Schema<OptionalDocEncoded> => OptionalDoc),
+    Schema.suspend((): Schema.Codec<OptionalDocEncoded> => OptionalDoc),
   ),
   contractKind: ContractKind,
   abstract: Schema.Boolean,
   baseContracts: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   nodes: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   storageLayout: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   // Compiler output metadata (optional on import)
   canonicalName: Schema.optional(Schema.String),
@@ -182,10 +186,10 @@ export const InheritanceSpecifier = Schema.Struct({
   nodeType: Schema.Literal("InheritanceSpecifier"),
   id: Schema.Number,
   src: Schema.String,
-  baseName: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  baseName: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   arguments: Schema.optional(
     Schema.Array(
-      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+      Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
     ),
   ),
 });
@@ -198,11 +202,11 @@ export interface UsingForFunctionListEntryEncoded {
 
 export const UsingForFunctionListEntry = Schema.Struct({
   function: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   operator: Schema.optional(Schema.String),
   definition: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
 });
 
@@ -222,11 +226,11 @@ export const UsingForDirective = Schema.Struct({
   src: Schema.String,
   global: Schema.Boolean,
   libraryName: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   functionList: Schema.optional(Schema.Array(UsingForFunctionListEntry)),
   typeName: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
 });
 
@@ -251,7 +255,7 @@ export const StructDefinition = Schema.Struct({
   nameLocation: Schema.String,
   documentation: Schema.optional(OptionalDoc),
   members: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   canonicalName: Schema.optional(Schema.String),
   scope: Schema.optional(Schema.Number),
@@ -277,7 +281,7 @@ export const EnumDefinition = Schema.Struct({
   nameLocation: Schema.String,
   documentation: Schema.optional(OptionalDoc),
   members: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   canonicalName: Schema.optional(Schema.String),
 });
@@ -313,7 +317,7 @@ export const UserDefinedValueTypeDefinition = Schema.Struct({
   name: Schema.String,
   nameLocation: Schema.String,
   underlyingType: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   canonicalName: Schema.optional(Schema.String),
 });
@@ -330,7 +334,7 @@ export const ParameterList = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   parameters: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
 });
 
@@ -346,7 +350,7 @@ export const OverrideSpecifier = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   overrides: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
 });
 
@@ -361,7 +365,7 @@ export interface FunctionDefinitionEncoded {
   virtual: boolean;
   implemented: boolean;
   visibility: VisibilityEncoded;
-  stateMutability: StateMutabilityEncoded;
+  stateMutability: typeof StateMutability.Type;
   parameters: ParameterListEncoded;
   returnParameters: ParameterListEncoded;
   modifiers: readonly AstNodeEncoded[];
@@ -385,15 +389,15 @@ export const FunctionDefinition = Schema.Struct({
   parameters: ParameterList,
   returnParameters: ParameterList,
   modifiers: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   overrides: Schema.optional(
     Schema.Array(
-      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+      Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
     ),
   ),
   body: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   scope: Schema.optional(Schema.Number),
   functionSelector: Schema.optional(Schema.String),
@@ -427,7 +431,7 @@ export const VariableDeclaration = Schema.Struct({
   nameLocation: Schema.String,
   documentation: Schema.optional(OptionalDoc),
   typeName: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   mutability: VariableMutability,
   constant: Schema.Boolean,
@@ -436,11 +440,11 @@ export const VariableDeclaration = Schema.Struct({
   storageLocation: StorageLocation,
   overrides: Schema.optional(
     Schema.Array(
-      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+      Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
     ),
   ),
   value: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   indexed: Schema.optional(Schema.Boolean),
   scope: Schema.optional(Schema.Number),
@@ -471,11 +475,11 @@ export const ModifierDefinition = Schema.Struct({
   parameters: ParameterList,
   overrides: Schema.optional(
     Schema.Array(
-      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+      Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
     ),
   ),
   body: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
 });
 
@@ -491,11 +495,11 @@ export const ModifierInvocation = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   modifierName: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   arguments: Schema.optional(
     Schema.Array(
-      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+      Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
     ),
   ),
 });
@@ -548,7 +552,7 @@ export interface ElementaryTypeNameEncoded {
   src: string;
   name: string;
   typeDescriptions?: TypeDescriptionsEncoded | undefined;
-  stateMutability?: StateMutabilityEncoded | undefined;
+  stateMutability?: typeof StateMutability.Type | undefined;
 }
 export const ElementaryTypeName = Schema.Struct({
   nodeType: Schema.Literal("ElementaryTypeName"),
@@ -571,7 +575,7 @@ export const UserDefinedTypeName = Schema.Struct({
   nodeType: Schema.Literal("UserDefinedTypeName"),
   id: Schema.Number,
   src: Schema.String,
-  pathNode: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  pathNode: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
 
@@ -582,7 +586,7 @@ export interface FunctionTypeNameEncoded {
   parameterTypes: readonly AstNodeEncoded[];
   returnParameterTypes: readonly AstNodeEncoded[];
   visibility: VisibilityEncoded;
-  stateMutability: StateMutabilityEncoded;
+  stateMutability: typeof StateMutability.Type;
 }
 
 export const FunctionTypeName = Schema.Struct({
@@ -590,10 +594,10 @@ export const FunctionTypeName = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   parameterTypes: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   returnParameterTypes: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   visibility: Visibility,
   stateMutability: StateMutability,
@@ -615,10 +619,10 @@ export const Mapping = Schema.Struct({
   nodeType: Schema.Literal("Mapping"),
   id: Schema.Number,
   src: Schema.String,
-  keyType: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  keyType: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   keyName: Schema.String,
   keyNameLocation: Schema.String,
-  valueType: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  valueType: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   valueName: Schema.String,
   valueNameLocation: Schema.String,
 });
@@ -634,7 +638,7 @@ export const ArrayTypeName = Schema.Struct({
   nodeType: Schema.Literal("ArrayTypeName"),
   id: Schema.Number,
   src: Schema.String,
-  baseType: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  baseType: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   length: Schema.optional(Schema.Number),
 });
 
@@ -653,7 +657,7 @@ export const Block = Schema.Struct({
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
   statements: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
 });
 
@@ -670,7 +674,7 @@ export const UncheckedBlock = Schema.Struct({
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
   statements: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
 });
 
@@ -701,10 +705,10 @@ export const IfStatement = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  condition: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
-  trueBody: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  condition: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
+  trueBody: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   falseBody: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
 });
 
@@ -722,9 +726,9 @@ export const TryCatchClause = Schema.Struct({
   src: Schema.String,
   errorName: Schema.String,
   parameters: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
-  block: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  block: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
 });
 
 export interface TryStatementEncoded {
@@ -741,10 +745,10 @@ export const TryStatement = Schema.Struct({
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
   externalCall: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   clauses: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
 });
 
@@ -761,8 +765,8 @@ export const WhileStatement = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  condition: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
-  body: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  condition: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
+  body: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
 });
 
 export interface DoWhileStatementEncoded {
@@ -778,8 +782,8 @@ export const DoWhileStatement = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  condition: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
-  body: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  condition: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
+  body: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
 });
 
 export interface ForStatementEncoded {
@@ -798,15 +802,15 @@ export const ForStatement = Schema.Struct({
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
   initializationExpression: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   condition: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   loopExpression: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
-  body: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  body: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
 });
 
 export interface ContinueEncoded {
@@ -849,7 +853,7 @@ export const Return = Schema.Struct({
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
   expression: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   functionReturnParameters: Schema.optional(Schema.Number),
 });
@@ -866,7 +870,7 @@ export const EmitStatement = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  eventCall: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  eventCall: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
 });
 
 export interface RevertStatementEncoded {
@@ -881,7 +885,7 @@ export const RevertStatement = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  errorCall: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  errorCall: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
 });
 
 export interface ThrowEncoded {
@@ -912,11 +916,11 @@ export const VariableDeclarationStatement = Schema.Struct({
   documentation: Schema.optional(Schema.String),
   declarations: Schema.Array(
     Schema.NullOr(
-      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+      Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
     ),
   ),
   initialValue: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
 });
 
@@ -932,9 +936,7 @@ export const ExpressionStatement = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   documentation: Schema.optional(Schema.String),
-  expression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
-  ),
+  expression: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
 });
 
 // --- Expressions ---
@@ -952,12 +954,12 @@ export const Conditional = Schema.Struct({
   nodeType: Schema.Literal("Conditional"),
   id: Schema.Number,
   src: Schema.String,
-  condition: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  condition: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   trueExpression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   falseExpression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
@@ -981,10 +983,10 @@ export const Assignment = Schema.Struct({
   src: Schema.String,
   operator: Schema.String,
   leftHandSide: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   rightHandSide: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   typeDescriptions: Schema.optional(TypeDescriptions),
   isConstant: Schema.optional(Schema.Boolean),
@@ -1007,7 +1009,7 @@ export const TupleExpression = Schema.Struct({
   src: Schema.String,
   components: Schema.Array(
     Schema.NullOr(
-      Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+      Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
     ),
   ),
   isInlineArray: Schema.Boolean,
@@ -1030,7 +1032,7 @@ export const UnaryOperation = Schema.Struct({
   operator: Schema.String,
   prefix: Schema.Boolean,
   subExpression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
@@ -1055,10 +1057,10 @@ export const BinaryOperation = Schema.Struct({
   src: Schema.String,
   operator: Schema.String,
   leftExpression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   rightExpression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   typeDescriptions: Schema.optional(TypeDescriptions),
   isConstant: Schema.optional(Schema.Boolean),
@@ -1088,11 +1090,9 @@ export const FunctionCall = Schema.Struct({
   nodeType: Schema.Literal("FunctionCall"),
   id: Schema.Number,
   src: Schema.String,
-  expression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
-  ),
+  expression: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   arguments: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   names: Schema.Array(Schema.String),
   tryCall: Schema.optional(Schema.Boolean),
@@ -1118,12 +1118,10 @@ export const FunctionCallOptions = Schema.Struct({
   nodeType: Schema.Literal("FunctionCallOptions"),
   id: Schema.Number,
   src: Schema.String,
-  expression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
-  ),
+  expression: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   names: Schema.Array(Schema.String),
   options: Schema.Array(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
@@ -1139,7 +1137,7 @@ export const NewExpression = Schema.Struct({
   nodeType: Schema.Literal("NewExpression"),
   id: Schema.Number,
   src: Schema.String,
-  typeName: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  typeName: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
 
@@ -1161,9 +1159,7 @@ export const MemberAccess = Schema.Struct({
   nodeType: Schema.Literal("MemberAccess"),
   id: Schema.Number,
   src: Schema.String,
-  expression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
-  ),
+  expression: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   memberName: Schema.String,
   memberLocation: Schema.optional(Schema.String),
   typeDescriptions: Schema.optional(TypeDescriptions),
@@ -1191,10 +1187,10 @@ export const IndexAccess = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   baseExpression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   indexExpression: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   typeDescriptions: Schema.optional(TypeDescriptions),
   isConstant: Schema.optional(Schema.Boolean),
@@ -1217,13 +1213,13 @@ export const IndexRangeAccess = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   baseExpression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
   startExpression: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   endExpression: Schema.optional(
-    Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+    Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   ),
   typeDescriptions: Schema.optional(TypeDescriptions),
 });
@@ -1262,7 +1258,7 @@ export const ElementaryTypeNameExpression = Schema.Struct({
   nodeType: Schema.Literal("ElementaryTypeNameExpression"),
   id: Schema.Number,
   src: Schema.String,
-  typeName: Schema.suspend((): Schema.Schema<AstNodeEncoded> => AstNodeSchema),
+  typeName: Schema.suspend((): Schema.Codec<AstNodeEncoded> => AstNodeSchema),
   typeDescriptions: Schema.optional(TypeDescriptions),
   isConstant: Schema.optional(Schema.Boolean),
   isLValue: Schema.optional(Schema.Boolean),
@@ -1325,7 +1321,7 @@ export const StorageLayoutSpecifier = Schema.Struct({
   id: Schema.Number,
   src: Schema.String,
   baseSlotExpression: Schema.suspend(
-    (): Schema.Schema<AstNodeEncoded> => AstNodeSchema,
+    (): Schema.Codec<AstNodeEncoded> => AstNodeSchema,
   ),
 });
 
@@ -1372,7 +1368,7 @@ export type DeclarationNodeEncoded =
   | EventDefinitionEncoded
   | ErrorDefinitionEncoded;
 
-export const DeclarationNode = Schema.Union(
+export const DeclarationNode = Schema.Union([
   PragmaDirective,
   ImportDirective,
   ContractDefinition,
@@ -1391,7 +1387,7 @@ export const DeclarationNode = Schema.Union(
   ModifierInvocation,
   EventDefinition,
   ErrorDefinition,
-);
+]);
 
 export type TypeNodeEncoded =
   | ElementaryTypeNameEncoded
@@ -1399,13 +1395,13 @@ export type TypeNodeEncoded =
   | FunctionTypeNameEncoded
   | MappingEncoded
   | ArrayTypeNameEncoded;
-export const TypeNode = Schema.Union(
+export const TypeNode = Schema.Union([
   ElementaryTypeName,
   UserDefinedTypeName,
   FunctionTypeName,
   Mapping,
   ArrayTypeName,
-);
+]);
 
 export type StatementNodeEncoded =
   | BlockEncoded
@@ -1425,7 +1421,7 @@ export type StatementNodeEncoded =
   | ThrowEncoded
   | VariableDeclarationStatementEncoded
   | ExpressionStatementEncoded;
-export const StatementNode = Schema.Union(
+export const StatementNode = Schema.Union([
   Block,
   UncheckedBlock,
   PlaceholderStatement,
@@ -1443,7 +1439,7 @@ export const StatementNode = Schema.Union(
   Throw,
   VariableDeclarationStatement,
   ExpressionStatement,
-);
+]);
 
 export type ExpressionNodeEncoded =
   | ConditionalEncoded
@@ -1461,7 +1457,7 @@ export type ExpressionNodeEncoded =
   | ElementaryTypeNameExpressionEncoded
   | LiteralEncoded;
 
-export const ExpressionNode = Schema.Union(
+export const ExpressionNode = Schema.Union([
   Conditional,
   Assignment,
   TupleExpression,
@@ -1476,13 +1472,13 @@ export const ExpressionNode = Schema.Union(
   Identifier,
   ElementaryTypeNameExpression,
   Literal,
-);
+]);
 
-export const DocOrMiscNode = Schema.Union(
+export const DocOrMiscNode = Schema.Union([
   StructuredDocumentation,
   StorageLayoutSpecifier,
   InlineAssembly,
-);
+]);
 
 export type DocOrMiscNodeEncoded =
   | StructuredDocumentationEncoded
@@ -1495,13 +1491,13 @@ export type AstNodeEncoded =
   | StatementNodeEncoded
   | ExpressionNodeEncoded
   | DocOrMiscNodeEncoded;
-export const AstNodeSchema = Schema.Union(
+export const AstNodeSchema = Schema.Union([
   DeclarationNode,
   TypeNode,
   StatementNode,
   ExpressionNode,
   DocOrMiscNode,
-);
+]);
 
 /** Root AST attached under `sources[absolutePath].ast` */
 export const SolcAst = Schema.Struct({
@@ -1510,10 +1506,7 @@ export const SolcAst = Schema.Struct({
   src: Schema.String,
   absolutePath: Schema.optional(Schema.String),
   exportedSymbols: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.Array(Schema.Number),
-    }),
+    Schema.Record(Schema.String, Schema.Array(Schema.Number)),
   ),
   license: Schema.optional(Schema.String),
   experimentalSolidity: Schema.optional(Schema.Boolean),

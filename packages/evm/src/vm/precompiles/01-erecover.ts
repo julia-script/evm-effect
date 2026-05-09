@@ -3,7 +3,7 @@ import {
   secp256k1Recover,
 } from "@evm-effect/crypto/transactions";
 import { Bytes, Bytes32, U256 } from "@evm-effect/ethereum-types";
-import { Effect, Either, Ref } from "effect";
+import { Effect, Ref, Result } from "effect";
 import { Evm } from "../evm.js";
 import * as Gas from "../gas.js";
 
@@ -77,12 +77,12 @@ export const erecover = Effect.gen(function* () {
     s,
     v,
     new Bytes32({ value: messageHash }),
-  ).pipe(Effect.either);
-  if (Either.isLeft(publicKey)) {
+  ).pipe(Effect.result);
+  if (Result.isFailure(publicKey)) {
     return;
   }
 
-  const address = publicKeyToAddress(publicKey.right);
+  const address = publicKeyToAddress(publicKey.success);
 
   const paddedAddress = new Uint8Array(32);
   paddedAddress.set(address.value.value, 12); // Place 20-byte address at offset 12

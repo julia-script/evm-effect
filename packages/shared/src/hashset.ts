@@ -1,4 +1,4 @@
-import { Data, Hash } from "effect";
+import { Data, Hash, Schema } from "effect";
 
 export class HashSet<V> extends Data.TaggedClass("HashSet")<{
   readonly _map: Map<number, V>;
@@ -40,9 +40,9 @@ export class HashSet<V> extends Data.TaggedClass("HashSet")<{
   }
 }
 
-// export const HashSetFromSelf = <V extends Schema.Schema.All>(
-//   _value: V,
-// ): HashSetFromSelf<V> => Schema.instanceOf(HashSet<V["Encoded"]>);
-// export type HashSetFromSelf<V extends Schema.Schema.All> = Schema.Schema<
-//   HashSet<Schema.Schema.Type<V>>
-// >;
+export const HashSetFromSelf = <V extends Schema.Top>(
+  _value: V,
+): HashSetFromSelf<V> => Schema.instanceOf(HashSet<Schema.Schema.Type<V>>);
+export type HashSetFromSelf<V extends Schema.Top> = Schema.Schema<
+  HashSet<Schema.Schema.Type<V>>
+>;

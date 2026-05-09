@@ -1,25 +1,18 @@
-import {
-  Address,
-  Bytes,
-  Bytes20,
-  Bytes32,
-  U8,
-  U64,
-  U256,
-  Uint,
-} from "@evm-effect/ethereum-types";
-import { HashMapFromRecord } from "@evm-effect/shared/hashmap";
-import { Effect, ParseResult, Schema } from "effect";
+import { Address, Bytes, Bytes20, Uint } from "@evm-effect/ethereum-types";
+import { bufferFromHex } from "@evm-effect/shared/bytes";
+// import { HashMapFromRecord } from "@evm-effect/shared/hashmap";
+import { Effect, Option, Schema, SchemaGetter, SchemaIssue } from "effect";
+import { isBigInt, isString, isUint8Array } from "effect/Predicate";
 
-const FixtureFormat = Schema.Union(
+const FixtureFormat = Schema.Union([
   Schema.Literal("blockchain_test_engine_x"),
   Schema.Literal("blockchain_test"),
   Schema.Literal("blockchain_test_engine"),
   Schema.Literal("transaction_test"),
   Schema.Literal("state_test"),
-);
+]);
 
-const ForkFix = Schema.Union(
+const ForkFix = Schema.Union([
   Schema.Literal("Osaka"),
   Schema.Literal("Frontier"),
   Schema.Literal("Cancun"),
@@ -35,7 +28,7 @@ const ForkFix = Schema.Union(
   Schema.Literal("Byzantium"),
   Schema.Literal("CancunToPragueAtTime15k"),
   Schema.Literal("London"),
-);
+]);
 
 export const IndexEntry = Schema.Struct({
   id: Schema.String,
@@ -54,119 +47,77 @@ export const Index = Schema.Struct({
   test_cases: Schema.Array(IndexEntry),
 });
 
-const UintFromHex = Schema.transform(Schema.BigInt, Uint, {
-  decode: (fromA) => {
-    return new Uint({ value: fromA });
-  },
-  encode: (toI) => {
-    return toI.value;
-  },
-  strict: false,
-});
-const _U8FromHex = Schema.transform(Schema.BigInt, U8, {
-  decode: (fromA) => {
-    return new U8({ value: fromA });
-  },
-  encode: (toI) => {
-    return toI.value;
-  },
-  strict: false,
-});
+const BigIntFromHex = Schema.String.pipe(
+  Schema.decodeTo(Schema.BigInt, {
+    decode: SchemaGetter.transformOrFail((fromA) => {
+      try {
+        return Effect.succeed(BigInt(fromA));
+      } catch (_error) {
+        return Effect.fail(new SchemaIssue.InvalidValue(Option.some(fromA)));
+      }
+    }),
+    encode: SchemaGetter.transformOrFail((toI) =>
+      Effect.succeed(`0x${toI.toString(16)}`),
+    ),
+  }),
+);
 
-const _U64FromHex = Schema.transform(Schema.BigInt, U64, {
-  decode: (fromA) => {
-    return new U64({ value: fromA });
-  },
-  encode: (toI) => {
-    return toI.value;
-  },
-  strict: false,
-});
+const UintFromHex = BigIntFromHex.pipe(
+  Schema.decodeTo(Uint, {
+    decode: SchemaGetter.transformOrFail((fromA) => {
+      if (!isBigInt(fromA)) {
+        return Effect.fail(new SchemaIssue.InvalidValue(Option.some(fromA)));
+      }
+      return Effect.succeed(new Uint({ value: fromA }));
+    }),
+    encode: SchemaGetter.transformOrFail((toI) => Effect.succeed(toI.value)),
+  }),
+);
 
-const _U256FromHex = Schema.transform(Schema.BigInt, U256, {
-  decode: (fromA) => {
-    return new U256({ value: fromA });
-  },
-  encode: (toI) => {
-    return toI.value;
-  },
-  strict: false,
-});
-
-const Uint8ArrayFromHex = Schema.transformOrFail(
-  Schema.String,
-  Schema.instanceOf(Uint8Array),
-  {
-    decode: (fromA) => {
+const Uint8ArrayFromHex = Schema.String.pipe(
+  Schema.decodeTo(Schema.Uint8Array, {
+    decode: SchemaGetter.transformOrFail((fromA) => {
+      if (!isString(fromA)) {
+        return Effect.fail(new SchemaIssue.InvalidValue(Option.some(fromA)));
+      }
       if (fromA.startsWith("0x")) {
         fromA = fromA.slice(2);
       }
       return Effect.succeed(Uint8Array.fromHex(fromA));
-    },
-    encode: (toI) => {
-      return Effect.succeed(`0x${toI.toHex()}`);
-    },
-    strict: true,
-  },
+    }),
+    encode: SchemaGetter.transformOrFail((toI) =>
+      Effect.succeed(`0x${toI.toHex()}`),
+    ),
+  }),
 );
 
-const BytesFromHex = Schema.transformOrFail(Uint8ArrayFromHex, Bytes, {
-  decode: (fromA, _options, _ast, _fromI) => {
-    return Effect.succeed(new Bytes({ value: fromA }));
-  },
-  encode: (toI) => {
-    return Effect.succeed(toI.value);
-  },
-  strict: false,
-});
-
-const _Bytes32FromHex = Schema.transformOrFail(Uint8ArrayFromHex, Bytes32, {
-  decode: (fromA) => {
-    return Effect.succeed(new Bytes32({ value: fromA }));
-  },
-  encode: (toI) => {
-    return Effect.succeed(toI.value);
-  },
-  strict: false,
-});
-const AddressFromHex = Schema.transformOrFail(Uint8ArrayFromHex, Address, {
-  decode: (fromA) => {
-    return Effect.succeed(
-      new Address({ value: new Bytes20({ value: fromA }) }),
-    );
-  },
-  encode: (toI) => {
-    return Effect.succeed(new Uint8Array(toI.value.value));
-  },
-  strict: false,
-});
-
-const _entriesFromRecrod = <
-  K extends Schema.Schema.Any,
-  V extends Schema.Schema.Any,
->(options: {
-  key: K;
-  value: V;
-}) =>
-  Schema.transformOrFail(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.Unknown,
+const BytesFromHex = Uint8ArrayFromHex.pipe(
+  Schema.decodeTo(Bytes, {
+    decode: SchemaGetter.transformOrFail((fromA) => {
+      if (!isUint8Array(fromA)) {
+        return Effect.fail(new SchemaIssue.InvalidValue(Option.some(fromA)));
+      }
+      return Effect.succeed(new Bytes({ value: fromA }));
     }),
-    Schema.Array(Schema.Tuple(options.key, options.value)),
-    {
-      decode: (fromA) => {
-        return ParseResult.decodeUnknown(
-          Schema.Array(Schema.Tuple(options.key, options.value)),
-        )(fromA);
-        // return Object.entries(fromA);
-      },
-      encode: (toI) => {
-        return Object.fromEntries(toI);
-      },
-      strict: false,
-    },
-  );
+    encode: SchemaGetter.transformOrFail((toI) => Effect.succeed(toI.value)),
+  }),
+);
+
+const AddressFromHex = Uint8ArrayFromHex.pipe(
+  Schema.decodeTo(Address, {
+    decode: SchemaGetter.transformOrFail((fromA) => {
+      if (!isUint8Array(fromA)) {
+        return Effect.fail(new SchemaIssue.InvalidValue(Option.some(fromA)));
+      }
+      return Effect.succeed(
+        new Address({ value: new Bytes20({ value: fromA }) }),
+      );
+    }),
+    encode: SchemaGetter.transformOrFail((toI) =>
+      Effect.succeed(new Uint8Array(toI.value.value)),
+    ),
+  }),
+);
 
 const AccessListFix = Schema.Struct({
   address: AddressFromHex,
@@ -190,23 +141,20 @@ const TransactionFix = Schema.Struct({
   maxPriorityFeePerGas: Schema.optional(UintFromHex),
   maxFeePerGas: Schema.optional(UintFromHex),
   gasLimit: Schema.Array(UintFromHex),
-  to: Schema.transform(Schema.String, Schema.UndefinedOr(Address), {
-    decode: (fromA) => {
-      if (fromA === "") {
-        return undefined;
-      }
-      return new Address({
-        value: new Bytes20({ value: Uint8Array.fromHex(fromA.slice(2)) }),
-      });
-    },
-    encode: (toI) => {
-      if (toI === undefined) {
-        return;
-      }
-      return `0x${Buffer.from(toI.value.value).toString("hex")}`;
-    },
-    strict: false,
-  }).pipe(Schema.optional),
+  to: Schema.String.pipe(
+    Schema.decodeTo(Address.pipe(Schema.optional), {
+      decode: SchemaGetter.transform((value) =>
+        value
+          ? new Address({ value: new Bytes20({ value: bufferFromHex(value) }) })
+          : undefined,
+      ),
+      encode: SchemaGetter.transform((value) =>
+        value ? `0x${value.value.value.toHex()}` : "",
+      ),
+    }),
+    Schema.optional,
+  ),
+
   value: Schema.Array(UintFromHex),
   data: Schema.Array(BytesFromHex),
   accessLists: Schema.optional(Schema.Array(Schema.Array(AccessListFix))),
@@ -217,13 +165,14 @@ const TransactionFix = Schema.Struct({
   sender: Schema.optional(AddressFromHex),
   secretKey: Schema.optional(BytesFromHex),
 });
+
 const AccountStateFix = Schema.Struct({
   nonce: UintFromHex,
   balance: UintFromHex,
   code: BytesFromHex,
-  storage: HashMapFromRecord(BytesFromHex, BytesFromHex),
+  storage: Schema.Record(Schema.String, BytesFromHex),
 });
-const AllocFix = HashMapFromRecord(AddressFromHex, AccountStateFix);
+const AllocFix = Schema.Record(Schema.String, AccountStateFix);
 const PostByForkFix = Schema.Struct({
   hash: BytesFromHex,
   logs: BytesFromHex,
@@ -340,19 +289,19 @@ const InvalidFixtureBlock = Schema.Struct({
 /**
  * Union type for blocks array - discriminated by presence of expectException
  */
-const FixtureBlockOrInvalid = Schema.Union(InvalidFixtureBlock, FixtureBlock);
+const FixtureBlockOrInvalid = Schema.Union([InvalidFixtureBlock, FixtureBlock]);
 /**
  * Config for StateTest (original)
  */
 const StateTestConfig = Schema.Struct({
-  blobSchedule: Schema.Record({
-    key: ForkFix,
-    value: Schema.Struct({
+  blobSchedule: Schema.Record(
+    Schema.String,
+    Schema.Struct({
       target: UintFromHex,
       max: UintFromHex,
       baseFeeUpdateFraction: UintFromHex,
     }),
-  }).pipe(Schema.partial, Schema.optional),
+  ).pipe(Schema.optional),
   chainid: UintFromHex,
 });
 
@@ -363,14 +312,14 @@ const StateTestConfig = Schema.Struct({
 const BlockchainTestConfig = Schema.Struct({
   network: ForkFix,
   chainid: UintFromHex,
-  blobSchedule: Schema.Record({
-    key: ForkFix,
-    value: Schema.Struct({
+  blobSchedule: Schema.Record(
+    Schema.String,
+    Schema.Struct({
       target: UintFromHex,
       max: UintFromHex,
       baseFeeUpdateFraction: UintFromHex,
     }),
-  }).pipe(Schema.partial, Schema.optional),
+  ).pipe(Schema.optional),
 });
 const Info = Schema.Struct({
   hash: BytesFromHex,
@@ -409,13 +358,15 @@ export const StateTestFix = Schema.Struct({
   }),
   env: EnvironmentFix,
   pre: AllocFix,
-  post: Schema.Record({
-    key: ForkFix,
-    value: Schema.Array(PostByForkFix),
-  }).pipe(Schema.partial),
+  post: Schema.Record(Schema.String, Schema.Array(PostByForkFix)),
   config: StateTestConfig,
   transaction: TransactionFix,
-}).pipe(Schema.attachPropertySignature("_tag", "state_test"));
+}).pipe((schema) =>
+  schema.mapFields((f) => ({
+    ...f,
+    k: Schema.tagDefaultOmit("state_test"),
+  })),
+);
 
 /**
  * BlockchainTest fixture schema
@@ -435,41 +386,56 @@ export const BlockchainTest = Schema.Struct({
     "fixture-format": Schema.Literal("blockchain_test"),
     ...Info.fields,
   }),
-}).pipe(Schema.attachPropertySignature("_tag", "blockchain_test"));
+}).pipe((schema) =>
+  schema.mapFields((f) => ({
+    ...f,
+    k: Schema.tagDefaultOmit("blockchain_test"),
+  })),
+);
 
 const BlockchainTestEngine = Schema.Struct({
   _info: Schema.Struct({
     "fixture-format": Schema.Literal("blockchain_test_engine"),
   }),
-}).pipe(Schema.attachPropertySignature("_tag", "blockchain_test_engine"));
+}).pipe((schema) =>
+  schema.mapFields((f) => ({
+    ...f,
+    k: Schema.tagDefaultOmit("blockchain_test_engine"),
+  })),
+);
 
 const TransactionTest = Schema.Struct({
   _info: Schema.Struct({
     "fixture-format": Schema.Literal("transaction_test"),
   }),
-}).pipe(Schema.attachPropertySignature("_tag", "transaction_test"));
+}).pipe((schema) =>
+  schema.mapFields((f) => ({
+    ...f,
+    k: Schema.tagDefaultOmit("transaction_test"),
+  })),
+);
 
 const BlockchainTestEngineX = Schema.Struct({
   _info: Schema.Struct({
     "fixture-format": Schema.Literal("blockchain_test_engine_x"),
   }),
-}).pipe(Schema.attachPropertySignature("_tag", "blockchain_test_engine_x"));
+}).pipe((schema) =>
+  schema.mapFields((f) => ({
+    ...f,
+    k: Schema.tagDefaultOmit("blockchain_test_engine_x"),
+  })),
+);
 
-const TestCase = Schema.Union(
+const TestCase = Schema.Union([
   StateTestFix,
   BlockchainTest,
   BlockchainTestEngine,
   TransactionTest,
   BlockchainTestEngineX,
-);
+]);
 
-const _TestCaseFile = Schema.Record({
-  key: Schema.String,
-  value: TestCase,
-});
-export function* flattenStateTestFixtures(
-  fixture: (typeof StateTestFix)["Type"],
-) {
+const _TestCaseFile = Schema.Record(Schema.String, TestCase);
+export function* flattenStateTestFixtures(fixture: typeof StateTestFix.Type) {
   for (const [fork, postByFork] of Object.entries(fixture.post)) {
     if (!postByFork) continue;
     yield* postByFork.map((post, index: number) => {

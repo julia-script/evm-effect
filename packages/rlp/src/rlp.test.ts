@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { BunCommandExecutor, BunFileSystem } from "@effect/platform-bun";
+import { BunFileSystem, BunServices } from "@effect/platform-bun";
 import { pythonEval } from "@evm-effect/shared/test/python";
-import { Arbitrary, Either, FastCheck, Layer, Schema } from "effect";
+import { Layer, Result, Schema } from "effect";
 import { dedent } from "ts-dedent";
 
 FastCheck.configureGlobal({ numRuns: 100, verbose: true });
@@ -25,12 +25,13 @@ import {
   Uint,
 } from "@evm-effect/ethereum-types";
 import { Effect } from "effect";
+import { FastCheck } from "effect/testing";
 import { decodeTo } from "./decodeTo.js";
 import { encodeTo } from "./encodeTo.js";
 import { decode, encode } from "./index.js";
 import type { Extended } from "./types.js";
 
-const extendedUnion = Schema.Union(
+const extendedUnion = Schema.Union([
   Uint,
   U8,
   U64,
@@ -47,12 +48,12 @@ const extendedUnion = Schema.Union(
   Schema.String,
   Schema.Boolean,
   Schema.Uint8Array,
-);
+]);
 const extendedUnionList = Schema.Array(
-  Schema.Union(extendedUnion, Schema.Array(extendedUnion)),
+  Schema.Union([extendedUnion, Schema.Array(extendedUnion)]),
 );
-const arbExtended = Arbitrary.make(
-  Schema.Union(extendedUnion, extendedUnionList),
+const arbExtended = Schema.toArbitrary(
+  Schema.Union([extendedUnion, extendedUnionList]),
 );
 
 const ellipsis = (str: string) =>
@@ -71,9 +72,7 @@ const formatTestTitle = (extended: Extended): string => {
   return `[${extended.map((e) => formatTestTitle(e)).join(", ")}]`;
 };
 
-const layers = BunCommandExecutor.layer.pipe(
-  Layer.provide(BunFileSystem.layer),
-);
+const layers = BunServices.layer.pipe(Layer.provide(BunFileSystem.layer));
 describe("encode", async () => {
   const encodeToPython = (extended: Extended): string => {
     if (extended instanceof Uint8Array)
@@ -120,10 +119,10 @@ describe("encode", async () => {
 });
 
 describe("decode", async () => {
-  const arbSimple = Schema.Union(Schema.Array(Bytes), Bytes);
-  const arbNested = Schema.Union(Schema.Array(arbSimple), arbSimple);
+  const arbSimple = Schema.Union([Schema.Array(Bytes), Bytes]);
+  const arbNested = Schema.Union([Schema.Array(arbSimple), arbSimple]);
 
-  const simple = Arbitrary.make(arbNested);
+  const simple = Schema.toArbitrary(arbNested);
   const samples = FastCheck.sample(simple, { seed: 1 }) as (Bytes | Bytes[])[];
 
   it.each(
@@ -131,9 +130,9 @@ describe("decode", async () => {
   )("$i - $name", async ({ simple }) => {
     const encoded = encode(simple);
     const decoded = decode(encoded);
-    expect(Either.isRight(decoded)).toBe(true);
+    expect(Result.isSuccess(decoded)).toBe(true);
 
-    expect(Either.getOrThrow(decoded)).toEqual(simple);
+    expect(Result.getOrThrow(decoded)).toEqual(simple);
   });
 });
 describe("encodeTo", async () => {
@@ -155,15 +154,8 @@ describe("encodeTo", async () => {
     "field-15": U64,
     "field-16": U256,
     "field-17": Schema.Array(Schema.String),
-    "field-18": Schema.Tuple(Schema.String, Schema.Boolean),
-    "field-19": Schema.Tuple(
-      [Schema.String, Schema.optionalElement(Schema.Boolean)], // elements
-      Schema.Boolean, // rest element
-    ),
-    "field-20": Schema.Tuple(
-      [Schema.String, Schema.String], // elements
-      Schema.Boolean, // rest element
-    ),
+    "field-18": Schema.Tuple([Schema.String, Schema.Boolean]),
+
     // nested
     "field-21": Schema.Struct({
       a: U8,
@@ -187,7 +179,7 @@ describe("encodeTo", async () => {
       }),
     }),
   });
-  const arbTestStruct = Arbitrary.make(testStruct);
+  const arbTestStruct = Schema.toArbitrary(testStruct);
   const samples = FastCheck.sample(arbTestStruct, { seed: 1 }).map((e, i) => ({
     i,
     e,

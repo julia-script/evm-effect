@@ -10,7 +10,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "@effect/platform";
 import { BunContext } from "@effect/platform-bun";
-import { Chunk, Data, Effect, Either, Stream } from "effect";
+import { Chunk, Data, Effect, Result, Stream } from "effect";
 import * as fc from "fast-check";
 import { dedent } from "ts-dedent";
 
@@ -110,7 +110,7 @@ export const pythonEval = (code: string, fail = true) =>
 export interface TestAgainstPythonConfig<TInput, TOutput> {
   name: string;
   arbitrary: fc.Arbitrary<TInput>;
-  tsOperation: (input: TInput) => TOutput | Either.Either<TOutput, Error>;
+  tsOperation: (input: TInput) => TOutput | Result.Result<TOutput, Error>;
   pyCode: (input: TInput) => string;
   parseOutput: (stdout: string) => TOutput;
   numRuns?: number;
@@ -134,12 +134,12 @@ export async function testAgainstPython<TInput, TOutput>(
         let tsError: unknown;
         try {
           const result = config.tsOperation(input);
-          if (Either.isEither(result)) {
-            if (Either.isLeft(result)) {
+          if (Result.isEither(result)) {
+            if (Result.isFailure(result)) {
               tsResult = "error";
-              tsError = result.left;
+              tsError = result.failure;
             } else {
-              tsResult = result.right;
+              tsResult = result.success;
             }
           } else {
             tsResult = result;

@@ -57,8 +57,7 @@ export const jump: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     const isValid = evm.validJumpDestinations.has(jumpDest);
 
     if (!isValid) {
-      yield* Effect.fail(new InvalidJumpDestError(jumpDest));
-      return;
+      return yield* Effect.fail(new InvalidJumpDestError(jumpDest));
     }
 
     // PROGRAM COUNTER - set to jump destination
@@ -92,14 +91,13 @@ export const jumpi: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     // OPERATION
     if (conditionalValue.value === 0n) {
       // Condition false - just increment PC
-      const currentPc = yield* evm.pc;
+      const currentPc = yield* Ref.get(evm.pc);
       yield* Ref.set(evm.pc, currentPc + 1);
     } else {
       const isValid = evm.validJumpDestinations.has(jumpDest);
 
       if (!isValid) {
-        yield* Effect.fail(new InvalidJumpDestError(jumpDest));
-        return;
+        return yield* Effect.fail(new InvalidJumpDestError(jumpDest));
       }
 
       yield* Ref.set(evm.pc, jumpDest);
@@ -123,7 +121,7 @@ export const pc: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     yield* Gas.chargeGas(Gas.GAS_BASE);
 
     // OPERATION
-    const currentPc = yield* evm.pc;
+    const currentPc = yield* Ref.get(evm.pc);
     const pcValue = new U256({ value: BigInt(currentPc) });
     yield* evm.stack.push(pcValue);
 

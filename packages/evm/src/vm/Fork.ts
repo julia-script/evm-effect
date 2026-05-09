@@ -250,7 +250,7 @@ type PrecompileHashMap = HashMap<
   Effect.Effect<void, EthereumException, Evm | Fork>
 >;
 type OpcodeHashMap = Map<number, OpcodeImplementation>;
-export class Fork extends Context.Tag("Fork")<
+export class Fork extends Context.Service<
   Fork,
   {
     name: string;
@@ -264,7 +264,7 @@ export class Fork extends Context.Tag("Fork")<
     eipSelect: <T>(eip: number, left: T, right: T) => T;
     isForkBlock: boolean;
   }
->() {
+>()("Fork") {
   static from({
     name,
     precompiledContracts,
@@ -288,7 +288,7 @@ export class Fork extends Context.Tag("Fork")<
         precompiledContracts,
         ops,
         getPrecompiledContract: (address: Address) =>
-          Option.fromNullable(precompiledContracts.get(address)),
+          Option.fromNullishOr(precompiledContracts.get(address)),
         getOp: (opcode: number) => ops.get(opcode),
         eip,
         eipSelect: <T>(n: number, left: T, right: T) => (eip(n) ? left : right),

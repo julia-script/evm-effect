@@ -16,8 +16,7 @@ import {
   Uint,
 } from "@evm-effect/ethereum-types";
 import rlp, { type Extended } from "@evm-effect/rlp";
-import { Effect, Either, Schema } from "effect";
-import type { Transaction } from "./Transaction.js";
+import { Effect, Result, Schema } from "effect";
 import { LegacyTransaction } from "./Transaction.js";
 
 /**
@@ -87,11 +86,11 @@ export const decodeBlock = Effect.fn("decodeBlock")(function* (block: Bytes) {
 });
 export const Block = Schema.TaggedStruct("Block", {
   header: Header,
-  transactions: Schema.Array(Schema.Union(Bytes, LegacyTransaction)),
+  transactions: Schema.Array(Schema.Union([Bytes, LegacyTransaction])),
   ommers: Schema.Array(Header),
-  withdrawals: Schema.optionalWith(Schema.Array(Withdrawal), {
-    default: () => [],
-  }),
+  withdrawals: Schema.Array(Withdrawal).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed([])),
+  ),
 });
 
 export type Block = (typeof Block)["Type"];
@@ -180,11 +179,11 @@ const encodeWithdrawal = (withdrawal: Withdrawal): Extended[] => {
  * `rlp.encode(block)` where block = [header, transactions, ommers, withdrawals]
  *
  * @param block - The block to encode
- * @returns Either the RLP-encoded block as Bytes or an error
+ * @returns Result the RLP-encoded block as Bytes or an error
  */
 export const encodeBlock = (
   block: Block,
-): Either.Either<Bytes, { message: string }> => {
+): Result.Result<Bytes, { message: string }> => {
   // Encode header fields (as a list, not as bytes)
   const headerFields: Extended[] = [
     block.header.parentHash.value,
@@ -234,20 +233,20 @@ export const encodeBlock = (
       encodedTransactions.push(tx.value);
     } else {
       // Need to encode the transaction
-      const encodedResult = encodeTransaction(tx as Transaction);
-      if (Either.isLeft(encodedResult)) {
-        return Either.left({ message: `Failed to encode transaction` });
+      const encodedResult = encodeTransaction(tx);
+      if (Result.isFailure(encodedResult)) {
+        return Result.fail({ message: `Failed to encode transaction` });
       }
-      const encoded = encodedResult.right;
+      const encoded = encodedResult.success;
       if (encoded._tag === "LegacyTransaction") {
         // Legacy transactions are RLP encoded directly as a list
         const legacyResult = rlp.encodeTo(LegacyTransaction, encoded);
-        if (Either.isLeft(legacyResult)) {
-          return Either.left({
+        if (Result.isFailure(legacyResult)) {
+          return Result.fail({
             message: `Failed to encode legacy transaction`,
           });
         }
-        encodedTransactions.push(legacyResult.right.value);
+        encodedTransactions.push(legacyResult.success.value);
       } else {
         // Typed transactions are already prefixed bytes
         encodedTransactions.push(encoded.value);
@@ -290,5 +289,5 @@ export const encodeBlock = (
     blockFields.push(encodedWithdrawals);
   }
 
-  return Either.right(rlp.encode(blockFields));
+  return Result.succeed(rlp.encode(blockFields));
 };

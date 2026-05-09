@@ -93,8 +93,12 @@ const program = Effect.gen(function* () {
   const blockOutput = yield* applyBody(blockEnv, [signedTx], [], []);
 
   // Check results
-  const aliceBalance = State.getAccount(blockchain.state, alice).balance;
-  const bobBalance = State.getAccount(blockchain.state, bob).balance;
+  const aliceBalance = yield* State.getAccount(blockchain.state, alice).pipe(
+    Effect.map((account) => account.balance),
+  );
+  const bobBalance = yield* State.getAccount(blockchain.state, bob).pipe(
+    Effect.map((account) => account.balance),
+  );
 
   yield* Console.log("Transaction executed!");
   yield* Console.log(`Gas used: ${blockOutput.blockGasUsed.value}`);

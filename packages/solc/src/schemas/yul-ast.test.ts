@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
+import { Schema } from "effect";
 import solc from "solc";
-import { decodeOutput } from "./helpers.js";
-import { type CompilerOutput, isSolcSourceUnitAst } from "./output.js";
+import {
+  type CompilerOutput,
+  CompilerOutput as CompilerOutputSchema,
+  isSolcSourceUnitAst,
+} from "./output.js";
+
+const decodeOutput = Schema.decodeUnknownSync(CompilerOutputSchema);
 
 /** Walk JSON-like trees and collect every `nodeType` string (Yul + any nested JSON). */
 function collectYulNodeTypes(value: unknown): Set<string> {

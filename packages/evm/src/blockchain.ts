@@ -141,7 +141,12 @@ export type BlockOutput = {
   requests: readonly Bytes[];
 };
 
-export const BlockOutput = Data.tagged<BlockOutput>("BlockOutput");
+export const BlockOutput = (
+  blockOutput: Omit<BlockOutput, "_tag">,
+): BlockOutput => ({
+  _tag: "BlockOutput",
+  ...blockOutput,
+});
 
 export const emptyBlockOutput = (): BlockOutput => {
   return BlockOutput({

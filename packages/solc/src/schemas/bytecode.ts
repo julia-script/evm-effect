@@ -12,20 +12,17 @@ export const LinkReferencePosition = Schema.Struct({
 
 export type LinkReferencePosition = typeof LinkReferencePosition.Type;
 
-export const LinkReferences = Schema.Record({
-  key: Schema.String,
-  value: Schema.Record({
-    key: Schema.String,
-    value: Schema.Array(LinkReferencePosition),
-  }),
-});
+export const LinkReferences = Schema.Record(
+  Schema.String,
+  Schema.Record(Schema.String, Schema.Array(LinkReferencePosition)),
+);
 
 export type LinkReferences = typeof LinkReferences.Type;
 
-export const ImmutableReferences = Schema.Record({
-  key: Schema.String,
-  value: Schema.Array(LinkReferencePosition),
-});
+export const ImmutableReferences = Schema.Record(
+  Schema.String,
+  Schema.Array(LinkReferencePosition),
+);
 
 export type ImmutableReferences = typeof ImmutableReferences.Type;
 
@@ -56,10 +53,7 @@ export const Bytecode = Schema.Struct({
   immutableReferences: Schema.optional(ImmutableReferences),
   generatedSources: Schema.optional(Schema.Array(GeneratedSource)),
   functionDebugData: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: FunctionDebugData,
-    }),
+    Schema.Record(Schema.String, FunctionDebugData),
   ),
   ethdebug: Schema.optional(Schema.Unknown),
 });
@@ -74,20 +68,13 @@ export const GasEstimates = Schema.Struct({
       totalCost: Schema.String,
     }),
   ),
-  external: Schema.optional(
-    Schema.Record({ key: Schema.String, value: Schema.String }),
-  ),
-  internal: Schema.optional(
-    Schema.Record({ key: Schema.String, value: Schema.String }),
-  ),
+  external: Schema.optional(Schema.Record(Schema.String, Schema.String)),
+  internal: Schema.optional(Schema.Record(Schema.String, Schema.String)),
 });
 
 export type GasEstimates = typeof GasEstimates.Type;
 
-export const MethodIdentifiers = Schema.Record({
-  key: Schema.String,
-  value: Schema.String,
-});
+export const MethodIdentifiers = Schema.Record(Schema.String, Schema.String);
 
 export type MethodIdentifiers = typeof MethodIdentifiers.Type;
 
