@@ -15,7 +15,7 @@ import {
 } from "@evm-effect/ethereum-types";
 import rlp, { type Extended } from "@evm-effect/rlp";
 import { HashMap } from "@evm-effect/shared/hashmap";
-import { Data, Equal, Match, Option, Result } from "effect";
+import { Data, Effect, Equal, Match, Option, Result } from "effect";
 import { isTagged } from "effect/Predicate";
 import { Withdrawal } from "../types/Block.js";
 import { Receipt } from "../types/Receipt.js";
@@ -262,47 +262,44 @@ export class Trie<
     });
   }
 }
-function prepareTrie<
+
+const prepareTrie = Effect.fn("prepareTrie")(function* <
   K extends TrieKey,
   V extends TrieValue,
   D extends V | null = V,
 >(
   trie: Trie<K, V, D>,
-  getStorageRoot: Option.Option<(address: Address) => Root>,
-) {
+  getStorageRoot?: (address: Address) => Effect.Effect<Root, TrieError>,
+): Effect.fn.Return<HashMap<Bytes, Bytes>, TrieError, never> {
   const mapped = HashMap.empty<Bytes, Bytes>();
   for (const { key: preimage, value } of trie._data.entries()) {
     let encoded: Bytes = new Bytes({ value: new Uint8Array(0) });
     if (value instanceof Account) {
-      if (Option.isNone(getStorageRoot)) {
-        return Result.fail(
+      if (!getStorageRoot) {
+        return yield* Effect.fail(
           new TrieError({
             message: "Storage root is required for account encoding",
           }),
         );
       }
       if (!isTagged(preimage, "Address")) {
-        return Result.fail(new TrieError({ message: "Key is not an address" }));
+        return yield* Effect.fail(
+          new TrieError({ message: "Key is not an address" }),
+        );
       }
 
-      const storageRoot = getStorageRoot.value(preimage);
-      const encodedValue = encodeNode(
+      const storageRoot = yield* getStorageRoot(preimage);
+      encoded = yield* encodeNode(
         value,
         Option.some(new Bytes({ value: storageRoot.value })),
-      );
-      if (Result.isFailure(encodedValue)) {
-        return Result.fail(encodedValue.failure);
-      }
-      encoded = encodedValue.success;
+      ).asEffect();
     } else {
-      const encodedValue = encodeNode(value, Option.none());
-      if (Result.isFailure(encodedValue)) {
-        return Result.fail(encodedValue.failure);
-      }
-      encoded = encodedValue.success;
+      encoded = yield* encodeNode(value, Option.none()).asEffect();
     }
     if (encoded.value.length === 0) {
-      return Result.fail(new TrieError({ message: "Encoded value is empty" }));
+      return yield* Effect.fail(
+        new TrieError({ message: "Encoded value is empty" }),
+      );
     }
 
     const keyAsBytes = new Bytes({
@@ -317,8 +314,8 @@ function prepareTrie<
 
     mapped.set(nibbleKey, encoded);
   }
-  return Result.succeed(mapped);
-}
+  return mapped;
+});
 
 const patricialize = (
   mapped: HashMap<Bytes, Bytes>,
@@ -386,23 +383,20 @@ const patricialize = (
   });
 };
 
-export const root = <
+export const root = Effect.fn("root")(function* <
   K extends TrieKey,
   V extends TrieValue,
   D extends V | null = V,
 >(
   trie: Trie<K, V, D>,
-  getStorageRoot: Option.Option<(address: Address) => Root>,
-): Result.Result<Root, TrieError> => {
-  const obj = prepareTrie(trie, getStorageRoot);
-  if (Result.isFailure(obj)) {
-    return Result.fail(obj.failure);
-  }
+  getStorageRoot?: (address: Address) => Effect.Effect<Root, TrieError>,
+): Effect.fn.Return<Root, TrieError, never> {
+  const obj = yield* prepareTrie(trie, getStorageRoot);
 
-  const rootNode = encodeInternalNode(patricialize(obj.success, 0));
+  const rootNode = encodeInternalNode(patricialize(obj, 0));
   const rlpEncoded = rlp.encode(rootNode);
   if (rlpEncoded.value.length < 32) {
-    return Result.succeed(keccak256(rlpEncoded));
+    return yield* Effect.succeed(keccak256(rlpEncoded));
   }
-  return Result.succeed(new Bytes32({ value: rlpEncoded.value }));
-};
+  return yield* Effect.succeed(new Bytes32({ value: rlpEncoded.value }));
+});

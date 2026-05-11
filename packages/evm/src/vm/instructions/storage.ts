@@ -93,11 +93,7 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
     const currentTarget = evm.message.currentTarget;
 
     // Get original and current values
-    const originalValue = yield* State.getStorageOriginal(
-      state,
-      currentTarget,
-      key,
-    );
+    const originalValue = yield* state.getStorageOriginal(currentTarget, key);
     const currentValue = yield* State.getStorage(state, currentTarget, key);
 
     const fork = yield* Fork;

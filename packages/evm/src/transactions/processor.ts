@@ -256,7 +256,7 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
     encodedReceiptResult = rlp.encodeTo(Receipt, receipt);
     unencodedReceipt = receipt;
   } else {
-    const postState = stateRoot(blockEnv.state);
+    const postState = yield* stateRoot(blockEnv.state);
     const receipt = new LegacyReceipt({
       postState,
       cumulativeGasUsed: blockOutput.blockGasUsed,

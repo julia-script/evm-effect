@@ -262,10 +262,10 @@ export const processMessage = Effect.fn("processMessage")(function* (
 
   const state = message.blockEnv.state;
   const transientStorage = message.txEnv.transientStorage;
-  yield* State.beginTransaction(state, transientStorage);
+  yield* state.beginTransaction(transientStorage);
 
-  if (message.depth.value === 0n && state._transactionSnapshotIndex === null) {
-    State.markTransactionSnapshot(state);
+  if (message.depth.value === 0n && state.transactionSnapshotIndex === null) {
+    yield* state.markTransactionSnapshot();
   }
 
   const fork = yield* Fork;
@@ -286,9 +286,9 @@ export const processMessage = Effect.fn("processMessage")(function* (
 
   const error = yield* Ref.get(evm.error);
   if (Option.isSome(error)) {
-    State.rollbackTransaction(state, transientStorage);
+    yield* State.rollbackTransaction(state, transientStorage);
   } else {
-    State.commitTransaction(state, transientStorage);
+    yield* state.commitTransaction(transientStorage);
   }
 
   return evm;
@@ -314,17 +314,14 @@ export const processCreateMessage = Effect.fn("processCreateMessage")(
     const state = message.blockEnv.state;
     const transientStorage = message.txEnv.transientStorage;
 
-    yield* State.beginTransaction(state, transientStorage);
-    if (
-      message.depth.value === 0n &&
-      state._transactionSnapshotIndex === null
-    ) {
-      State.markTransactionSnapshot(state);
+    yield* state.beginTransaction(transientStorage);
+    if (message.depth.value === 0n && state.transactionSnapshotIndex === null) {
+      yield* state.markTransactionSnapshot();
     }
 
     yield* State.destroyStorage(state, message.currentTarget);
 
-    yield* State.markAccountCreated(state, message.currentTarget);
+    yield* state.markAccountCreated(message.currentTarget);
 
     const fork = yield* Fork;
     if (fork.eip(161)) {
@@ -383,11 +380,11 @@ export const processCreateMessage = Effect.fn("processCreateMessage")(
           }
         }
 
-        State.commitTransaction(state, transientStorage);
+        yield* state.commitTransaction(transientStorage);
       }).pipe(
         Effect.catch((deployError) =>
           Effect.gen(function* () {
-            State.rollbackTransaction(state, transientStorage);
+            yield* State.rollbackTransaction(state, transientStorage);
             evm.setGasLeft(0n);
             yield* Ref.set(evm.output, new Bytes({ value: new Uint8Array(0) }));
             yield* Ref.set(
@@ -398,7 +395,7 @@ export const processCreateMessage = Effect.fn("processCreateMessage")(
         ),
       );
     } else {
-      State.rollbackTransaction(state, transientStorage);
+      yield* State.rollbackTransaction(state, transientStorage);
     }
 
     return evm;
@@ -416,7 +413,8 @@ export const processMessageCall = Effect.fn("processMessageCall")(function* (
       (yield* State.accountHasCodeOrNonce(
         blockEnv.state,
         message.currentTarget,
-      )) || State.accountHasStorage(blockEnv.state, message.currentTarget);
+      )) ||
+      (yield* State.accountHasStorage(blockEnv.state, message.currentTarget));
     if (isCollision) {
       return yield* Effect.succeed(
         new MessageCallOutput({

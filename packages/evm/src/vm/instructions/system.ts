@@ -247,7 +247,10 @@ const genericCreate = (
         evm.message.blockEnv.state,
         contractAddress,
       )) ||
-      State.accountHasStorage(evm.message.blockEnv.state, contractAddress)
+      (yield* State.accountHasStorage(
+        evm.message.blockEnv.state,
+        contractAddress,
+      ))
     ) {
       yield* State.incrementNonce(
         evm.message.blockEnv.state,
@@ -469,9 +472,9 @@ export const selfdestruct: Effect.Effect<void, EthereumException, Evm | Fork> =
       originatorAccount.balance,
     );
 
-    const shouldDelete = fork.eip(6780)
-      ? evm.message.blockEnv.state.createdAccounts.has(originator)
-      : true;
+    const createdAccountsHasOriginator =
+      yield* evm.message.blockEnv.state.createdAccountsHas(originator);
+    const shouldDelete = fork.eip(6780) ? createdAccountsHasOriginator : true;
 
     const addressToKey = (addr: Address): string =>
       Array.from(addr.value.value)

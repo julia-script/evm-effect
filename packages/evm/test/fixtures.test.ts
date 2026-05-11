@@ -612,9 +612,9 @@ describe("StateTest", () => {
           yield* processTransactionResult;
         }
 
-        const stateRoot = State.stateRoot(blockEnv.state);
-        const expectedHash = post.hash.value.toHex();
-        const actualHash = stateRoot.value.toHex();
+        const stateRoot = yield* State.stateRoot(blockEnv.state);
+        const expectedHash = post.hash.toHex();
+        const actualHash = stateRoot.toHex();
         const testFailed = actualHash !== expectedHash;
 
         if (testFailed) {
@@ -905,8 +905,8 @@ describe("BlockchainTest", () => {
         const expectedHeader = fixture.genesisBlockHeader;
 
         // State root comparison (explicit check for better error messages)
-        const decodedStateRoot = decodedHeader.stateRoot.value.toHex();
-        const expectedStateRoot = expectedHeader.stateRoot.value.toHex();
+        const decodedStateRoot = decodedHeader.stateRoot.toHex();
+        const expectedStateRoot = expectedHeader.stateRoot.toHex();
         if (decodedStateRoot !== expectedStateRoot) {
           yield* Console.log(
             `Header stateRoot mismatch: decoded=${decodedStateRoot}, expected=${expectedStateRoot}`,
@@ -919,7 +919,9 @@ describe("BlockchainTest", () => {
         }
 
         // STEP 5: Compare calculated state root with genesis header state root
-        const calculatedStateRootHex = calculatedGenesisStateRoot.value.toHex();
+        const calculatedStateRootHex = yield* calculatedGenesisStateRoot.pipe(
+          Effect.map((value) => value.toHex()),
+        );
         if (calculatedStateRootHex !== expectedStateRoot) {
           yield* Console.log(
             `State root mismatch: calculated=${calculatedStateRootHex}, expected=${expectedStateRoot}`,

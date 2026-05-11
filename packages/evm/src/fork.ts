@@ -1,5 +1,5 @@
 import { Bytes32, U64, Uint } from "@evm-effect/ethereum-types";
-import { Effect, Option, Result } from "effect";
+import { Effect, Result } from "effect";
 
 import type { BlockChain } from "./blockchain.js";
 import { applyBody, computeRequestsHash } from "./blocks/executor.js";
@@ -12,7 +12,7 @@ import {
   InvalidWithdrawalsRootError,
 } from "./exceptions.js";
 import { logsBloom } from "./receipts/bloom.js";
-import State, { stateRoot, TransientStorage } from "./state.js";
+import { stateRoot, TransientStorage } from "./state.js";
 import { root } from "./trie/trie.js";
 import { type Block, encodeBlock, type Header } from "./types/Block.js";
 import { Fork } from "./vm/Fork.js";
@@ -81,7 +81,7 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
   const blockEnv = createBlockEnvironment(chain, block.header);
 
   const blockTransientStorage = TransientStorage.empty();
-  yield* State.beginTransaction(blockEnv.state, blockTransientStorage);
+  yield* blockEnv.state.beginTransaction(blockTransientStorage);
 
   const blockOutputResult = yield* applyBody(
     blockEnv,
@@ -91,20 +91,21 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
   ).pipe(Effect.result);
 
   if (Result.isFailure(blockOutputResult)) {
-    State.rollbackTransaction(blockEnv.state, blockTransientStorage);
+    yield* blockEnv.state.rollbackTransaction(blockTransientStorage);
     return yield* Effect.fail(blockOutputResult.failure);
   }
   const blockOutput = blockOutputResult.success;
 
   const failWithRollback = <E>(error: E) => {
-    State.rollbackTransaction(blockEnv.state, blockTransientStorage);
-    return Effect.fail(error);
+    return Effect.gen(function* () {
+      yield* blockEnv.state.rollbackTransaction(blockTransientStorage);
+      return yield* Effect.fail(error);
+    });
   };
 
-  const blockStateRoot = stateRoot(blockEnv.state);
-  const transactionsRootResult = root(
-    blockOutput.transactionsTrie,
-    Option.none(),
+  const blockStateRoot = yield* stateRoot(blockEnv.state);
+  const transactionsRootResult = yield* root(blockOutput.transactionsTrie).pipe(
+    Effect.result,
   );
   if (Result.isFailure(transactionsRootResult)) {
     return yield* failWithRollback(
@@ -115,7 +116,9 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
   }
   const transactionsRoot = transactionsRootResult.success;
 
-  const receiptRootResult = root(blockOutput.receiptsTrie, Option.none());
+  const receiptRootResult = yield* root(blockOutput.receiptsTrie).pipe(
+    Effect.result,
+  );
   if (Result.isFailure(receiptRootResult)) {
     return yield* failWithRollback(
       new InvalidBlock({
@@ -127,9 +130,8 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
 
   const blockLogsBloom = logsBloom(blockOutput.blockLogs);
 
-  const withdrawalsRootResult = root(
-    blockOutput.withdrawalsTrie,
-    Option.none(),
+  const withdrawalsRootResult = yield* root(blockOutput.withdrawalsTrie).pipe(
+    Effect.result,
   );
   if (Result.isFailure(withdrawalsRootResult)) {
     return yield* failWithRollback(
@@ -199,7 +201,7 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
     }
   }
 
-  State.commitTransaction(blockEnv.state, blockTransientStorage);
+  yield* blockEnv.state.commitTransaction(blockTransientStorage);
   const updatedChain = chain.addBlock(block).withState(blockEnv.state);
 
   return updatedChain;

@@ -426,7 +426,8 @@ const BlockchainTestEngineX = Schema.Struct({
   })),
 );
 
-const TestCase = Schema.Union([
+/** Union of all fixture JSON shapes in the execution-specs cache. */
+export const TestCase = Schema.Union([
   StateTestFix,
   BlockchainTest,
   BlockchainTestEngine,
@@ -434,7 +435,6 @@ const TestCase = Schema.Union([
   BlockchainTestEngineX,
 ]);
 
-const _TestCaseFile = Schema.Record(Schema.String, TestCase);
 export function* flattenStateTestFixtures(fixture: typeof StateTestFix.Type) {
   for (const [fork, postByFork] of Object.entries(fixture.post)) {
     if (!postByFork) continue;
