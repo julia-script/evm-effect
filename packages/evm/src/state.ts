@@ -44,14 +44,10 @@ export type StateOperationsOverrides = {
  * Contains all information that is preserved between transactions.
  */
 export class State extends Data.TaggedClass("State")<StateOperationsOverrides> {
-  private _mainTrie: Trie<Address, Account, Account | null> = Trie.empty(
-    true,
-    null,
-  );
-  private _storageTries: HashMap<Address, Trie<Bytes32, U256, U256>> =
-    HashMap.empty();
+  _mainTrie: Trie<Address, Account, Account | null> = Trie.empty(true, null);
+  _storageTries: HashMap<Address, Trie<Bytes32, U256, U256>> = HashMap.empty();
 
-  private _transactionSnapshotIndex: number | null = null;
+  _transactionSnapshotIndex: number | null = null;
   /**
    * Index of the transaction-level snapshot in _snapshots.
    * This is set when a transaction starts (first beginTransaction after block-level).

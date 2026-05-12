@@ -1,4 +1,5 @@
-import { Data, Hash, Schema } from "effect";
+import { Data, Schema } from "effect";
+import { HashMap } from "./hashmap.js";
 
 export class HashSet<V> extends Data.TaggedClass("HashSet")<{
   readonly _map: Map<number, V>;
@@ -12,15 +13,15 @@ export class HashSet<V> extends Data.TaggedClass("HashSet")<{
   }
 
   add(value: V) {
-    const hash = Hash.hash(value);
+    const hash = HashMap.getHash(value);
     this._map.set(hash, value);
   }
   remove(value: V) {
-    const hash = Hash.hash(value);
+    const hash = HashMap.getHash(value);
     this._map.delete(hash);
   }
   has(value: V): boolean {
-    const hash = Hash.hash(value);
+    const hash = HashMap.getHash(value);
     return this._map.has(hash);
   }
 

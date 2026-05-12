@@ -1,11 +1,11 @@
 import { Data, Hash, Schema } from "effect";
-
 export class Entry<K, V> {
   constructor(
     readonly key: K,
     readonly value: V,
   ) {}
 }
+
 export class HashMap<K, V> extends Data.TaggedClass("HashMap")<{
   readonly _map: Map<number, Entry<K, V>>;
 }> {
@@ -18,7 +18,7 @@ export class HashMap<K, V> extends Data.TaggedClass("HashMap")<{
   ): HashMap<K, V> {
     const map = new Map<number, Entry<K, V>>();
     for (const [key, value] of iterable) {
-      map.set(Hash.hash(key), new Entry(key, value));
+      map.set(HashMap.getHash(key), new Entry(key, value));
     }
     return new HashMap(map);
   }
@@ -27,27 +27,43 @@ export class HashMap<K, V> extends Data.TaggedClass("HashMap")<{
     return new HashMap(new Map());
   }
 
+  static CachedHashSymbol = Symbol("CachedHash");
+  static getHash(key: unknown): number {
+    if (key === null) return 0;
+    if (typeof key === "object" && HashMap.CachedHashSymbol in key) {
+      return key[HashMap.CachedHashSymbol as keyof typeof key] as number;
+    }
+    if (typeof key === "object" && Hash.symbol in key) {
+      const hash = (key[Hash.symbol as keyof typeof key] as () => number)();
+      Object.defineProperty(key, HashMap.CachedHashSymbol, {
+        value: hash,
+      });
+      return hash;
+    }
+    throw new Error("Invalid key type");
+  }
   set(key: K, value: V) {
-    const hash = Hash.hash(key);
+    const hash = HashMap.getHash(key);
+
     this._map.set(hash, new Entry(key, value));
   }
   get(key: K): V | undefined {
-    const hash = Hash.hash(key);
+    const hash = HashMap.getHash(key);
     return this._map.get(hash)?.value;
   }
   remove(key: K) {
-    const hash = Hash.hash(key);
+    const hash = HashMap.getHash(key);
     this._map.delete(hash);
   }
   has(key: K): boolean {
-    const hash = Hash.hash(key);
+    const hash = HashMap.getHash(key);
     return this._map.has(hash);
   }
   getOrPut(key: K): {
     existing: boolean;
     entry: Entry<K, V | undefined>;
   } {
-    const hash = Hash.hash(key);
+    const hash = HashMap.getHash(key);
     const entry = this._map.get(hash);
     if (entry) {
       return { existing: true, entry };
