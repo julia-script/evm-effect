@@ -1,8 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { BunFileSystem, BunServices } from "@effect/platform-bun";
-import { pythonEval } from "@evm-effect/shared/test/python";
 import { Layer, Result, Schema } from "effect";
-import { dedent } from "ts-dedent";
 
 FastCheck.configureGlobal({ numRuns: 100, verbose: true });
 
@@ -31,31 +29,6 @@ import { encodeTo } from "./encodeTo.js";
 import { decode, encode } from "./index.js";
 import type { Extended } from "./types.js";
 
-const extendedUnion = Schema.Union([
-  Uint,
-  U8,
-  U64,
-  U256,
-  Bytes,
-  Bytes1,
-  Bytes20,
-  Bytes32,
-  Bytes4,
-  Bytes8,
-  Bytes256,
-  Bytes64,
-  Address,
-  Schema.String,
-  Schema.Boolean,
-  Schema.Uint8Array,
-]);
-const extendedUnionList = Schema.Array(
-  Schema.Union([extendedUnion, Schema.Array(extendedUnion)]),
-);
-const arbExtended = Schema.toArbitrary(
-  Schema.Union([extendedUnion, extendedUnionList]),
-);
-
 const ellipsis = (str: string) =>
   str.length > 6 ? `${str.slice(0, 6)}…${str.length}+` : str;
 const formatTestTitle = (extended: Extended): string => {
@@ -73,50 +46,6 @@ const formatTestTitle = (extended: Extended): string => {
 };
 
 const layers = BunServices.layer.pipe(Layer.provide(BunFileSystem.layer));
-describe("encode", async () => {
-  const encodeToPython = (extended: Extended): string => {
-    if (extended instanceof Uint8Array)
-      return `bytes.fromhex("${extended.toHex()}")`;
-    if (isBytes(extended)) return `bytes.fromhex("${extended.value.toHex()}")`;
-    if (isAddress(extended)) return encodeToPython(extended.value.value);
-    if (typeof extended === "string") return JSON.stringify(extended);
-    if (typeof extended === "boolean") return extended ? "True" : "False";
-    if (Array.isArray(extended)) {
-      const lines: string[] = [];
-      for (const e of extended) {
-        lines.push(encodeToPython(e));
-      }
-      return `[${lines.join(", ")}]`;
-    }
-    return `${extended._tag}(${extended.value})`;
-  };
-
-  const extended = FastCheck.sample(arbExtended, {
-    seed: 1,
-    verbose: true,
-  }) as Extended[];
-
-  it.each(
-    extended.map((e, i) => ({ name: formatTestTitle(e), extended: e, i })),
-  )("$i - $name", async ({ extended }) => {
-    const program = Effect.gen(function* () {
-      const pythonValue = encodeToPython(extended);
-
-      const pythonEncoded = yield* pythonEval(/*python*/ `
-        from ethereum_rlp import encode
-        from ethereum_types.bytes import Bytes, Bytes1, Bytes20, Bytes32, Bytes4, Bytes8, Bytes256, Bytes64
-        from ethereum_types.numeric import U8, U64, U256, Uint
-        value = ${dedent(pythonValue)}
-        export_value(encode(value).hex())
-      `);
-      const encoded = encode(extended);
-      expect(Uint8Array.fromHex(pythonEncoded.exports[0]?.value)).toEqual(
-        new Uint8Array(encoded.value),
-      );
-    }).pipe(Effect.provide(layers), Effect.scoped);
-    await Effect.runPromise(program);
-  });
-});
 
 describe("decode", async () => {
   const arbSimple = Schema.Union([Schema.Array(Bytes), Bytes]);

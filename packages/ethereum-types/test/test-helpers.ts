@@ -5,17 +5,6 @@
  */
 
 import * as fc from "fast-check";
-
-export {
-  createComparisonTest,
-  fc,
-  PythonEvalError,
-  type PythonResult,
-  pythonEval,
-  type TestAgainstPythonConfig,
-  testAgainstPython,
-} from "@evm-effect/shared/test/python";
-
 // ============================================================================
 // ETHEREUM-TYPES SPECIFIC FAST-CHECK ARBITRARIES
 // ============================================================================
@@ -82,12 +71,3 @@ export const arbBytes64 = () => fc.uint8Array({ minLength: 64, maxLength: 64 });
  */
 export const arbBytes256 = () =>
   fc.uint8Array({ minLength: 256, maxLength: 256 });
-
-/**
- * Arbitrary for hex strings (even length)
- */
-export const arbHexString = (minLength = 2, maxLength = 64) =>
-  fc.hexaString({ minLength, maxLength }).map((s) => {
-    // Ensure even length
-    return s.length % 2 === 0 ? s : `${s}0`;
-  });
