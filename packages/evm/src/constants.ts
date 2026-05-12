@@ -2,7 +2,7 @@ import { keccak256 } from "@evm-effect/crypto";
 import { Address, Bytes, Bytes32, U64, Uint } from "@evm-effect/ethereum-types";
 import { encode } from "@evm-effect/rlp";
 import { Effect, Result } from "effect";
-import { Fork } from "./vm/Fork.js";
+import { Fork } from "./vm/ForkService.js";
 
 // ============================================================================
 // Block Reward Constants (pre-merge only)

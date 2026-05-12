@@ -11,7 +11,7 @@ import { Data, Effect } from "effect";
 import { OutOfGasError } from "../exceptions.js";
 import { evmTrace, GasAndRefund } from "../trace.js";
 import { Evm } from "./evm.js";
-import { Fork } from "./Fork.js";
+import { Fork } from "./ForkService.js";
 
 // ============================================================================
 // Gas Constants

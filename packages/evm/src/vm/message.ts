@@ -17,7 +17,7 @@ import { Authorization } from "../types/Account.js";
 import type { Transaction } from "../types/Transaction.js";
 import { computeContractAddress } from "../utils/address.js";
 import type { Evm } from "./evm.js";
-import { Fork } from "./Fork.js";
+import { Fork } from "./ForkService.js";
 import { Code } from "./runtime.js";
 import { StorageKey } from "./StorageKey.js";
 

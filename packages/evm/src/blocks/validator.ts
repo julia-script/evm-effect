@@ -18,7 +18,7 @@ import {
   InvalidGasLimitError,
 } from "../exceptions.js";
 import { encodeHeader, type Header } from "../types/Block.js";
-import { Fork } from "../vm/Fork.js";
+import { Fork } from "../vm/ForkService.js";
 
 /**
  * Verifies a block header.

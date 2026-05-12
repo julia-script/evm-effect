@@ -18,7 +18,7 @@ import {
 import * as State from "../state.js";
 import { TransientStorage } from "../state.js";
 import type { Log } from "../types/index.js";
-import type { Fork } from "../vm/Fork.js";
+import type { Fork } from "../vm/ForkService.js";
 import { processMessage } from "../vm/interpreter.js";
 import type { BlockEnvironment } from "../vm/message.js";
 import { Message, TransactionEnvironment } from "../vm/message.js";

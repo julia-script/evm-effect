@@ -1,8 +1,9 @@
 import { Address } from "@evm-effect/ethereum-types";
 import { HashMap } from "@evm-effect/shared/hashmap";
-import { Context, type Effect, Layer, Option } from "effect";
+import type { Effect } from "effect";
 import type { EthereumException } from "../exceptions.js";
 import type { Evm } from "./evm.js";
+import { Fork } from "./ForkService.js";
 import {
   BASE_OPCODES,
   BERLIN_OPCODES,
@@ -12,7 +13,6 @@ import {
   HOMESTEAD_OPCODES,
   ISTANBUL_OPCODES,
   LONDON_OPCODES,
-  type OpcodeImplementation,
   OSAKA_OPCODES,
   PARIS_OPCODES,
   PETERSBURG_OPCODES,
@@ -36,6 +36,8 @@ import { blake2f } from "./precompiles/09-blake2f.js";
 import { bls12MapFpToG1 } from "./precompiles/10-bls12-map-fp-to-g1.js";
 import { bls12MapFp2ToG2 } from "./precompiles/11-bls12-map-fp2-to-g2.js";
 import { modexp } from "./precompiles/modexp.js";
+
+export { Fork } from "./ForkService.js";
 
 type PrecompileEntry = [
   Address,
@@ -245,165 +247,128 @@ const OSAKA_EIPS = [
   7910, // EIP-7910: eth_config JSON-RPC Method
 ];
 
-type PrecompileHashMap = HashMap<
-  Address,
-  Effect.Effect<void, EthereumException, Evm | Fork>
->;
-type OpcodeHashMap = Map<number, OpcodeImplementation>;
-export class Fork extends Context.Service<
-  Fork,
-  {
-    name: string;
-    precompiledContracts: PrecompileHashMap;
-    ops: OpcodeHashMap;
-    getPrecompiledContract: (
-      address: Address,
-    ) => Option.Option<Effect.Effect<void, EthereumException, Evm | Fork>>;
-    getOp: (opcode: number) => OpcodeImplementation | undefined;
-    eip: (n: number) => boolean;
-    eipSelect: <T>(eip: number, left: T, right: T) => T;
-    isForkBlock: boolean;
-  }
->()("Fork") {
-  static from({
-    name,
-    precompiledContracts,
-    ops,
-    EIPs = [],
-    isForkBlock = false,
-  }: {
-    name: string;
-    precompiledContracts: PrecompileHashMap;
-    ops: OpcodeHashMap;
-    EIPs: number[];
-    isForkBlock?: boolean;
-  }) {
-    const eips = new Set(EIPs);
-    const eip = (n: number) => eips.has(n);
+// export class Fork extends Context.Service<
+//   Fork,
+//   {
+//     name: string;
+//     precompiledContracts: PrecompileHashMap;
+//     ops: OpcodeHashMap;
+//     getPrecompiledContract: (
+//       address: Address,
+//     ) => Option.Option<Effect.Effect<void, EthereumException, Evm | Fork>>;
+//     getOp: (opcode: number) => OpcodeImplementation | undefined;
+//     eip: (n: number) => boolean;
+//     eipSelect: <T>(eip: number, left: T, right: T) => T;
+//     isForkBlock: boolean;
+//   }
+// >()("Fork") {
 
-    return Layer.succeed(
-      Fork,
-      Fork.of({
-        name,
-        precompiledContracts,
-        ops,
-        getPrecompiledContract: (address: Address) =>
-          Option.fromNullishOr(precompiledContracts.get(address)),
-        getOp: (opcode: number) => ops.get(opcode),
-        eip,
-        eipSelect: <T>(n: number, left: T, right: T) => (eip(n) ? left : right),
-        isForkBlock,
-      }),
-    );
-  }
+export function osaka() {
+  return Fork.from({
+    name: "osaka",
+    precompiledContracts: HashMap.fromIterable(PRAGUE_PRECOMPILES),
+    ops: OSAKA_OPCODES,
+    EIPs: OSAKA_EIPS,
+  });
+}
+export function prague() {
+  return Fork.from({
+    name: "prague",
+    precompiledContracts: HashMap.fromIterable(PRAGUE_PRECOMPILES),
+    ops: PRAGUE_OPCODES,
+    EIPs: PRAGUE_EIPS,
+  });
+}
+export function cancun() {
+  return Fork.from({
+    name: "cancun",
+    precompiledContracts: HashMap.fromIterable(CANCUN_PRECOMPILES),
+    ops: CANCUN_OPCODES,
+    EIPs: CANCUN_EIPS,
+  });
+}
+export function shanghai() {
+  return Fork.from({
+    name: "shanghai",
+    precompiledContracts: HashMap.fromIterable(SHANGHAI_PRECOMPILES),
+    ops: SHANGHAI_OPCODES,
+    EIPs: SHANGHAI_EIPS,
+  });
+}
+export function paris() {
+  return Fork.from({
+    name: "paris",
+    precompiledContracts: HashMap.fromIterable(PARIS_PRECOMPILES),
+    ops: PARIS_OPCODES,
+    EIPs: PARIS_EIPS,
+  });
+}
 
-  static osaka() {
-    return Fork.from({
-      name: "osaka",
-      precompiledContracts: HashMap.fromIterable(PRAGUE_PRECOMPILES),
-      ops: OSAKA_OPCODES,
-      EIPs: OSAKA_EIPS,
-    });
-  }
-  static prague() {
-    return Fork.from({
-      name: "prague",
-      precompiledContracts: HashMap.fromIterable(PRAGUE_PRECOMPILES),
-      ops: PRAGUE_OPCODES,
-      EIPs: PRAGUE_EIPS,
-    });
-  }
-  static cancun() {
-    return Fork.from({
-      name: "cancun",
-      precompiledContracts: HashMap.fromIterable(CANCUN_PRECOMPILES),
-      ops: CANCUN_OPCODES,
-      EIPs: CANCUN_EIPS,
-    });
-  }
-  static shanghai() {
-    return Fork.from({
-      name: "shanghai",
-      precompiledContracts: HashMap.fromIterable(SHANGHAI_PRECOMPILES),
-      ops: SHANGHAI_OPCODES,
-      EIPs: SHANGHAI_EIPS,
-    });
-  }
-  static paris() {
-    return Fork.from({
-      name: "paris",
-      precompiledContracts: HashMap.fromIterable(PARIS_PRECOMPILES),
-      ops: PARIS_OPCODES,
-      EIPs: PARIS_EIPS,
-    });
-  }
+export function london() {
+  return Fork.from({
+    name: "london",
+    precompiledContracts: HashMap.fromIterable(LONDON_PRECOMPILES),
+    ops: LONDON_OPCODES,
+    EIPs: LONDON_EIPS,
+  });
+}
+export function berlin() {
+  return Fork.from({
+    name: "berlin",
+    precompiledContracts: HashMap.fromIterable(BERLIN_PRECOMPILES),
+    ops: BERLIN_OPCODES,
+    EIPs: BERLIN_EIPS,
+  });
+}
 
-  static london() {
-    return Fork.from({
-      name: "london",
-      precompiledContracts: HashMap.fromIterable(LONDON_PRECOMPILES),
-      ops: LONDON_OPCODES,
-      EIPs: LONDON_EIPS,
-    });
-  }
-  static berlin() {
-    return Fork.from({
-      name: "berlin",
-      precompiledContracts: HashMap.fromIterable(BERLIN_PRECOMPILES),
-      ops: BERLIN_OPCODES,
-      EIPs: BERLIN_EIPS,
-    });
-  }
+export function istantbul() {
+  return Fork.from({
+    name: "istantbul",
+    precompiledContracts: HashMap.fromIterable(ISTANBUL_PRECOMPILES),
+    ops: ISTANBUL_OPCODES,
+    EIPs: ISTANBUL_EIPS,
+  });
+}
+export function constantinople() {
+  return Fork.from({
+    name: "constantinople",
+    precompiledContracts: HashMap.fromIterable(CONSTANTINOPLE_PRECOMPILES),
+    ops: CONSTANTINOPLE_OPCODES,
+    EIPs: CONSTANTINOPLE_EIPS,
+  });
+}
 
-  static istantbul() {
-    return Fork.from({
-      name: "istantbul",
-      precompiledContracts: HashMap.fromIterable(ISTANBUL_PRECOMPILES),
-      ops: ISTANBUL_OPCODES,
-      EIPs: ISTANBUL_EIPS,
-    });
-  }
-  static constantinople() {
-    return Fork.from({
-      name: "constantinople",
-      precompiledContracts: HashMap.fromIterable(CONSTANTINOPLE_PRECOMPILES),
-      ops: CONSTANTINOPLE_OPCODES,
-      EIPs: CONSTANTINOPLE_EIPS,
-    });
-  }
+export function petersburg() {
+  return Fork.from({
+    name: "petersburg",
+    precompiledContracts: HashMap.fromIterable(PETERSBURG_PRECOMPILES),
+    ops: PETERSBURG_OPCODES,
+    EIPs: PETERSBURG_EIPS,
+  });
+}
 
-  static petersburg() {
-    return Fork.from({
-      name: "petersburg",
-      precompiledContracts: HashMap.fromIterable(PETERSBURG_PRECOMPILES),
-      ops: PETERSBURG_OPCODES,
-      EIPs: PETERSBURG_EIPS,
-    });
-  }
+export function byzantium() {
+  return Fork.from({
+    name: "byzantium",
+    precompiledContracts: HashMap.fromIterable(BYZANTIUM_PRECOMPILES),
+    ops: BYZANTIUM_OPCODES,
+    EIPs: BYZANTIUM_EIPS,
+  });
+}
 
-  static byzantium() {
-    return Fork.from({
-      name: "byzantium",
-      precompiledContracts: HashMap.fromIterable(BYZANTIUM_PRECOMPILES),
-      ops: BYZANTIUM_OPCODES,
-      EIPs: BYZANTIUM_EIPS,
-    });
-  }
-
-  static homestead() {
-    return Fork.from({
-      name: "homestead",
-      precompiledContracts: HashMap.fromIterable(HOMESTEAD_PRECOMPILES),
-      ops: HOMESTEAD_OPCODES,
-      EIPs: HOMESTEAD_EIPS,
-    });
-  }
-  static frontier() {
-    return Fork.from({
-      name: "frontier",
-      precompiledContracts: HashMap.fromIterable(FRONTIER_PRECOMPILES),
-      ops: BASE_OPCODES,
-      EIPs: FRONTIER_EIPS,
-    });
-  }
+export function homestead() {
+  return Fork.from({
+    name: "homestead",
+    precompiledContracts: HashMap.fromIterable(HOMESTEAD_PRECOMPILES),
+    ops: HOMESTEAD_OPCODES,
+    EIPs: HOMESTEAD_EIPS,
+  });
+}
+export function frontier() {
+  return Fork.from({
+    name: "frontier",
+    precompiledContracts: HashMap.fromIterable(FRONTIER_PRECOMPILES),
+    ops: BASE_OPCODES,
+    EIPs: FRONTIER_EIPS,
+  });
 }

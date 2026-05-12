@@ -49,7 +49,7 @@ import {
   SetCodeTransaction,
   type Transaction,
 } from "../types/Transaction.js";
-import { Fork } from "../vm/Fork.js";
+import { Fork } from "../vm/ForkService.js";
 import type { BlockEnvironment } from "../vm/message.js";
 import {
   processCheckedSystemTransaction,

@@ -8,7 +8,7 @@
 import type { Effect } from "effect";
 import type { EthereumException } from "../exceptions.js";
 import type { Evm } from "./evm.js";
-import type { Fork } from "./Fork.js";
+import type { Fork } from "./ForkService.js";
 import * as Arithmetic from "./instructions/arithmetic.js";
 import * as Bitwise from "./instructions/bitwise.js";
 import * as Block from "./instructions/block.js";

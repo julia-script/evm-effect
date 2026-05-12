@@ -18,7 +18,7 @@ import type {
   SetCodeTransaction,
   Transaction,
 } from "../types/Transaction.js";
-import { Fork } from "../vm/Fork.js";
+import { Fork } from "../vm/ForkService.js";
 import { initCodeCost } from "../vm/gas.js";
 
 const PER_EMPTY_ACCOUNT_COST = 25000;

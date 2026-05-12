@@ -4,7 +4,7 @@ import { bn254 } from "@noble/curves/bn254.js";
 import { Effect, Ref } from "effect";
 import { PrecompileFailure } from "../../exceptions.js";
 import { Evm } from "../evm.js";
-import { Fork } from "../Fork.js";
+import { Fork } from "../ForkService.js";
 import * as Gas from "../gas.js";
 import { assertBn254G1AffineLikeGeth } from "./bn254-g1-geth-validation.js";
 

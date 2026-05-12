@@ -35,7 +35,7 @@ import {
   isValidDelegation,
 } from "../eoa_delegation.js";
 import { Evm } from "../evm.js";
-import { Fork } from "../Fork.js";
+import { Fork } from "../ForkService.js";
 import * as Gas from "../gas.js";
 import * as Interpreter from "../interpreter.js";
 import {

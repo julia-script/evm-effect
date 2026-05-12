@@ -6,7 +6,7 @@ import { bn254 } from "@noble/curves/bn254.js";
 import { Effect, Ref } from "effect";
 import { OutOfGasError } from "../../exceptions.js";
 import { Evm } from "../evm.js";
-import { Fork } from "../Fork.js";
+import { Fork } from "../ForkService.js";
 import * as Gas from "../gas.js";
 
 /**

@@ -9,7 +9,7 @@ import { U256, Uint } from "@evm-effect/ethereum-types";
 import { Effect } from "effect";
 import type { EthereumException } from "../../exceptions.js";
 import { Evm } from "../evm.js";
-import type { Fork } from "../Fork.js";
+import type { Fork } from "../ForkService.js";
 import * as Gas from "../gas.js";
 
 /**

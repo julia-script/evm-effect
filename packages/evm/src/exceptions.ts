@@ -5,7 +5,6 @@
 import type { Transaction } from "@evm-effect/crypto/transactions";
 import type { Uint } from "@evm-effect/ethereum-types";
 import { Data } from "effect";
-import { getOpcodeName } from "./vm/opcodes.js";
 
 export class InvalidBlock extends Data.TaggedError(
   "EthereumException/InvalidBlock",
@@ -231,8 +230,7 @@ export class InvalidOpcode extends Data.TaggedError(
   `${ExceptionalHaltTag}/InvalidOpcode`,
 )<{ readonly message?: string | undefined }> {
   constructor(public readonly code: number) {
-    const name = getOpcodeName(code);
-    super({ message: `invalid opcode ${code} (${name})` });
+    super({ message: `invalid opcode ${code.toString(16)}` });
   }
 }
 

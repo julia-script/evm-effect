@@ -11,7 +11,7 @@ import type { EthereumException } from "../../exceptions.js";
 import { OutOfGasError, WriteInStaticContext } from "../../exceptions.js";
 import * as State from "../../state.js";
 import { Evm } from "../evm.js";
-import { Fork } from "../Fork.js";
+import { Fork } from "../ForkService.js";
 import * as Gas from "../gas.js";
 import { StorageKey } from "../StorageKey.js";
 

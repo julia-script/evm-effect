@@ -36,7 +36,7 @@ import {
 import type { Log } from "../types/index.js";
 import { getDelegatedCodeAddress, setDelegation } from "./eoa_delegation.js";
 import { Evm } from "./evm.js";
-import { Fork } from "./Fork.js";
+import { Fork } from "./ForkService.js";
 import * as Gas from "./gas.js";
 import type { Message } from "./message.js";
 import { getOpcodeName, Ops } from "./opcodes.js";

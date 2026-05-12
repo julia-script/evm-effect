@@ -43,7 +43,7 @@ import {
 } from "../exceptions.js";
 import State from "../state.js";
 import type { Transaction } from "../types/Transaction.js";
-import { Fork } from "../vm/Fork.js";
+import { Fork } from "../vm/ForkService.js";
 import { MAX_INIT_CODE_SIZE } from "../vm/interpreter.js";
 import type { BlockEnvironment } from "../vm/message.js";
 import {

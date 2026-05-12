@@ -15,7 +15,7 @@ import { logsBloom } from "./receipts/bloom.js";
 import { stateRoot, TransientStorage } from "./state.js";
 import { root } from "./trie/trie.js";
 import { type Block, encodeBlock, type Header } from "./types/Block.js";
-import { Fork } from "./vm/Fork.js";
+import { Fork } from "./vm/ForkService.js";
 import { BlockEnvironment } from "./vm/message.js";
 
 /**

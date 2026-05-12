@@ -26,7 +26,7 @@ import { HashSet } from "@evm-effect/shared/hashset";
 import { Data, Effect, Equal } from "effect";
 import type { TrieError } from "./trie/TrieError.js";
 import { EMPTY_TRIE_ROOT, Trie, root as trieRoot } from "./trie/trie.js";
-import { Fork } from "./vm/Fork.js";
+import { Fork } from "./vm/ForkService.js";
 import { type Account, EMPTY_ACCOUNT } from "./vm/types.js";
 
 export type StateOperationsOverrides = {

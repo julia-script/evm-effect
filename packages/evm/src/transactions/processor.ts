@@ -27,7 +27,7 @@ import {
 } from "../trace.js";
 import { LegacyReceipt, Receipt } from "../types/Receipt.js";
 import { LegacyTransaction, type Transaction } from "../types/Transaction.js";
-import { Fork } from "../vm/Fork.js";
+import { Fork } from "../vm/ForkService.js";
 import { processMessageCall } from "../vm/interpreter.js";
 import {
   type BlockEnvironment,

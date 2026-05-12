@@ -10,7 +10,7 @@ import { Effect } from "effect";
 import type { EthereumException } from "../../exceptions.js";
 import { calculateBlobGasPrice } from "../../transactions/gas.js";
 import { Evm } from "../evm.js";
-import { Fork } from "../Fork.js";
+import { Fork } from "../ForkService.js";
 import * as Gas from "../gas.js";
 
 /**

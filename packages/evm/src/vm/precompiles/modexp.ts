@@ -8,7 +8,7 @@ import {
 import { Effect, Ref } from "effect";
 import { ExceptionalHaltError } from "../../exceptions.js";
 import { Evm } from "../evm.js";
-import { Fork } from "../Fork.js";
+import { Fork } from "../ForkService.js";
 import * as Gas from "../gas.js";
 
 const min = (a: bigint, b: bigint) => (a < b ? a : b);

@@ -19,7 +19,7 @@ export { processTransaction } from "./transactions/processor.js";
 export { Block, Header, Withdrawal } from "./types/Block.js";
 export { computeContractAddress } from "./utils/address.js";
 export { Evm } from "./vm/evm.js";
-export { Fork } from "./vm/Fork.js";
+export { Fork } from "./vm/ForkService.js";
 export { processMessageCall } from "./vm/interpreter.js";
 export {
   BlockEnvironment,

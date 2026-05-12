@@ -2,7 +2,7 @@ import { appendFile, mkdir } from "node:fs/promises";
 import * as path from "node:path";
 import * as Bun from "bun";
 import { Effect, type Layer, Logger, Match } from "effect";
-import { Fork } from "../src/vm/Fork.js";
+import * as Fork from "../src/vm/Fork.js";
 
 export const SKIP_CACHE = process.env.SKIP_CACHE !== "false";
 export const VERBOSE = process.env.VERBOSE === "true";
@@ -152,7 +152,7 @@ class UnsupportedForkError extends Error {
  */
 const resolveSimpleFork = (
   forkName: string,
-): Effect.Effect<Layer.Layer<Fork>, UnsupportedForkError> =>
+): Effect.Effect<Layer.Layer<Fork.Fork>, UnsupportedForkError> =>
   Match.value(forkName).pipe(
     Match.when("Osaka", () => Effect.succeed(Fork.osaka())),
     Match.when("Cancun", () => Effect.succeed(Fork.cancun())),
@@ -181,7 +181,7 @@ export const isTransitionFork = (forkName: string): boolean =>
  */
 export const resolveFork = (
   forkName: string,
-): Effect.Effect<Layer.Layer<Fork>, UnsupportedForkError> => {
+): Effect.Effect<Layer.Layer<Fork.Fork>, UnsupportedForkError> => {
   if (forkName in TRANSITION_FORKS) {
     const [, targetFork] = TRANSITION_FORKS[forkName];
     return resolveSimpleFork(targetFork);
@@ -196,7 +196,7 @@ export const resolveFork = (
 export const resolveForkForTimestamp = (
   forkName: string,
   timestamp: bigint,
-): Effect.Effect<Layer.Layer<Fork>, UnsupportedForkError> => {
+): Effect.Effect<Layer.Layer<Fork.Fork>, UnsupportedForkError> => {
   if (forkName in TRANSITION_FORKS) {
     const [sourceFork, targetFork] = TRANSITION_FORKS[forkName];
     if (timestamp >= TRANSITION_TIMESTAMP) {
