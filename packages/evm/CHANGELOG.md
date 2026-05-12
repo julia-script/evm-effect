@@ -1,5 +1,11 @@
 # @evm-effect/evm
 
+## 0.1.1
+
+### Patch Changes
+
+- [`4e7f22f`](https://github.com/julia-script/evm-effect/commit/4e7f22fd0fbc8f932d44c7826386730e5d729f77) Thanks [@julia-script](https://github.com/julia-script)! - Extract the fork `Context.Service` into `ForkService.ts` and re-export fork layers from `Fork.ts`, updating VM, transaction, and block code to use the new module boundary. `InvalidOpcode` errors now describe the opcode in hexadecimal so the exceptions module no longer depends on opcode metadata.
+
 ## 0.1.0
 
 ### Minor Changes

@@ -43,7 +43,7 @@
     "@changesets/cli": "^2.31.0",
     "@manypkg/cli": "^0.25.1",
     "@types/bun": "catalog:",
-    "@types/node": "^24.12.3",
+    "@types/node": "^24.12.4",
     "babel-plugin-annotate-pure-calls": "^0.5.0",
     "glob": "^11.1.0",
     "knip": "^5.88.1",

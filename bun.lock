@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 1,
   "workspaces": {
     "": {
       "name": "evm-effect",
@@ -67,7 +66,7 @@
     },
     "packages/evm": {
       "name": "@evm-effect/evm",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@effect/platform-bun": "catalog:",
         "@evm-effect/crypto": "workspace:*",
@@ -91,7 +90,7 @@
     },
     "packages/examples": {
       "name": "@evm-effect/examples",
-      "version": "0.0.20",
+      "version": "0.0.21",
       "dependencies": {
         "@evm-effect/crypto": "workspace:*",
         "@evm-effect/ethereum-types": "workspace:*",

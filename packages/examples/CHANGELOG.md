@@ -1,5 +1,12 @@
 # @evm-effect/examples
 
+## 0.0.21
+
+### Patch Changes
+
+- Updated dependencies [[`4e7f22f`](https://github.com/julia-script/evm-effect/commit/4e7f22fd0fbc8f932d44c7826386730e5d729f77)]:
+  - @evm-effect/evm@0.1.1
+
 ## 0.0.20
 
 ### Patch Changes
