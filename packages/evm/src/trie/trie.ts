@@ -15,7 +15,7 @@ import {
 } from "@evm-effect/ethereum-types";
 import rlp, { type Extended } from "@evm-effect/rlp";
 import { HashMap } from "@evm-effect/shared/hashmap";
-import { Data, Effect, Equal, Match, Option, Result } from "effect";
+import { Data, Effect, Match, Option, Result } from "effect";
 import { isTagged } from "effect/Predicate";
 import { Withdrawal } from "../types/Block.js";
 import { Receipt } from "../types/Receipt.js";
@@ -243,7 +243,7 @@ export class Trie<
   }
 
   set(key: K, value: V | D) {
-    if (Equal.equals(value, this.default)) {
+    if (HashMap.equals(value, this.default)) {
       this._data.remove(key);
     } else {
       this._data.set(key, value as V);

@@ -1,7 +1,7 @@
 import { keccak256 } from "@evm-effect/crypto";
 import { Bytes, U256, Uint } from "@evm-effect/ethereum-types";
 import rlp from "@evm-effect/rlp";
-import { Schema } from "effect";
+import { Hash, Schema } from "effect";
 
 /**
  * State associated with an Ethereum address
@@ -63,6 +63,10 @@ export class Account extends Schema.TaggedClass<Account>("Account")("Account", {
   encode(storageRoot: Bytes): Bytes {
     const code = keccak256(this.code);
     return rlp.encode([this.nonce, this.balance, storageRoot, code]);
+  }
+  [Hash.symbol](): number {
+    const encoded = this.encode(new Bytes({ value: new Uint8Array(0) }));
+    return encoded[Hash.symbol]();
   }
 }
 

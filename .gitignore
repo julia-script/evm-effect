@@ -34,3 +34,6 @@ generated/
 
 
 *.heapsnapshot
+
+.tmp-*/
+

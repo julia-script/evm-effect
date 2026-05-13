@@ -143,7 +143,7 @@ export class U256 extends Schema.TaggedClass<U256>("U256")(
   }
 
   [Hash.symbol](): number {
-    return Number(this.value & 0xffffffffn);
+    return hash(this.toBeBytes32().value);
   }
 
   static from(input: Uintish): Result.Result<U256, EvmTypeError> {
@@ -761,6 +761,7 @@ export function isZero<T extends FixedUnsigned>(a: T): boolean {
 
 // Import bytes types (will be available after bytes.ts is created)
 import { type AnyBytes, Bytes32 } from "./bytes.js";
+import { hash } from "./utils.js";
 
 /**
  * Convert to native bigint

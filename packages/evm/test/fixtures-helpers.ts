@@ -1,9 +1,16 @@
-import { appendFile, mkdir } from "node:fs/promises";
+import { appendFile, mkdir, readFile, stat } from "node:fs/promises";
 import * as path from "node:path";
-import * as Bun from "bun";
 import { Effect, type Layer, Logger, Match } from "effect";
 import * as Fork from "../src/vm/Fork.js";
 
+const exists = async (path: string) => {
+  try {
+    await stat(path);
+    return true;
+  } catch {
+    return false;
+  }
+};
 export const SKIP_CACHE = process.env.SKIP_CACHE !== "false";
 export const VERBOSE = process.env.VERBOSE === "true";
 export const SKIP = process.env.SKIP ? Number(process.env.SKIP) : 0;
@@ -45,14 +52,14 @@ export const checkTestCache = async (shortHash: string): Promise<boolean> => {
   if (SKIP_CACHE) return false;
 
   const testFilePath = path.join(cachedTestStatusDir, shortHash);
-  const file = Bun.file(testFilePath);
+  const file = await exists(testFilePath);
 
-  if (!(await file.exists())) {
+  if (!file) {
     return false;
   }
 
   try {
-    const content = await file.text();
+    const content = await readFile(testFilePath, { encoding: "utf-8" });
     const lines = content.trim().split("\n");
     const lastLine = lines[lines.length - 1];
 

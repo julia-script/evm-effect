@@ -207,7 +207,7 @@ export const executeCode = Effect.fn("executeCode")(function* (
 });
 
 const executeLoop: () => Effect.Effect<void, EthereumException, Evm | Fork> =
-  Effect.fn("executeLoop")(function* () {
+  Effect.fn("executeLoop")(function* executeLoop() {
     const evm = yield* Evm;
     const fork = yield* Fork;
 

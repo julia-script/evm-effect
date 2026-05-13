@@ -23,7 +23,7 @@ import {
 import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { HashMap } from "@evm-effect/shared/hashmap";
 import { HashSet } from "@evm-effect/shared/hashset";
-import { Data, Effect, Equal } from "effect";
+import { Data, Effect } from "effect";
 import type { TrieError } from "./trie/TrieError.js";
 import { EMPTY_TRIE_ROOT, Trie, root as trieRoot } from "./trie/trie.js";
 import { Fork } from "./vm/ForkService.js";
@@ -633,7 +633,7 @@ export const isAccountAlive = Effect.fn("isAccountAlive")(function* (
   address: Address,
 ): Effect.fn.Return<boolean, never, never> {
   const account = yield* state.getAccount(address);
-  return account !== null && !Equal.equals(account, EMPTY_ACCOUNT);
+  return account !== null && !HashMap.equals(account, EMPTY_ACCOUNT);
 });
 
 /**
@@ -652,7 +652,7 @@ export const accountExistsAndIsEmpty = Effect.fn("accountExistsAndIsEmpty")(
     address: Address,
   ): Effect.fn.Return<boolean, never, never> {
     const account = yield* state.getAccount(address);
-    return account !== null && Equal.equals(account, EMPTY_ACCOUNT);
+    return account !== null && HashMap.equals(account, EMPTY_ACCOUNT);
   },
 );
 

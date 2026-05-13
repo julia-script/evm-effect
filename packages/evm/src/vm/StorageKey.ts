@@ -7,6 +7,7 @@
 
 import type { Address, Bytes32 } from "@evm-effect/ethereum-types";
 import { hash } from "@evm-effect/ethereum-types/utils";
+import { HashMap } from "@evm-effect/shared/hashmap";
 
 import { Data, Equal, Hash } from "effect";
 
@@ -25,8 +26,7 @@ export class StorageKey extends Data.Class<{
       return false;
     }
     return (
-      Equal.equals(this.address, that.address) &&
-      Equal.equals(this.slot, that.slot)
+      HashMap.getHash(this) === HashMap.getHash(that)
     );
   }
 

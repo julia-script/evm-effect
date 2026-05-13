@@ -40,7 +40,10 @@ export class HashMap<K, V> extends Data.TaggedClass("HashMap")<{
       });
       return hash;
     }
-    throw new Error("Invalid key type");
+    return Hash.hash(key);
+  }
+  static equals(a: unknown, b: unknown): boolean {
+    return HashMap.getHash(a) === HashMap.getHash(b);
   }
   set(key: K, value: V) {
     const hash = HashMap.getHash(key);

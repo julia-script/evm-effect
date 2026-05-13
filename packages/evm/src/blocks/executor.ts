@@ -15,7 +15,8 @@ import {
   Uint,
 } from "@evm-effect/ethereum-types";
 import rlp from "@evm-effect/rlp";
-import { Effect, Equal, Result } from "effect";
+import { HashMap } from "@evm-effect/shared/hashmap";
+import { Effect, Result } from "effect";
 import { type BlockOutput, emptyBlockOutput } from "../blockchain.js";
 import {
   BEACON_ROOTS_ADDRESS,
@@ -516,10 +517,10 @@ const parseDepositRequests = (
       }
 
       for (const log of decodedReceipt.logs) {
-        if (Equal.equals(log.address, DEPOSIT_CONTRACT_ADDRESS)) {
+        if (HashMap.equals(log.address, DEPOSIT_CONTRACT_ADDRESS)) {
           if (
             log.topics.length > 0 &&
-            Equal.equals(log.topics[0], DEPOSIT_EVENT_SIGNATURE_HASH)
+            HashMap.equals(log.topics[0], DEPOSIT_EVENT_SIGNATURE_HASH)
           ) {
             const depositData = yield* extractDepositData(log.data);
             depositRequestsArray.push(depositData.value);
