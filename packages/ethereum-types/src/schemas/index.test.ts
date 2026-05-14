@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Effect, Schema } from "effect";
 import { Bytes, Bytes32, padBuffer } from "../bytes.js";
 import { EthSchema } from "./index.js";
@@ -44,6 +44,7 @@ describe("EthSchema", () => {
     Effect.gen(function* () {
       const encode = Schema.encodeEffect(EthSchema.Bytes32FromHex);
       const decode = Schema.decodeEffect(EthSchema.Bytes32FromHex);
+
       expect(
         yield* encode(
           new Bytes32({ value: padBuffer(new Uint8Array([1, 2, 3]), 32) }),

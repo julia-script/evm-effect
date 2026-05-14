@@ -9,8 +9,6 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
-    // `src/schemas/index.test.ts` imports `./index.js`, which is not in the tree yet.
-    exclude: ["src/schemas/index.test.ts"],
     passWithNoTests: true,
   },
 });
