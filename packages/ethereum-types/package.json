@@ -34,18 +34,19 @@
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
     "dev": "tsc -b tsconfig.build.json --watch",
-    "check": "tsc -b tsconfig.json"
+    "check": "tsc -b tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "@evm-effect/shared": "workspace:*",
     "@noble/hashes": "catalog:",
-    "@effect/platform-bun": "catalog:",
     "effect": "catalog:",
     "ts-dedent": "^2.2.0"
   },
   "devDependencies": {
     "@types/node": "^24.8.1",
     "fast-check": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^3.2.4"
   }
 }

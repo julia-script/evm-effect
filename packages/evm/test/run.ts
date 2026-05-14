@@ -21,7 +21,7 @@ Object.defineProperty(globalThis, "_heap_size_limit", {
 // because we want the startup time to be minimal.
 //
 // This section will read the index of all tests, which are thousands
-// then let bun do the filtering based on the  --test-name-pattern parameter,
+// then let the test runner filter via -t / --testNamePattern,
 // and only run the relevant tests
 // then the code that runs inside the test body is already past filtering
 // so we can lazily  do any more expensive things there
@@ -750,10 +750,7 @@ for (const testCase of stateTests) {
             `    Balance match: expected ${expectedAccount.balance.value}, actual ${actualAccount.balance.value}`,
           );
         }
-        if (
-          actualAccount.code.value.toHex() !==
-          expectedAccount.code.value.toHex()
-        ) {
+        if (actualAccount.code.toHex() !== expectedAccount.code.toHex()) {
           yield* Console.log(
             "\x1b[31m%s\x1b[0m",
             `    Code mismatch: expected ${expectedAccount.code.toHex()}, actual ${actualAccount.code.toHex()}`,
@@ -794,8 +791,8 @@ for (const testCase of stateTests) {
       Schema.Array(Log),
       block_output.blockLogs,
     );
-    const actualLogsHash = `0x${keccak256(logsRlpEncoded).value.toHex()}`;
-    const expectedLogsHash = `0x${post.logs.value.toHex()}`;
+    const actualLogsHash = keccak256(logsRlpEncoded).toHex();
+    const expectedLogsHash = `0x${post.logs.toHex()}`;
     assert.equal(actualLogsHash, expectedLogsHash);
   });
 

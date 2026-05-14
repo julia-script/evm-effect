@@ -1,15 +1,15 @@
-#!/usr/bin/env bun
 /**
  * Script to print all failed tests from the cached test status directory.
  *
  * Usage:
- *   bun packages/evm/test/print-failed-tests.ts
- *   bun packages/evm/test/print-failed-tests.ts --verbose  # Include error details
- *   bun packages/evm/test/print-failed-tests.ts --json     # Output as JSON
+ *   node --import tsx packages/evm/test/print-failed-tests.ts
+ *   pnpm exec tsx packages/evm/test/print-failed-tests.ts
+ *   pnpm exec tsx packages/evm/test/print-failed-tests.ts --verbose  # Include error details
+ *   pnpm exec tsx packages/evm/test/print-failed-tests.ts --json     # Output as JSON
  */
 
 import * as path from "node:path";
-import { BunFileSystem, BunRuntime } from "@effect/platform-bun";
+import { NodeFileSystem, NodeRuntime } from "@effect/platform-node";
 import {
   Array as Arr,
   Console,
@@ -312,4 +312,4 @@ const program = Effect.gen(function* () {
 });
 
 // Run the program
-BunRuntime.runMain(program.pipe(Effect.provide(BunFileSystem.layer)));
+NodeRuntime.runMain(program.pipe(Effect.provide(NodeFileSystem.layer)));

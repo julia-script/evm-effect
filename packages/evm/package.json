@@ -34,16 +34,16 @@
     "build": "tsc -b tsconfig.build.json",
     "dev": "tsc -b tsconfig.build.json --watch",
     "check": "tsc -b tsconfig.json",
-    "test": "bun test",
+    "test": "vitest run",
+    "print-failed-tests": "tsx test/print-failed-tests.ts",
     "fixtures:stable": "uvx --from git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing consume cache --input=stable@latest --extract-to ./test-fixtures",
     "fixtures:develop": "uvx --from git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing consume cache --input=develop@latest --extract-to ./test-fixtures",
     "test:direct": "uvx --from git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing consume direct --input=test-fixtures/fixtures -m state_test --bin=./test/statetest.ts",
     "test:direct:modexp": "uvx --from git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing consume direct --input=test-fixtures/fixtures -m state_test --bin=./test/statetest.ts -k modexp",
-    "test:downloaded": "FIXTURES_PATH=test-fixtures/fixtures TEST_FILTER=eip7883_modexp bun test test/fixtures.test.ts",
-    "test:downloaded:all": "FIXTURES_PATH=test-fixtures/fixtures TEST_FILTER= bun test test/fixtures.test.ts"
+    "test:downloaded": "FIXTURES_PATH=test-fixtures/fixtures TEST_FILTER=eip7883_modexp vitest run test/fixtures.test.ts",
+    "test:downloaded:all": "FIXTURES_PATH=test-fixtures/fixtures TEST_FILTER= vitest run test/fixtures.test.ts"
   },
   "dependencies": {
-    "@effect/platform-bun": "catalog:",
     "@evm-effect/crypto": "workspace:*",
     "@evm-effect/ethereum-types": "workspace:*",
     "@evm-effect/rlp": "workspace:*",
@@ -54,12 +54,14 @@
     "effect": "catalog:",
     "kzg-wasm": "^0.5.0",
     "superjson": "^2.2.2",
-    "zod": "^4.1.12"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@effect/platform-node": "catalog:",
     "@types/node": "^24.8.1",
     "fast-check": "catalog:",
+    "tsx": "^4.21.0",
     "typescript": "catalog:",
-    "@types/bun": "catalog:"
+    "vitest": "^3.2.4"
   }
 }

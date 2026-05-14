@@ -9,7 +9,7 @@ export const annotateSafe = (values: Record<string, unknown>) => {
         Match.when(Match.bigint, (value) => `${value}n`),
         Match.when(
           Predicate.isUint8Array,
-          (value) => `0x${value.toHex() || "00"}`,
+          (value) => `0x${value.toHex?.() ?? "00"}`,
         ),
         Match.when(Predicate.isString, (value) => value),
         Match.when(Predicate.isNumber, (value) => value),

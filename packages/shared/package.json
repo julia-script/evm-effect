@@ -42,18 +42,18 @@
     "build": "tsc -b tsconfig.build.json",
     "dev": "tsc -b tsconfig.build.json --watch",
     "clean": "rm -rf build",
-    "test": "bun test"
+    "test": "vitest run"
   },
   "dependencies": {
     "@effect/opentelemetry": "catalog:",
-    "@effect/platform-bun": "catalog:",
+    "@effect/platform-node": "catalog:",
     "effect": "catalog:",
     "fast-check": "catalog:",
     "superjson": "^2.2.2",
     "ts-dedent": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^3.2.4"
   }
 }

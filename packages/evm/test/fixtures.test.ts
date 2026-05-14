@@ -1,5 +1,5 @@
+import { readFile } from "node:fs/promises";
 import * as path from "node:path";
-import * as Bun from "bun";
 import {
   checkTestCache,
   isTransitionFork,
@@ -27,7 +27,7 @@ import {
 // because we want the startup time to be minimal.
 //
 // This section will read the index of all tests, which are thousands
-// then let bun do the filtering based on the  --test-name-pattern parameter,
+// then let vitest do the filtering based on -t / --testNamePattern,
 // and only run the relevant tests
 // then the code that runs inside the test body is already past filtering
 // so we can lazily  do any more expensive things there
@@ -36,9 +36,9 @@ const root = path.join(dirname, "..", "test-fixtures");
 const now = performance.now();
 const fixturesIndexPath = path.join(root, "fixtures", ".meta", "index.json");
 
-const loaded = (await Bun.file(
-  fixturesIndexPath,
-).json()) as (typeof Index)["Type"];
+const loaded = JSON.parse(
+  await readFile(fixturesIndexPath, "utf-8"),
+) as (typeof Index)["Type"];
 
 type IndexCaseWithHash = (typeof IndexEntry)["Type"] & { shortHash: string };
 type CasesByFormat = {
@@ -67,7 +67,6 @@ console.log(`processed in ${performance.now() - now}ms`);
 
 // END OF THE INDEX LOADING
 
-import { afterEach, describe, expect, test } from "bun:test";
 import { keccak256 } from "@evm-effect/crypto/keccak256";
 import {
   type Access,
@@ -86,6 +85,7 @@ import { U8, U64, U256, Uint } from "@evm-effect/ethereum-types/numeric";
 import rlp from "@evm-effect/rlp";
 import { bufferFromHex } from "@evm-effect/shared/bytes";
 import { Console, Effect, Match, Result, Schema } from "effect";
+import { afterEach, describe, expect, test } from "vitest";
 import { BlockChain, emptyBlockOutput } from "../src/blockchain.js";
 import { computeBlockHash } from "../src/blocks/validator.js";
 import { stateTransition } from "../src/fork.js";
@@ -234,10 +234,11 @@ const matchesExpectedException = (
   return { matches, actualException, expectedOptions };
 };
 
-type FlatStateTestFixture =
-  ReturnType<typeof flattenStateTestFixtures> extends Generator<infer T, void>
-    ? T
-    : never;
+type FlatStateTestFixture = ReturnType<
+  typeof flattenStateTestFixtures
+> extends Generator<infer T, void>
+  ? T
+  : never;
 
 type TestState = {
   shortHash: string | null;
@@ -247,7 +248,7 @@ type TestState = {
   error: unknown;
 };
 
-describe("StateTest", () => {
+describe("StateTest", TEST_CONFIG, () => {
   const testState: TestState = {
     shortHash: null,
     passed: false,
@@ -281,6 +282,7 @@ describe("StateTest", () => {
       })),
   )(
     `$shortHash - [$index] $id`,
+    TEST_CONFIG,
     async (testCaseIndex) => {
       testState.shortHash = testCaseIndex.shortHash;
       testState.passed = false;
@@ -293,9 +295,10 @@ describe("StateTest", () => {
         return;
       }
       const testCaseRaw: unknown = (
-        await Bun.file(
+        await readFile(
           path.join(root, "fixtures", testCaseIndex.json_path),
-        ).json()
+          "utf-8",
+        ).then(JSON.parse)
       )[testCaseIndex.id];
 
       const runStateTest = Effect.fn("runStateTest")(function* (
@@ -729,10 +732,7 @@ describe("StateTest", () => {
                 `    Balance match: expected ${expectedAccount.balance.value}, actual ${actualAccount.balance.value}`,
               );
             }
-            if (
-              actualAccount.code.value.toHex() !==
-              expectedAccount.code.value.toHex()
-            ) {
+            if (actualAccount.code.toHex() !== expectedAccount.code.toHex()) {
               yield* Console.log(
                 "\x1b[31m%s\x1b[0m",
                 `    Code mismatch: expected ${expectedAccount.code.toHex()}, actual ${actualAccount.code.toHex()}`,
@@ -776,8 +776,8 @@ describe("StateTest", () => {
           Schema.Array(Log),
           block_output.blockLogs,
         );
-        const actualLogsHash = `0x${keccak256(logsRlpEncoded).value.toHex()}`;
-        const expectedLogsHash = `0x${post.logs.value.toHex()}`;
+        const actualLogsHash = keccak256(logsRlpEncoded).toHex();
+        const expectedLogsHash = post.logs.toHex();
         expect(actualLogsHash).toBe(expectedLogsHash);
       });
 
@@ -798,7 +798,6 @@ describe("StateTest", () => {
         throw error;
       }
     },
-    TEST_CONFIG,
   );
 });
 
@@ -838,385 +837,375 @@ describe("BlockchainTest", () => {
         index: SKIP + index,
         total: totalBlockchainTests,
       })),
-  )(
-    `$shortHash - [$index/$total] $id`,
-    async (testCaseIndex) => {
-      testState.shortHash = testCaseIndex.shortHash;
-      testState.passed = false;
-      testState.skipped = false;
-      testState.startTime = performance.now();
-      testState.error = undefined;
+  )(`$shortHash - [$index/$total] $id`, async (testCaseIndex) => {
+    testState.shortHash = testCaseIndex.shortHash;
+    testState.passed = false;
+    testState.skipped = false;
+    testState.startTime = performance.now();
+    testState.error = undefined;
 
-      if (await checkTestCache(testCaseIndex.shortHash)) {
-        testState.skipped = true;
-        return;
-      }
-      const testCaseRaw = (
-        await Bun.file(
-          path.join(root, "fixtures", testCaseIndex.json_path),
-        ).json()
-      )[testCaseIndex.id];
+    if (await checkTestCache(testCaseIndex.shortHash)) {
+      testState.skipped = true;
+      return;
+    }
+    const testCaseRaw = (
+      await readFile(
+        path.join(root, "fixtures", testCaseIndex.json_path),
+        "utf-8",
+      ).then(JSON.parse)
+    )[testCaseIndex.id];
 
-      /**
-       * Run blockchain test following the 9-step consumption algorithm
-       * from blockchain_test.md specification
-       */
-      const runBlockchainTest = Effect.fn("runBlockchainTest")(function* (
-        fixture: (typeof BlockchainTest)["Type"],
-      ) {
-        // STEP 1: Configure fork from fixture.network
-        yield* Console.log(`Fork: ${fixture.network}`);
-        const forkLayer = yield* resolveFork(fixture.network);
+    /**
+     * Run blockchain test following the 9-step consumption algorithm
+     * from blockchain_test.md specification
+     */
+    const runBlockchainTest = Effect.fn("runBlockchainTest")(function* (
+      fixture: (typeof BlockchainTest)["Type"],
+    ) {
+      // STEP 1: Configure fork from fixture.network
+      yield* Console.log(`Fork: ${fixture.network}`);
+      const forkLayer = yield* resolveFork(fixture.network);
 
-        // STEP 2: Initialize state from fixture.pre and calculate genesis state root
-        const state = State.empty();
-        for (const [address, account] of Object.entries(fixture.pre)) {
-          yield* State.setAccount(
+      // STEP 2: Initialize state from fixture.pre and calculate genesis state root
+      const state = State.empty();
+      for (const [address, account] of Object.entries(fixture.pre)) {
+        yield* State.setAccount(
+          state,
+          new Address({ value: bufferFromHex(address) }),
+          new Account({
+            nonce: account.nonce,
+            balance: new U256({ value: account.balance.value }),
+            code: account.code,
+          }),
+        );
+
+        for (const [slot, storageValue] of Object.entries(account.storage)) {
+          const keyBytes = new Bytes32({ value: bufferFromHex(slot) });
+          const valueU256 = U256.fromBeBytes(storageValue.value);
+
+          yield* State.setStorage(
             state,
             new Address({ value: bufferFromHex(address) }),
-            new Account({
-              nonce: account.nonce,
-              balance: new U256({ value: account.balance.value }),
-              code: account.code,
-            }),
+            keyBytes,
+            valueU256,
           );
+        }
+      }
+      const calculatedGenesisStateRoot = State.stateRoot(state);
 
-          for (const [slot, storageValue] of Object.entries(account.storage)) {
-            const keyBytes = new Bytes32({ value: bufferFromHex(slot) });
-            const valueU256 = U256.fromBeBytes(storageValue.value);
+      // STEP 3: Decode genesisRLP - FAIL if cannot decode
+      const decodedGenesis = yield* decodeBlock(fixture.genesisRLP);
 
-            yield* State.setStorage(
-              state,
-              new Address({ value: bufferFromHex(address) }),
-              keyBytes,
-              valueU256,
+      // STEP 4: Compare decoded header with genesisBlockHeader - FAIL if mismatch
+      // We check stateRoot explicitly for a clear error message, but the block hash
+      // verification below will catch any field mismatch (since hash = keccak256(rlp(header)))
+      const decodedHeader = decodedGenesis.header;
+      const expectedHeader = fixture.genesisBlockHeader;
+
+      // State root comparison (explicit check for better error messages)
+      const decodedStateRoot = decodedHeader.stateRoot.toHex();
+      const expectedStateRoot = expectedHeader.stateRoot.toHex();
+      if (decodedStateRoot !== expectedStateRoot) {
+        yield* Console.log(
+          `Header stateRoot mismatch: decoded=${decodedStateRoot}, expected=${expectedStateRoot}`,
+        );
+        return yield* Effect.fail(
+          new Error(
+            "Genesis header stateRoot mismatch between RLP and fixture",
+          ),
+        );
+      }
+
+      // STEP 5: Compare calculated state root with genesis header state root
+      const calculatedStateRootHex = yield* calculatedGenesisStateRoot.pipe(
+        Effect.map((value) => value.toHex()),
+      );
+      if (calculatedStateRootHex !== expectedStateRoot) {
+        yield* Console.log(
+          `State root mismatch: calculated=${calculatedStateRootHex}, expected=${expectedStateRoot}`,
+        );
+        return yield* Effect.fail(
+          new Error("Calculated genesis state root does not match header"),
+        );
+      }
+
+      // STEP 6: Set genesis as current head
+      let chain = BlockChain.empty(
+        new U64({ value: fixture.config.chainid.value }),
+      )
+        .withState(state)
+        .addBlock(decodedGenesis);
+
+      // Compute and verify genesis block hash
+      const computedGenesisHash = computeBlockHash(decodedGenesis.header);
+      let currentHeadHash = computedGenesisHash.toHex();
+      const expectedGenesisHash = fixture.genesisBlockHeader.hash.toHex();
+      if (currentHeadHash !== expectedGenesisHash) {
+        yield* Console.log(
+          `Genesis hash mismatch: computed=${currentHeadHash}, expected=${expectedGenesisHash}`,
+        );
+        return yield* Effect.fail(
+          new Error("Computed genesis block hash does not match fixture"),
+        );
+      }
+
+      // STEP 7: Process each block in fixture.blocks
+      for (
+        let blockIndex = 0;
+        blockIndex < fixture.blocks.length;
+        blockIndex++
+      ) {
+        const block = fixture.blocks[blockIndex];
+        const expectsException = "expectException" in block;
+
+        yield* Console.log(
+          `Processing block ${blockIndex + 1}/${fixture.blocks.length}${
+            expectsException
+              ? ` (expects exception: ${block.expectException})`
+              : ""
+          }`,
+        );
+
+        // 7.2: Attempt to decode RLP
+        const decodeResult = yield* decodeBlock(block.rlp).pipe(Effect.result);
+
+        if (Result.isFailure(decodeResult)) {
+          // Decode failed
+          if (!expectsException) {
+            yield* Console.log(`Block decode failed: ${decodeResult.failure}`);
+            return yield* Effect.fail(
+              new Error("Block decode failed but no exception expected"),
             );
           }
-        }
-        const calculatedGenesisStateRoot = State.stateRoot(state);
+          // Expected decode failure - check if the error matches expected exception
+          // RLP decode errors map to RLP_STRUCTURES_ENCODING
+          const { matches, actualException, expectedOptions } =
+            matchesExpectedException(
+              // Create an error object with RLP tag for matching
+              {
+                _tag: "EthereumException/InvalidBlock/RlpStructuresEncodingError",
+              },
+              block.expectException,
+            );
 
-        // STEP 3: Decode genesisRLP - FAIL if cannot decode
-        const decodedGenesis = yield* decodeBlock(fixture.genesisRLP);
-
-        // STEP 4: Compare decoded header with genesisBlockHeader - FAIL if mismatch
-        // We check stateRoot explicitly for a clear error message, but the block hash
-        // verification below will catch any field mismatch (since hash = keccak256(rlp(header)))
-        const decodedHeader = decodedGenesis.header;
-        const expectedHeader = fixture.genesisBlockHeader;
-
-        // State root comparison (explicit check for better error messages)
-        const decodedStateRoot = decodedHeader.stateRoot.toHex();
-        const expectedStateRoot = expectedHeader.stateRoot.toHex();
-        if (decodedStateRoot !== expectedStateRoot) {
           yield* Console.log(
-            `Header stateRoot mismatch: decoded=${decodedStateRoot}, expected=${expectedStateRoot}`,
+            `Decode exception expected: ${block.expectException}`,
           );
+          yield* Console.log(
+            `  Actual exception: ${actualException ?? "RLP decode error"}`,
+          );
+
+          if (!matches) {
+            // Check if any expected option is RLP related
+            const isRlpExpected = expectedOptions.some(
+              (opt) =>
+                opt.includes("RLP") ||
+                opt.includes("TYPE_3_TX_WITH_FULL_BLOBS"),
+            );
+            if (!isRlpExpected) {
+              return yield* Effect.fail(
+                new Error(
+                  `Decode exception mismatch: expected ${expectedOptions.join(
+                    " | ",
+                  )}, got RLP decode error`,
+                ),
+              );
+            }
+          }
+          // Expected decode failure - this is the last block per spec
+          yield* Console.log("Expected decode failure occurred");
+          break;
+        }
+
+        const decodedBlock = decodeResult.success;
+
+        // For transition forks, resolve the appropriate fork based on block timestamp
+        const blockForkLayer = isTransitionFork(fixture.network)
+          ? yield* resolveForkForTimestamp(
+              fixture.network,
+              decodedBlock.header.timestamp.value,
+            )
+          : forkLayer;
+
+        // 7.3: Attempt to apply block
+        const applyResult = yield* stateTransition(chain, decodedBlock).pipe(
+          Effect.provide(blockForkLayer),
+          Effect.result,
+        );
+
+        if (Result.isFailure(applyResult)) {
+          // Apply failed
+          if (!expectsException) {
+            yield* Console.log(`Block apply failed: ${applyResult.failure}`);
+            return yield* Effect.fail(
+              new Error(`Block apply failed: ${applyResult.failure}`),
+            );
+          }
+          // Expected exception - verify it matches
+          const actualError = applyResult.failure;
+          const { matches, actualException, expectedOptions } =
+            matchesExpectedException(actualError, block.expectException);
+
+          yield* Console.log(`Exception expected: ${block.expectException}`);
+          yield* Console.log(
+            `  Actual exception: ${actualException ?? "UNKNOWN (no mapping)"}`,
+          );
+
+          if (!matches) {
+            // Special handling: INVALID_BLOCK is acceptable for RLP/blob-related expected exceptions
+            // These are low-level structural errors that our implementation may not distinguish
+            const isRlpOrBlobExpected = expectedOptions.some(
+              (opt) =>
+                opt.includes("RLP") ||
+                opt.includes("TYPE_3_TX_WITH_FULL_BLOBS"),
+            );
+            if (
+              isRlpOrBlobExpected &&
+              actualException === "BlockException.INVALID_BLOCK"
+            ) {
+              yield* Console.log(
+                `  (INVALID_BLOCK accepted for RLP/blob-related expected exception)`,
+              );
+              break;
+            }
+
+            const errorTag =
+              actualError !== null &&
+              typeof actualError === "object" &&
+              "_tag" in actualError
+                ? String(actualError._tag)
+                : "unknown";
+            return yield* Effect.fail(
+              new Error(
+                actualException === null
+                  ? `Unmapped exception: got error tag "${errorTag}", expected one of: ${expectedOptions.join(
+                      " | ",
+                    )}`
+                  : `Exception mismatch: expected ${expectedOptions.join(
+                      " | ",
+                    )}, got ${actualException}`,
+              ),
+            );
+          }
+          break;
+        }
+
+        // Apply succeeded
+        if (expectsException) {
           return yield* Effect.fail(
             new Error(
-              "Genesis header stateRoot mismatch between RLP and fixture",
+              `Expected exception ${block.expectException} but block applied successfully`,
             ),
           );
         }
 
-        // STEP 5: Compare calculated state root with genesis header state root
-        const calculatedStateRootHex = yield* calculatedGenesisStateRoot.pipe(
-          Effect.map((value) => value.toHex()),
+        chain = applyResult.success;
+
+        // Compute the actual block hash from the processed block header
+        const lastBlock = chain.blocks[chain.blocks.length - 1];
+        const computedHash = computeBlockHash(lastBlock.header);
+        currentHeadHash = computedHash.toHex();
+
+        // Verify computed hash matches expected hash from fixture
+        if ("blockHeader" in block && block.blockHeader.hash) {
+          const expectedBlockHash = block.blockHeader.hash.toHex();
+          if (currentHeadHash !== expectedBlockHash) {
+            yield* Console.log(
+              `Block ${
+                blockIndex + 1
+              } hash mismatch: computed=${currentHeadHash}, expected=${expectedBlockHash}`,
+            );
+          }
+          expect(currentHeadHash).toBe(expectedBlockHash);
+        }
+      }
+
+      // STEP 8: Compare hash of current head against lastblockhash
+      const expectedLastBlockHash = fixture.lastblockhash.toHex();
+      if (currentHeadHash !== expectedLastBlockHash) {
+        yield* Console.log(
+          `Last block hash mismatch: current=${currentHeadHash}, expected=${expectedLastBlockHash}`,
         );
-        if (calculatedStateRootHex !== expectedStateRoot) {
+      }
+      expect(currentHeadHash).toBe(expectedLastBlockHash);
+
+      // STEP 9: Compare postState against current state
+      // Note: We only check accounts listed in postState here for detailed error messages.
+      // Any extra/missing accounts would already cause a state root mismatch in stateTransition,
+      // which validates computed state root against block.header.stateRoot.
+      for (const [address, expectedAccount] of Object.entries(
+        fixture.postState,
+      )) {
+        const actualAccount = yield* State.getAccount(
+          chain.state,
+          new Address({ value: bufferFromHex(address) }),
+        );
+
+        // Check nonce
+        if (actualAccount.nonce.value !== expectedAccount.nonce.value) {
           yield* Console.log(
-            `State root mismatch: calculated=${calculatedStateRootHex}, expected=${expectedStateRoot}`,
-          );
-          return yield* Effect.fail(
-            new Error("Calculated genesis state root does not match header"),
+            `Account ${address} nonce mismatch: actual=${
+              actualAccount.nonce.value
+            }, expected=${expectedAccount.nonce.value}`,
           );
         }
+        expect(actualAccount.nonce.value).toBe(expectedAccount.nonce.value);
 
-        // STEP 6: Set genesis as current head
-        let chain = BlockChain.empty(
-          new U64({ value: fixture.config.chainid.value }),
-        )
-          .withState(state)
-          .addBlock(decodedGenesis);
-
-        // Compute and verify genesis block hash
-        const computedGenesisHash = computeBlockHash(decodedGenesis.header);
-        let currentHeadHash = computedGenesisHash.value.toHex();
-        const expectedGenesisHash =
-          fixture.genesisBlockHeader.hash.value.toHex();
-        if (currentHeadHash !== expectedGenesisHash) {
+        // Check balance
+        if (actualAccount.balance.value !== expectedAccount.balance.value) {
           yield* Console.log(
-            `Genesis hash mismatch: computed=${currentHeadHash}, expected=${expectedGenesisHash}`,
-          );
-          return yield* Effect.fail(
-            new Error("Computed genesis block hash does not match fixture"),
+            `Account ${address} balance mismatch: actual=${
+              actualAccount.balance.value
+            }, expected=${expectedAccount.balance.value}`,
           );
         }
+        expect(actualAccount.balance.value).toBe(expectedAccount.balance.value);
 
-        // STEP 7: Process each block in fixture.blocks
-        for (
-          let blockIndex = 0;
-          blockIndex < fixture.blocks.length;
-          blockIndex++
-        ) {
-          const block = fixture.blocks[blockIndex];
-          const expectsException = "expectException" in block;
-
-          yield* Console.log(
-            `Processing block ${blockIndex + 1}/${fixture.blocks.length}${
-              expectsException
-                ? ` (expects exception: ${block.expectException})`
-                : ""
-            }`,
-          );
-
-          // 7.2: Attempt to decode RLP
-          const decodeResult = yield* decodeBlock(block.rlp).pipe(
-            Effect.result,
-          );
-
-          if (Result.isFailure(decodeResult)) {
-            // Decode failed
-            if (!expectsException) {
-              yield* Console.log(
-                `Block decode failed: ${decodeResult.failure}`,
-              );
-              return yield* Effect.fail(
-                new Error("Block decode failed but no exception expected"),
-              );
-            }
-            // Expected decode failure - check if the error matches expected exception
-            // RLP decode errors map to RLP_STRUCTURES_ENCODING
-            const { matches, actualException, expectedOptions } =
-              matchesExpectedException(
-                // Create an error object with RLP tag for matching
-                {
-                  _tag: "EthereumException/InvalidBlock/RlpStructuresEncodingError",
-                },
-                block.expectException,
-              );
-
-            yield* Console.log(
-              `Decode exception expected: ${block.expectException}`,
-            );
-            yield* Console.log(
-              `  Actual exception: ${actualException ?? "RLP decode error"}`,
-            );
-
-            if (!matches) {
-              // Check if any expected option is RLP related
-              const isRlpExpected = expectedOptions.some(
-                (opt) =>
-                  opt.includes("RLP") ||
-                  opt.includes("TYPE_3_TX_WITH_FULL_BLOBS"),
-              );
-              if (!isRlpExpected) {
-                return yield* Effect.fail(
-                  new Error(
-                    `Decode exception mismatch: expected ${expectedOptions.join(
-                      " | ",
-                    )}, got RLP decode error`,
-                  ),
-                );
-              }
-            }
-            // Expected decode failure - this is the last block per spec
-            yield* Console.log("Expected decode failure occurred");
-            break;
-          }
-
-          const decodedBlock = decodeResult.success;
-
-          // For transition forks, resolve the appropriate fork based on block timestamp
-          const blockForkLayer = isTransitionFork(fixture.network)
-            ? yield* resolveForkForTimestamp(
-                fixture.network,
-                decodedBlock.header.timestamp.value,
-              )
-            : forkLayer;
-
-          // 7.3: Attempt to apply block
-          const applyResult = yield* stateTransition(chain, decodedBlock).pipe(
-            Effect.provide(blockForkLayer),
-            Effect.result,
-          );
-
-          if (Result.isFailure(applyResult)) {
-            // Apply failed
-            if (!expectsException) {
-              yield* Console.log(`Block apply failed: ${applyResult.failure}`);
-              return yield* Effect.fail(
-                new Error(`Block apply failed: ${applyResult.failure}`),
-              );
-            }
-            // Expected exception - verify it matches
-            const actualError = applyResult.failure;
-            const { matches, actualException, expectedOptions } =
-              matchesExpectedException(actualError, block.expectException);
-
-            yield* Console.log(`Exception expected: ${block.expectException}`);
-            yield* Console.log(
-              `  Actual exception: ${actualException ?? "UNKNOWN (no mapping)"}`,
-            );
-
-            if (!matches) {
-              // Special handling: INVALID_BLOCK is acceptable for RLP/blob-related expected exceptions
-              // These are low-level structural errors that our implementation may not distinguish
-              const isRlpOrBlobExpected = expectedOptions.some(
-                (opt) =>
-                  opt.includes("RLP") ||
-                  opt.includes("TYPE_3_TX_WITH_FULL_BLOBS"),
-              );
-              if (
-                isRlpOrBlobExpected &&
-                actualException === "BlockException.INVALID_BLOCK"
-              ) {
-                yield* Console.log(
-                  `  (INVALID_BLOCK accepted for RLP/blob-related expected exception)`,
-                );
-                break;
-              }
-
-              const errorTag =
-                actualError !== null &&
-                typeof actualError === "object" &&
-                "_tag" in actualError
-                  ? String(actualError._tag)
-                  : "unknown";
-              return yield* Effect.fail(
-                new Error(
-                  actualException === null
-                    ? `Unmapped exception: got error tag "${errorTag}", expected one of: ${expectedOptions.join(
-                        " | ",
-                      )}`
-                    : `Exception mismatch: expected ${expectedOptions.join(
-                        " | ",
-                      )}, got ${actualException}`,
-                ),
-              );
-            }
-            break;
-          }
-
-          // Apply succeeded
-          if (expectsException) {
-            return yield* Effect.fail(
-              new Error(
-                `Expected exception ${block.expectException} but block applied successfully`,
-              ),
-            );
-          }
-
-          chain = applyResult.success;
-
-          // Compute the actual block hash from the processed block header
-          const lastBlock = chain.blocks[chain.blocks.length - 1];
-          const computedHash = computeBlockHash(lastBlock.header);
-          currentHeadHash = computedHash.value.toHex();
-
-          // Verify computed hash matches expected hash from fixture
-          if ("blockHeader" in block && block.blockHeader.hash) {
-            const expectedBlockHash = block.blockHeader.hash.value.toHex();
-            if (currentHeadHash !== expectedBlockHash) {
-              yield* Console.log(
-                `Block ${
-                  blockIndex + 1
-                } hash mismatch: computed=${currentHeadHash}, expected=${expectedBlockHash}`,
-              );
-            }
-            expect(currentHeadHash).toBe(expectedBlockHash);
-          }
+        // Check code
+        const actualCodeHex = actualAccount.code.toHex();
+        const expectedCodeHex = expectedAccount.code.toHex();
+        if (actualCodeHex !== expectedCodeHex) {
+          yield* Console.log(`Account ${address} code mismatch`);
         }
+        expect(actualCodeHex).toBe(expectedCodeHex);
 
-        // STEP 8: Compare hash of current head against lastblockhash
-        const expectedLastBlockHash = fixture.lastblockhash.value.toHex();
-        if (currentHeadHash !== expectedLastBlockHash) {
-          yield* Console.log(
-            `Last block hash mismatch: current=${currentHeadHash}, expected=${expectedLastBlockHash}`,
-          );
-        }
-        expect(currentHeadHash).toBe(expectedLastBlockHash);
-
-        // STEP 9: Compare postState against current state
-        // Note: We only check accounts listed in postState here for detailed error messages.
-        // Any extra/missing accounts would already cause a state root mismatch in stateTransition,
-        // which validates computed state root against block.header.stateRoot.
-        for (const [address, expectedAccount] of Object.entries(
-          fixture.postState,
+        // Check storage (only slots listed in expected - extra slots cause state root mismatch)
+        for (const [slot, expectedValue] of Object.entries(
+          expectedAccount.storage,
         )) {
-          const actualAccount = yield* State.getAccount(
+          const actualValue = yield* State.getStorage(
             chain.state,
             new Address({ value: bufferFromHex(address) }),
+            new Bytes32({ value: bufferFromHex(slot) }),
           );
+          const actualValueHex = actualValue.toBeBytes32().toHex();
+          // Pad expected value to 32 bytes (64 hex chars) for proper comparison
+          const expectedValueHex = U256.fromBeBytes(expectedValue.value)
+            .toBeBytes32()
+            .toHex();
 
-          // Check nonce
-          if (actualAccount.nonce.value !== expectedAccount.nonce.value) {
+          if (actualValueHex !== expectedValueHex) {
             yield* Console.log(
-              `Account ${address} nonce mismatch: actual=${
-                actualAccount.nonce.value
-              }, expected=${expectedAccount.nonce.value}`,
+              `Account ${address} storage[${slot}] mismatch: actual=${actualValueHex}, expected=${expectedValueHex}`,
             );
           }
-          expect(actualAccount.nonce.value).toBe(expectedAccount.nonce.value);
-
-          // Check balance
-          if (actualAccount.balance.value !== expectedAccount.balance.value) {
-            yield* Console.log(
-              `Account ${address} balance mismatch: actual=${
-                actualAccount.balance.value
-              }, expected=${expectedAccount.balance.value}`,
-            );
-          }
-          expect(actualAccount.balance.value).toBe(
-            expectedAccount.balance.value,
-          );
-
-          // Check code
-          const actualCodeHex = actualAccount.code.value.toHex();
-          const expectedCodeHex = expectedAccount.code.value.toHex();
-          if (actualCodeHex !== expectedCodeHex) {
-            yield* Console.log(`Account ${address} code mismatch`);
-          }
-          expect(actualCodeHex).toBe(expectedCodeHex);
-
-          // Check storage (only slots listed in expected - extra slots cause state root mismatch)
-          for (const [slot, expectedValue] of Object.entries(
-            expectedAccount.storage,
-          )) {
-            const actualValue = yield* State.getStorage(
-              chain.state,
-              new Address({ value: bufferFromHex(address) }),
-              new Bytes32({ value: bufferFromHex(slot) }),
-            );
-            const actualValueHex = actualValue.toBeBytes32().value.toHex();
-            // Pad expected value to 32 bytes (64 hex chars) for proper comparison
-            const expectedValueHex = U256.fromBeBytes(expectedValue.value)
-              .toBeBytes32()
-              .value.toHex();
-
-            if (actualValueHex !== expectedValueHex) {
-              yield* Console.log(
-                `Account ${address} storage[${slot}] mismatch: actual=${actualValueHex}, expected=${expectedValueHex}`,
-              );
-            }
-            expect(actualValueHex).toBe(expectedValueHex);
-          }
+          expect(actualValueHex).toBe(expectedValueHex);
         }
-      });
-
-      try {
-        await Effect.gen(function* () {
-          yield* Effect.log(`Running test case: ${testCaseIndex.id}`);
-          const fixture =
-            yield* Schema.decodeUnknownEffect(BlockchainTest)(testCaseRaw);
-          yield* runBlockchainTest(fixture);
-        }).pipe(runWithTestLogger);
-        // Mark as passed - afterEach will handle the caching
-        testState.passed = true;
-      } catch (error) {
-        testState.error = error;
-        throw error;
       }
-    },
-    TEST_CONFIG,
-  );
+    });
+
+    try {
+      await Effect.gen(function* () {
+        yield* Effect.log(`Running test case: ${testCaseIndex.id}`);
+        const fixture =
+          yield* Schema.decodeUnknownEffect(BlockchainTest)(testCaseRaw);
+        yield* runBlockchainTest(fixture);
+      }).pipe(runWithTestLogger);
+      // Mark as passed - afterEach will handle the caching
+      testState.passed = true;
+    } catch (error) {
+      testState.error = error;
+      throw error;
+    }
+  });
 });

@@ -1,6 +1,6 @@
-import { describe, expect, test } from "bun:test";
 import { Schema } from "effect";
 import solc from "solc";
+import { describe, expect, test } from "vitest";
 import { CompilerInput } from "./input.js";
 import { CompilerOutput } from "./output.js";
 

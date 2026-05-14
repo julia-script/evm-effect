@@ -1,7 +1,7 @@
 export const bufferToHex = (
   value: Uint8Array<ArrayBufferLike>,
 ): `0x${string}` => {
-  if ("toHex" in value) {
+  if ("toHex" in value && typeof value.toHex === "function") {
     return `0x${value.toHex()}` as `0x${string}`;
   }
   let out: `0x${string}` = "0x";
@@ -15,7 +15,7 @@ export const bufferFromHex = (string: string): Uint8Array<ArrayBufferLike> => {
   if (string.startsWith("0x")) {
     string = string.slice(2);
   }
-  if ("fromHex" in Uint8Array) {
+  if (typeof Uint8Array.fromHex === "function") {
     return Uint8Array.fromHex(string);
   }
   if (typeof string !== "string") {

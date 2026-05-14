@@ -1,5 +1,5 @@
 import { Address, Bytes, Bytes20, Uint } from "@evm-effect/ethereum-types";
-import { bufferFromHex } from "@evm-effect/shared/bytes";
+import { bufferFromHex, bufferToHex } from "@evm-effect/shared/bytes";
 // import { HashMapFromRecord } from "@evm-effect/shared/hashmap";
 import { Effect, Option, Schema, SchemaGetter, SchemaIssue } from "effect";
 import { isBigInt, isString, isUint8Array } from "effect/Predicate";
@@ -83,10 +83,10 @@ const Uint8ArrayFromHex = Schema.String.pipe(
       if (fromA.startsWith("0x")) {
         fromA = fromA.slice(2);
       }
-      return Effect.succeed(Uint8Array.fromHex(fromA));
+      return Effect.succeed(bufferFromHex(fromA));
     }),
     encode: SchemaGetter.transformOrFail((toI) =>
-      Effect.succeed(`0x${toI.toHex()}`),
+      Effect.succeed(bufferToHex(toI)),
     ),
   }),
 );
@@ -149,7 +149,7 @@ const TransactionFix = Schema.Struct({
           : undefined,
       ),
       encode: SchemaGetter.transform((value) =>
-        value ? `0x${value.value.value.toHex()}` : "",
+        value ? bufferToHex(value.value.value) : "",
       ),
     }),
     Schema.optional,
@@ -443,7 +443,7 @@ export function* flattenStateTestFixtures(fixture: typeof StateTestFix.Type) {
       return {
         ...rest,
         fork,
-        hash: fixture._info.hash.value.toHex().slice(0, 8),
+        hash: bufferToHex(fixture._info.hash.value).slice(0, 8),
         transaction: {
           ...transaction,
           gasLimit: transaction.gasLimit[index],

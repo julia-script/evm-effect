@@ -7,19 +7,19 @@
     "build": "tsc -b tsconfig.build.json",
     "dev": "tsc -b tsconfig.build.json --watch",
     "check": "tsc -b tsconfig.json",
-    "hello-world": "bun run src/hello-world.ts",
-    "blockchain-transaction": "bun run src/blockchain-transaction.ts",
-    "deploy-contract": "bun run src/deploy-contract.ts"
+    "hello-world": "tsx src/hello-world.ts",
+    "blockchain-transaction": "tsx src/blockchain-transaction.ts",
+    "deploy-contract": "tsx src/deploy-contract.ts"
   },
   "dependencies": {
     "@evm-effect/crypto": "workspace:*",
-    "@evm-effect/evm": "workspace:*",
     "@evm-effect/ethereum-types": "workspace:*",
+    "@evm-effect/evm": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "catalog:",
-    "@types/node": "^24.10.0",
+    "@types/node": "^24.8.1",
+    "tsx": "^4.21.0",
     "typescript": "catalog:"
   }
 }

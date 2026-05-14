@@ -31,10 +31,10 @@
     }
   },
   "scripts": {
-    "build": "bun run build:worker && tsc --build tsconfig.build.json",
-    "build:worker": "bun rspack build",
+    "build": "pnpm run build:worker && tsc --build tsconfig.build.json",
+    "build:worker": "rspack build",
     "dev": "tsc --build tsconfig.build.json --watch",
-    "test": "bun test",
+    "test": "vitest run",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -48,12 +48,13 @@
     "ts-dedent": "^2.2.0"
   },
   "devDependencies": {
-    "@effect/platform-bun": "catalog:",
+    "@effect/platform-node": "catalog:",
     "@evm-effect/shared": "workspace:*",
     "@rspack/cli": "^1.7.9",
     "@rspack/core": "^1.7.9",
-    "@types/bun": "catalog:",
     "fast-check": "catalog:",
-    "tsdown": "^0.21.4"
+    "tsdown": "^0.21.4",
+    "typescript": "catalog:",
+    "vitest": "^3.2.4"
   }
 }

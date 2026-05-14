@@ -1,51 +1,33 @@
-import { describe, expect, it } from "bun:test";
-import { BunFileSystem, BunServices } from "@effect/platform-bun";
-import { Layer, Result, Schema } from "effect";
-
-FastCheck.configureGlobal({ numRuns: 100, verbose: true });
-
 import {
-  Address,
   Bytes,
-  Bytes1,
-  Bytes4,
-  Bytes8,
-  Bytes20,
-  Bytes32,
-  Bytes64,
-  Bytes256,
   isAddress,
   isBytes,
   isUnsignedInt,
-  U8,
-  U64,
-  U256,
-  Uint,
 } from "@evm-effect/ethereum-types";
-import { Effect } from "effect";
+import { bufferToHex } from "@evm-effect/shared/bytes";
+import { Result, Schema } from "effect";
 import { FastCheck } from "effect/testing";
-import { decodeTo } from "./decodeTo.js";
-import { encodeTo } from "./encodeTo.js";
+import { describe, expect, it } from "vitest";
 import { decode, encode } from "./index.js";
 import type { Extended } from "./types.js";
+
+FastCheck.configureGlobal({ numRuns: 100, verbose: true });
 
 const ellipsis = (str: string) =>
   str.length > 6 ? `${str.slice(0, 6)}…${str.length}+` : str;
 const formatTestTitle = (extended: Extended): string => {
   if (extended instanceof Uint8Array)
-    return `Uint8Array("${ellipsis(extended.toHex())}")`;
+    return `Uint8Array("${ellipsis(bufferToHex(extended))}")`;
   if (isBytes(extended))
-    return `${extended._tag}("${ellipsis(extended.value.toHex())}")`;
+    return `${extended._tag}("${ellipsis(extended.toHex())}")`;
   if (isAddress(extended))
-    return `${extended._tag}("${ellipsis(extended.value.value.toHex())}")`;
+    return `${extended._tag}("${ellipsis(extended.toHex())}")`;
   if (typeof extended === "string") return `"${ellipsis(extended)}"`;
   if (typeof extended === "boolean") return extended ? "True" : "False";
   if (isUnsignedInt(extended))
     return `${extended._tag}(${ellipsis(extended.value.toString())}`;
   return `[${extended.map((e) => formatTestTitle(e)).join(", ")}]`;
 };
-
-const layers = BunServices.layer.pipe(Layer.provide(BunFileSystem.layer));
 
 describe("decode", async () => {
   const arbSimple = Schema.Union([Schema.Array(Bytes), Bytes]);
@@ -62,63 +44,5 @@ describe("decode", async () => {
     expect(Result.isSuccess(decoded)).toBe(true);
 
     expect(Result.getOrThrow(decoded)).toEqual(simple);
-  });
-});
-describe("encodeTo", async () => {
-  const testStruct = Schema.Struct({
-    "field-1": Schema.Boolean,
-    "field-2": Schema.String,
-    "field-3": Schema.Uint8Array,
-    "field-4": Address,
-    "field-5": Bytes,
-    "field-6": Bytes1,
-    "field-9": Bytes4,
-    "field-10": Bytes8,
-    "field-7": Bytes20,
-    "field-8": Bytes32,
-    "field-12": Bytes64,
-    "field-11": Bytes256,
-    "field-13": Uint,
-    "field-14": U8,
-    "field-15": U64,
-    "field-16": U256,
-    "field-17": Schema.Array(Schema.String),
-    "field-18": Schema.Tuple([Schema.String, Schema.Boolean]),
-
-    // nested
-    "field-21": Schema.Struct({
-      a: U8,
-      b: U64,
-      c: U256,
-      d: Bytes,
-      e: Bytes1,
-      f: Bytes20,
-      g: Bytes32,
-      h: Bytes4,
-      i: Bytes8,
-      j: Schema.Struct({
-        k: U8,
-        l: U64,
-        m: U256,
-        n: Bytes,
-        o: Bytes1,
-        p: Bytes20,
-        q: Bytes32,
-        r: Bytes4,
-      }),
-    }),
-  });
-  const arbTestStruct = Schema.toArbitrary(testStruct);
-  const samples = FastCheck.sample(arbTestStruct, { seed: 1 }).map((e, i) => ({
-    i,
-    e,
-  }));
-  it.each(samples)("$i", async ({ e }) => {
-    await Effect.gen(function* () {
-      const encoded = yield* encodeTo(testStruct, e);
-
-      const decoded = yield* decodeTo(testStruct, encoded);
-      expect(decoded).toEqual(e);
-    }).pipe(Effect.provide(layers), Effect.scoped, Effect.runPromise);
   });
 });

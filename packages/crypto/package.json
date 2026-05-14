@@ -32,7 +32,7 @@
   "scripts": {
     "build": "tsc --build tsconfig.build.json",
     "dev": "tsc --build tsconfig.build.json --watch",
-    "test": "bun test",
+    "test": "vitest run",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -46,9 +46,8 @@
     "viem": "^2.38.3"
   },
   "devDependencies": {
-    "@effect/platform-bun": "catalog:",
     "@evm-effect/shared": "workspace:*",
-    "@types/bun": "catalog:",
-    "fast-check": "catalog:"
+    "fast-check": "catalog:",
+    "vitest": "^3.2.4"
   }
 }

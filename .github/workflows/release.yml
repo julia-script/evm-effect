@@ -21,20 +21,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.0
-
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
+      - uses: ./.github/actions/ci-setup
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
         with:
-          version: bun run ci:version
-          publish: bun run ci:publish
+          version: pnpm run ci:version
+          publish: pnpm run ci:publish
           commit: Version Packages
           title: Version Packages
         env:
