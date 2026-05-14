@@ -1,5 +1,14 @@
 # @evm-effect/examples
 
+## 0.0.23
+
+### Patch Changes
+
+- Updated dependencies [[`207d868`](https://github.com/julia-script/evm-effect/commit/207d868ade8d9d751edf9c352996ae2cdb2a89d3)]:
+  - @evm-effect/ethereum-types@0.0.9
+  - @evm-effect/crypto@0.2.10
+  - @evm-effect/evm@0.1.3
+
 ## 0.0.22
 
 ### Patch Changes
