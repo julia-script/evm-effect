@@ -1,11 +1,6 @@
 import * as path from "node:path";
 import { parseArgs } from "node:util";
-import {
-  LIMIT,
-  resolveFork,
-  runWithTestLogger,
-  SKIP,
-} from "./fixtures-helpers.js";
+import { resolveFork, runWithTestLogger, SKIP } from "./fixtures-helpers.js";
 import {
   flattenStateTestFixtures,
   type Index,
@@ -236,20 +231,30 @@ type TestState = {
   startTime: number;
   error: unknown;
 };
-
-let stateTests = [...casesByFormat.state_test.values()]
-  .slice(SKIP, LIMIT ? SKIP + LIMIT : undefined)
-  .map((value, index) => ({
-    ...value,
-    index: SKIP + index,
-  }));
 const args = parseArgs({
   options: {
     filter: {
       type: "string",
     },
+    skip: {
+      type: "string",
+      default: process.env.SKIP,
+    },
+    limit: {
+      type: "string",
+      default: process.env.LIMIT ?? undefined,
+    },
   },
 });
+const skip = Number(args.values.skip || 0);
+const limit = args.values.limit ? Number(args.values.limit) : undefined;
+let stateTests = [...casesByFormat.state_test.values()]
+  .slice(skip, limit ? skip + limit : undefined)
+  .map((value, index) => ({
+    ...value,
+    index: SKIP + index,
+  }));
+
 const filter = args.values.filter;
 if (filter) {
   stateTests = stateTests.filter(
@@ -270,7 +275,9 @@ for (const testCase of stateTests) {
     error: undefined,
   };
 
-  console.log(`Running test case: ${testCase.shortHash} - ${testCase.id}`);
+  console.log(
+    `[${skip + testCase.index}] Running test case: ${testCase.shortHash} - ${testCase.id}`,
+  );
 
   // afterEach(async () => {
   // if (testState.shortHash && !testState.skipped) {
@@ -584,6 +591,7 @@ for (const testCase of stateTests) {
       transaction,
       new Uint({ value: BigInt(0) }),
     ).pipe(Effect.result);
+    console.log(processTransactionResult);
     if (post.expectException) {
       if (Result.isSuccess(processTransactionResult)) {
         return yield* Effect.fail(
@@ -593,6 +601,7 @@ for (const testCase of stateTests) {
         );
       }
       const actualError = processTransactionResult.failure;
+      // console.log(actualError);
       const { matches, actualException, expectedOptions } =
         matchesExpectedException(actualError, post.expectException);
 
@@ -790,6 +799,7 @@ for (const testCase of stateTests) {
       yield* Effect.log(testCaseRaw);
       const fixturesSource =
         yield* Schema.decodeUnknownEffect(StateTestFix)(testCaseRaw);
+      yield* Console.log(fixturesSource._info.description);
       for (const fixture of flattenStateTestFixtures(fixturesSource)) {
         const fork = yield* resolveFork(fixture.fork);
         yield* runStateTest(fixture).pipe(Effect.provide(fork));

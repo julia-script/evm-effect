@@ -1,7 +1,8 @@
 import { keccak256 } from "@evm-effect/crypto";
 import { Bytes, U256, Uint } from "@evm-effect/ethereum-types";
+import { uint8ArrayEquals } from "@evm-effect/ethereum-types/utils";
 import rlp from "@evm-effect/rlp";
-import { Hash, Schema } from "effect";
+import { Equal, Hash, Schema } from "effect";
 
 /**
  * State associated with an Ethereum address
@@ -64,9 +65,19 @@ export class Account extends Schema.TaggedClass<Account>("Account")("Account", {
     const code = keccak256(this.code);
     return rlp.encode([this.nonce, this.balance, storageRoot, code]);
   }
+
+  [Equal.symbol](that: Equal.Equal): boolean {
+    if (!(that instanceof Account)) {
+      return false;
+    }
+    const encoded = this.encode(new Bytes({ value: new Uint8Array(0) }));
+    const thatEncoded = that.encode(new Bytes({ value: new Uint8Array(0) }));
+    return uint8ArrayEquals(encoded.value, thatEncoded.value);
+    // return Equal.equals(this.nonce, that.nonce) && Equal.equals(this.balance, that.balance) && Equal.equals(this.code, that.code);
+  }
   [Hash.symbol](): number {
     const encoded = this.encode(new Bytes({ value: new Uint8Array(0) }));
-    return encoded[Hash.symbol]();
+    return Hash.hash(encoded.value);
   }
 }
 

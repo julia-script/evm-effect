@@ -490,6 +490,13 @@ export const getAccount = Effect.fn("getAccount")(function* (
   return account;
 });
 
+export const getAccountOptional = Effect.fn("getAccountOptional")(function* (
+  state: State,
+  address: Address,
+): Effect.fn.Return<Account | null, never, never> {
+  return yield* state.getAccount(address);
+});
+
 /**
  * Set the `Account` object at an address. Setting to `null` deletes
  * the account (but not its storage, see `destroyAccount()`).
@@ -912,6 +919,7 @@ export default {
 
   rollbackTransaction,
   getAccount,
+  getAccountOptional,
   updateAccountBalance,
   setAccount,
   destroyAccount,

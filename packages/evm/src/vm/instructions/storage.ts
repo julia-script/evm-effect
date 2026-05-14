@@ -94,7 +94,7 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
 
     // Get original and current values
     const originalValue = yield* state.getStorageOriginal(currentTarget, key);
-    const currentValue = yield* State.getStorage(state, currentTarget, key);
+    const currentValue = yield* state.getStorage(currentTarget, key);
 
     const fork = yield* Fork;
     let gasCost = new Uint({ value: 0n });
