@@ -243,11 +243,26 @@ const executeLoop: () => Effect.Effect<void, EthereumException, Evm | Fork> =
       i++;
       if (i % 100000 === 0) {
         yield* Effect.yieldNow;
-        // yield* Console.log(`${i} - ${Date.now() - startTime}ms, gasLeft: ${evm.gasLeft}`)
+
         const gasUsed = startGas - evm.gasLeft;
+
         const progress = Number(gasUsed) / Number(startGas);
         const time = Date.now() - startTime;
-        const status = `${encodeProgressBar(progress, 30)} gasLeft: ${evm.gasLeft}/${startGas} - ${(time / 1000).toFixed(2)}s`;
+        let status = `${encodeProgressBar(progress, 30)} gasLeft: ${evm.gasLeft}/${startGas} - ${(time / 1000).toFixed(2)}s`;
+        if (process.memoryUsage) {
+          const heapSizeLimit = (
+            globalThis as unknown as { _heap_size_limit: number | undefined }
+          )._heap_size_limit as number | undefined;
+
+          if (heapSizeLimit) {
+            const memory = process.memoryUsage();
+            const used = memory.heapTotal;
+            const total = heapSizeLimit;
+            const usedInMb = used / (1024 * 1024);
+            const totalInMb = total / (1024 * 1024);
+            status += ` - memory: ${usedInMb.toFixed(2)}MB / ${totalInMb.toFixed(2)}MB`;
+          }
+        }
         yield* Console.log(status);
       }
     }

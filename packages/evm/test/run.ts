@@ -1,5 +1,6 @@
 import * as path from "node:path";
 import { parseArgs } from "node:util";
+import { getHeapStatistics } from "node:v8";
 import { resolveFork, runWithTestLogger, SKIP } from "./fixtures-helpers.js";
 import {
   flattenStateTestFixtures,
@@ -8,6 +9,11 @@ import {
   StateTestFix,
 } from "./fixtures-schemas.js";
 
+const heapStats = getHeapStatistics();
+Object.defineProperty(globalThis, "_heap_size_limit", {
+  value: heapStats.heap_size_limit,
+  writable: false,
+});
 // START OF THE INDEX LOADING
 //
 //
