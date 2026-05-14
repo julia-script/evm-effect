@@ -1,5 +1,25 @@
 # @evm-effect/shared
 
+## 0.0.8
+
+### Patch Changes
+
+- [`b8770d3`](https://github.com/julia-script/evm-effect/commit/b8770d32742e4d328a92f0840528f476b06a3095) Thanks [@julia-script](https://github.com/julia-script)! - `HashMap.getHash` now falls back to `Hash.hash` for unknown key shapes instead of throwing, and `HashMap.equals` compares keys using that same numeric hash path so equality matches `HashMap` bucketing.
+
+  The EVM switches deposit-log, account-empty, trie-default, and storage-key checks from `Equal.equals` to `HashMap.equals`. `Account` defines `Hash.symbol` from its encoded form so hashing lines up with trie and map usage. `executeLoop` is named for clearer CPU profiles.
+
+  Fixture cache reads use Node `fs` instead of `Bun.file`. `.gitignore` ignores `.tmp-*/`. Adds `packages/evm/test/run.ts` as an indexed fixture test runner entrypoint.
+
+- [#24](https://github.com/julia-script/evm-effect/pull/24) [`8482f85`](https://github.com/julia-script/evm-effect/commit/8482f85d2a06a42fb2c2b1003968dc7ed21ad566) Thanks [@julia-script](https://github.com/julia-script)! - **HashMap collisions:** buckets now store an array of entries per hash slot so distinct keys that share a numeric hash no longer overwrite each other. Lookups use `Equal.equals` on keys instead of treating equal hash codes as equal keys. `HashMap.getHash` delegates to `Hash.hash` for a single consistent hash path.
+
+  `HashSet` and EVM/state helpers align with the stricter map semantics; related bytes and type tweaks ship alongside.
+
+- [`b7aabcc`](https://github.com/julia-script/evm-effect/commit/b7aabcc00bdc32f055e85d8533c5395365d2aa00) Thanks [@julia-script](https://github.com/julia-script)! - `HashMap` and `HashSet` no longer rely on Effect’s built-in `Hash` caching, which now uses a `WeakMap` and could not retain hashes for the volume of distinct key objects used in the EVM. Keys that expose `Hash.symbol` still use the same numeric hash function; the result is memoized on the object via a dedicated symbol so lookups stay stable without the WeakMap cache.
+
+  `State` exposes trie and transaction-snapshot fields for profiling and inspection. Repository `.gitignore` now ignores `*.heapsnapshot` files.
+
+- [`f2e6fc8`](https://github.com/julia-script/evm-effect/commit/f2e6fc81526d4b4475935648a456cccce73ca708) Thanks [@julia-script](https://github.com/julia-script)! - **Tooling:** Migrate the monorepo from Bun to **pnpm**, **Node 22+**, and **Vitest**. GitHub Actions and the release flow use pnpm installs and `pnpm publish -r` with Changesets. Replace `@effect/platform-bun` with `@effect/platform-node` where tests or scripts needed a runtime. Examples use `tsx` instead of `bun run`.
+
 ## 0.0.7
 
 ### Patch Changes
