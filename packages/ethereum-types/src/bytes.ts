@@ -107,7 +107,7 @@ export class Bytes0 extends Schema.TaggedClass<Bytes0>("Bytes0")("Bytes0", {
  * Fixed-size byte array of exactly 1 byte
  */
 export class Bytes1 extends Schema.TaggedClass<Bytes1>("Bytes1")("Bytes1", {
-  value: Schema.instanceOf(Uint8Array),
+  value: Schema.Uint8Array,
 }) {
   static readonly LENGTH = 1;
 
@@ -148,7 +148,7 @@ export class Bytes1 extends Schema.TaggedClass<Bytes1>("Bytes1")("Bytes1", {
  * Fixed-size byte array of exactly 4 bytes
  */
 export class Bytes4 extends Schema.TaggedClass<Bytes4>("Bytes4")("Bytes4", {
-  value: Schema.instanceOf(Uint8Array),
+  value: Schema.Uint8Array,
 }) {
   static readonly LENGTH = 4;
 
@@ -188,7 +188,7 @@ export class Bytes4 extends Schema.TaggedClass<Bytes4>("Bytes4")("Bytes4", {
  * Fixed-size byte array of exactly 8 bytes
  */
 export class Bytes8 extends Schema.TaggedClass<Bytes8>("Bytes8")("Bytes8", {
-  value: Schema.instanceOf(Uint8Array),
+  value: Schema.Uint8Array,
 }) {
   static readonly LENGTH = 8;
 
@@ -229,7 +229,7 @@ export class Bytes8 extends Schema.TaggedClass<Bytes8>("Bytes8")("Bytes8", {
  * Fixed-size byte array of exactly 20 bytes (Ethereum addresses)
  */
 export class Bytes20 extends Schema.TaggedClass<Bytes20>("Bytes20")("Bytes20", {
-  value: Schema.instanceOf(Uint8Array),
+  value: Schema.Uint8Array,
 }) {
   static readonly LENGTH = 20;
 
@@ -317,7 +317,7 @@ export class Bytes32 extends Schema.TaggedClass<Bytes32>("Bytes32")("Bytes32", {
  * Fixed-size byte array of exactly 64 bytes
  */
 export class Bytes64 extends Schema.TaggedClass<Bytes64>("Bytes64")("Bytes64", {
-  value: Schema.instanceOf(Uint8Array),
+  value: Schema.Uint8Array,
 }) {
   static readonly LENGTH = 64;
 
@@ -359,7 +359,7 @@ export class Bytes64 extends Schema.TaggedClass<Bytes64>("Bytes64")("Bytes64", {
 export class Bytes256 extends Schema.TaggedClass<Bytes256>("Bytes256")(
   "Bytes256",
   {
-    value: Schema.instanceOf(Uint8Array),
+    value: Schema.Uint8Array,
   },
 ) {
   static readonly LENGTH = 256;

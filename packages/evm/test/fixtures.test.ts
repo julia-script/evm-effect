@@ -801,7 +801,7 @@ describe("StateTest", TEST_CONFIG, () => {
   );
 });
 
-describe("BlockchainTest", () => {
+describe("BlockchainTest", TEST_CONFIG, () => {
   const allBlockchainTests = [...casesByFormat.blockchain_test.values()];
   const totalBlockchainTests = allBlockchainTests.length;
 
@@ -837,7 +837,7 @@ describe("BlockchainTest", () => {
         index: SKIP + index,
         total: totalBlockchainTests,
       })),
-  )(`$shortHash - [$index/$total] $id`, async (testCaseIndex) => {
+  )(`$shortHash - [$index/$total] $id`, TEST_CONFIG, async (testCaseIndex) => {
     testState.shortHash = testCaseIndex.shortHash;
     testState.passed = false;
     testState.skipped = false;
