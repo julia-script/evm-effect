@@ -89,7 +89,7 @@ export const kzgPointEvaluation = Effect.gen(function* () {
     try: async () => {
       const kzgLib = await loadKZG();
 
-      const toHex = (bytes: Uint8Array) => `0x${bufferToHex(bytes)}`;
+      const toHex = (bytes: Uint8Array) => bufferToHex(bytes);
 
       const result = kzgLib.verifyKZGProof(
         toHex(commitment),

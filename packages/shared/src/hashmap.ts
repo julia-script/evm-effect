@@ -1,4 +1,4 @@
-import { Data, Hash, Schema } from "effect";
+import { Data, Equal, Hash, Schema } from "effect";
 export class Entry<K, V> {
   constructor(
     readonly key: K,
@@ -7,20 +7,20 @@ export class Entry<K, V> {
 }
 
 export class HashMap<K, V> extends Data.TaggedClass("HashMap")<{
-  readonly _map: Map<number, Entry<K, V>>;
+  readonly _map: Map<number, Entry<K, V>[]>;
 }> {
-  constructor(map: Map<number, Entry<K, V>>) {
+  constructor(map: Map<number, Entry<K, V>[]>) {
     super({ _map: map });
   }
 
   static fromIterable<K, V>(
     iterable: Iterable<[K, V]> | [K, V][],
   ): HashMap<K, V> {
-    const map = new Map<number, Entry<K, V>>();
+    const hashMap = new HashMap<K, V>(new Map());
     for (const [key, value] of iterable) {
-      map.set(HashMap.getHash(key), new Entry(key, value));
+      hashMap.set(key, value);
     }
-    return new HashMap(map);
+    return hashMap;
   }
 
   static empty<K, V>(): HashMap<K, V> {
@@ -29,55 +29,65 @@ export class HashMap<K, V> extends Data.TaggedClass("HashMap")<{
 
   static CachedHashSymbol = Symbol("CachedHash");
   static getHash(key: unknown): number {
-    if (key === null) return 0;
-    if (typeof key === "object" && HashMap.CachedHashSymbol in key) {
-      return key[HashMap.CachedHashSymbol as keyof typeof key] as number;
-    }
-    if (typeof key === "object" && Hash.symbol in key) {
-      const hash = (key[Hash.symbol as keyof typeof key] as () => number)();
-      Object.defineProperty(key, HashMap.CachedHashSymbol, {
-        value: hash,
-      });
-      return hash;
-    }
     return Hash.hash(key);
   }
   static equals(a: unknown, b: unknown): boolean {
-    return HashMap.getHash(a) === HashMap.getHash(b);
+    return Equal.equals(a, b);
   }
   set(key: K, value: V) {
     const hash = HashMap.getHash(key);
 
-    this._map.set(hash, new Entry(key, value));
+    let entries = this._map.get(hash) || [];
+    const index = entries.findIndex((entry) => Equal.equals(entry.key, key));
+    if (index === -1) {
+      entries = [...entries, new Entry(key, value)];
+    } else {
+      entries = entries.slice();
+      entries[index] = new Entry(key, value);
+    }
+    this._map.set(hash, entries);
   }
   get(key: K): V | undefined {
     const hash = HashMap.getHash(key);
-    return this._map.get(hash)?.value;
+    return this._map.get(hash)?.find((entry) => Equal.equals(entry.key, key))
+      ?.value;
   }
   remove(key: K) {
     const hash = HashMap.getHash(key);
-    this._map.delete(hash);
+    let entries = this._map.get(hash);
+    if (!entries) return;
+    const index = entries.findIndex((entry) => Equal.equals(entry.key, key));
+    if (index === -1) return;
+    entries = [...entries.slice(0, index), ...entries.slice(index + 1)];
+    if (entries.length === 0) {
+      this._map.delete(hash);
+    } else {
+      this._map.set(hash, entries);
+    }
   }
   has(key: K): boolean {
     const hash = HashMap.getHash(key);
-    return this._map.has(hash);
+    return (
+      this._map.get(hash)?.some((entry) => Equal.equals(entry.key, key)) ??
+      false
+    );
   }
-  getOrPut(key: K): {
-    existing: boolean;
-    entry: Entry<K, V | undefined>;
-  } {
-    const hash = HashMap.getHash(key);
-    const entry = this._map.get(hash);
-    if (entry) {
-      return { existing: true, entry };
-    }
-    const newEntry = new Entry(key, undefined);
-    this._map.set(hash, newEntry as never);
-    return { existing: false, entry: newEntry };
-  }
+  // getOrPut(key: K): {
+  //   existing: boolean;
+  //   entry: Entry<K, V | undefined>;
+  // } {
+  //   const hash = HashMap.getHash(key);
+  //   const entry = this._map.get(hash);
+  //   if (entry) {
+  //     return { existing: true, entry };
+  //   }
+  //   const newEntry = new Entry(key, undefined);
+  //   this._map.set(hash, newEntry as never);
+  //   return { existing: false, entry: newEntry };
+  // }
   *entries() {
     for (const entry of this._map.values()) {
-      yield entry;
+      yield* entry;
     }
   }
 
@@ -85,12 +95,12 @@ export class HashMap<K, V> extends Data.TaggedClass("HashMap")<{
     return this._map.size;
   }
   *keys() {
-    for (const entry of this._map.values()) {
+    for (const entry of this.entries()) {
       yield entry.key;
     }
   }
   *values() {
-    for (const entry of this._map.values()) {
+    for (const entry of this.entries()) {
       yield entry.value;
     }
   }
@@ -101,9 +111,7 @@ export class HashMap<K, V> extends Data.TaggedClass("HashMap")<{
     return new HashMap(new Map(this._map));
   }
   *[Symbol.iterator]() {
-    for (const entry of this._map.values()) {
-      yield entry;
-    }
+    yield* this.entries();
   }
 }
 

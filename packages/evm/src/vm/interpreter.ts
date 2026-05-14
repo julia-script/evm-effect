@@ -7,7 +7,7 @@
 import { type Address, Bytes, U256, Uint } from "@evm-effect/ethereum-types";
 import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { HashSet } from "@evm-effect/shared/hashset";
-import { Effect, Option, Ref } from "effect";
+import { Console, Effect, Option, Ref } from "effect";
 import { MessageCallOutput } from "../blocks/system.js";
 import {
   AddressCollisionError,
@@ -206,12 +206,21 @@ export const executeCode = Effect.fn("executeCode")(function* (
   return evm;
 });
 
+const encodeProgressBar = (progress: number, width = 20) => {
+  const filled = Math.floor(progress * width);
+  const bar = `[${"=".repeat(filled)}${" ".repeat(width - filled)}]`;
+  return `[${Math.floor(progress * 100)
+    .toString()
+    .padStart(3, " ")}%] ${bar}`;
+};
 const executeLoop: () => Effect.Effect<void, EthereumException, Evm | Fork> =
   Effect.fn("executeLoop")(function* executeLoop() {
     const evm = yield* Evm;
     const fork = yield* Fork;
 
     let i = 0;
+    const startTime = Date.now();
+    const startGas = evm.gasLeft;
     while (evm.running) {
       const pc = yield* Ref.get(evm.pc);
       const code = evm.code;
@@ -234,6 +243,12 @@ const executeLoop: () => Effect.Effect<void, EthereumException, Evm | Fork> =
       i++;
       if (i % 100000 === 0) {
         yield* Effect.yieldNow;
+        // yield* Console.log(`${i} - ${Date.now() - startTime}ms, gasLeft: ${evm.gasLeft}`)
+        const gasUsed = startGas - evm.gasLeft;
+        const progress = Number(gasUsed) / Number(startGas);
+        const time = Date.now() - startTime;
+        const status = `${encodeProgressBar(progress, 30)} gasLeft: ${evm.gasLeft}/${startGas} - ${(time / 1000).toFixed(2)}s`;
+        yield* Console.log(status);
       }
     }
     yield* evmTrace(EvmStop({ op: Ops.STOP }));

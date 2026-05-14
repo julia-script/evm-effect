@@ -148,7 +148,7 @@ const AddressFromHex = Schema.String.pipe(
     ),
     encode: SchemaGetter.transformOrFail((value) =>
       Effect.gen(function* () {
-        return yield* Effect.succeed(`0x${bufferToHex(value.value.value)}`);
+        return yield* Effect.succeed(bufferToHex(value.value.value));
       }),
     ),
   }),
@@ -179,7 +179,7 @@ const Uint8ArrayFromHex = Schema.String.pipe(
     ),
     encode: SchemaGetter.transformOrFail((value) =>
       Effect.gen(function* () {
-        return yield* Effect.succeed(`0x${bufferToHex(value)}`);
+        return yield* Effect.succeed(bufferToHex(value));
       }),
     ),
   }),

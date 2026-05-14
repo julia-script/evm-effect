@@ -25,9 +25,6 @@ export class Bytes extends Schema.TaggedClass<Bytes>("Bytes")("Bytes", {
     return this.value.length;
   }
   toHex(): `0x${string}` {
-    return `0x${bufferToHex(this.value)}`;
-  }
-  toUnprefixedHex(): string {
     return bufferToHex(this.value);
   }
 
@@ -74,7 +71,7 @@ export class Bytes extends Schema.TaggedClass<Bytes>("Bytes")("Bytes", {
  * Fixed-size byte array of exactly 0 bytes
  */
 export class Bytes0 extends Schema.TaggedClass<Bytes0>("Bytes0")("Bytes0", {
-  value: Schema.instanceOf(Uint8Array),
+  value: Schema.Uint8Array,
 }) {
   static readonly LENGTH = 0;
 
@@ -89,9 +86,6 @@ export class Bytes0 extends Schema.TaggedClass<Bytes0>("Bytes0")("Bytes0", {
     return new Bytes0({ value: new Uint8Array(0) });
   }
   toHex(): `0x${string}` {
-    return `0x${bufferToHex(this.value)}`;
-  }
-  toUnprefixedHex(): string {
     return bufferToHex(this.value);
   }
 
@@ -129,9 +123,6 @@ export class Bytes1 extends Schema.TaggedClass<Bytes1>("Bytes1")("Bytes1", {
     return new Bytes1({ value: new Uint8Array(this.value) });
   }
   toHex(): `0x${string}` {
-    return `0x${bufferToHex(this.value)}`;
-  }
-  toUnprefixedHex(): string {
     return bufferToHex(this.value);
   }
 
@@ -173,9 +164,6 @@ export class Bytes4 extends Schema.TaggedClass<Bytes4>("Bytes4")("Bytes4", {
     return new Bytes4({ value: new Uint8Array(this.value) });
   }
   toHex(): `0x${string}` {
-    return `0x${bufferToHex(this.value)}`;
-  }
-  toUnprefixedHex(): string {
     return bufferToHex(this.value);
   }
   static constant(value: Byteish): Bytes4 {
@@ -216,9 +204,6 @@ export class Bytes8 extends Schema.TaggedClass<Bytes8>("Bytes8")("Bytes8", {
     return new Bytes8({ value: new Uint8Array(this.value) });
   }
   toHex(): `0x${string}` {
-    return `0x${bufferToHex(this.value)}`;
-  }
-  toUnprefixedHex(): string {
     return bufferToHex(this.value);
   }
 
@@ -274,7 +259,7 @@ export class Bytes20 extends Schema.TaggedClass<Bytes20>("Bytes20")("Bytes20", {
   }
 }
 
-const padBuffer = (value: Uint8Array | undefined, length: number) => {
+export const padBuffer = (value: Uint8Array | undefined, length: number) => {
   if (!value) {
     return new Uint8Array(length);
   }
@@ -291,7 +276,7 @@ const padBuffer = (value: Uint8Array | undefined, length: number) => {
  * Fixed-size byte array of exactly 32 bytes (hashes, storage keys)
  */
 export class Bytes32 extends Schema.TaggedClass<Bytes32>("Bytes32")("Bytes32", {
-  value: Schema.instanceOf(Uint8Array),
+  value: Schema.Uint8Array,
 }) {
   static readonly LENGTH = 32;
 
@@ -307,9 +292,6 @@ export class Bytes32 extends Schema.TaggedClass<Bytes32>("Bytes32")("Bytes32", {
     return new Bytes32({ value: new Uint8Array(this.value) });
   }
   toHex(): `0x${string}` {
-    return `0x${bufferToHex(this.value)}`;
-  }
-  toUnprefixedHex(): string {
     return bufferToHex(this.value);
   }
 
@@ -351,9 +333,6 @@ export class Bytes64 extends Schema.TaggedClass<Bytes64>("Bytes64")("Bytes64", {
     return new Bytes64({ value: new Uint8Array(this.value) });
   }
   toHex(): `0x${string}` {
-    return `0x${bufferToHex(this.value)}`;
-  }
-  toUnprefixedHex(): string {
     return bufferToHex(this.value);
   }
 
@@ -398,9 +377,6 @@ export class Bytes256 extends Schema.TaggedClass<Bytes256>("Bytes256")(
   }
 
   toHex(): `0x${string}` {
-    return `0x${bufferToHex(this.value)}`;
-  }
-  toUnprefixedHex(): string {
     return bufferToHex(this.value);
   }
   static constant(value: Byteish): Bytes256 {

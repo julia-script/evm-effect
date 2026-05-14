@@ -1,15 +1,17 @@
-export const bufferToHex = (value: Uint8Array<ArrayBufferLike>): string => {
+export const bufferToHex = (
+  value: Uint8Array<ArrayBufferLike>,
+): `0x${string}` => {
   if ("toHex" in value) {
-    return value.toHex();
+    return `0x${value.toHex()}` as `0x${string}`;
   }
-  let out = "";
+  let out: `0x${string}` = "0x";
   for (let i = 0; i < (value as Uint8Array).length; ++i) {
     out += (value[i] as number).toString(16).padStart(2, "0");
   }
   return out;
 };
 
-export const bufferFromHex = (string: string): Uint8Array<ArrayBuffer> => {
+export const bufferFromHex = (string: string): Uint8Array<ArrayBufferLike> => {
   if (string.startsWith("0x")) {
     string = string.slice(2);
   }

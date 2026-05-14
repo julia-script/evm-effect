@@ -652,7 +652,10 @@ export const extcodehash: Effect.Effect<void, EthereumException, Evm | Fork> =
     }
 
     // OPERATION
-    const account = yield* evm.message.blockEnv.state.getAccount(addr);
+    const account = yield* State.getAccountOptional(
+      evm.message.blockEnv.state,
+      addr,
+    );
 
     let codehash: U256;
     if (account === null) {

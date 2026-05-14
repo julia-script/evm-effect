@@ -10,7 +10,12 @@ import { Equal, Hash, Result, Schema } from "effect";
 import type { Bytes32 } from "./bytes.js";
 import { Bytes, Bytes20, type Bytes256 } from "./bytes.js";
 import { EvmTypeError } from "./exceptions.js";
-import { type Byteish, hash, normalizeToUint8Array } from "./utils.js";
+import {
+  type Byteish,
+  hash,
+  normalizeToUint8Array,
+  uint8ArrayEquals,
+} from "./utils.js";
 
 /**
  * Ethereum address (20 bytes)
@@ -95,10 +100,7 @@ export class Address extends Schema.TaggedClass<Address>("Address")("Address", {
   static zero(): Address {
     return new Address({ value: new Bytes20({ value: new Uint8Array(20) }) });
   }
-  toHex(): string {
-    return `0x${bufferToHex(this.value.value)}`;
-  }
-  toUnprefixedHex(): string {
+  toHex(): `0x${string}` {
     return bufferToHex(this.value.value);
   }
   static constant(value: Byteish): Address {
@@ -111,7 +113,7 @@ export class Address extends Schema.TaggedClass<Address>("Address")("Address", {
       return false;
     }
     if ("value" in that) {
-      return hash(this.value.value) === hash(that.value.value);
+      return uint8ArrayEquals(this.value.value, that.value.value);
     }
     return false;
   }
