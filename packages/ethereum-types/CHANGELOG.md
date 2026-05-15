@@ -1,5 +1,11 @@
 # @evm-effect/ethereum-types
 
+## 0.0.9
+
+### Patch Changes
+
+- [`207d868`](https://github.com/julia-script/evm-effect/commit/207d868ade8d9d751edf9c352996ae2cdb2a89d3) Thanks [@julia-script](https://github.com/julia-script)! - **Eth hex codecs:** `EthSchema` now includes hex string codecs for fixed-width byte types (`Bytes0` through `Bytes256`), `Address`, and numeric wrappers (`Uint`, `U8`, `U64`, `U256`, `Int`), with explicit `Schema.Codec` types on existing exports. Fixed-width `Bytes*` tagged classes use `Schema.Uint8Array` instead of `instanceOf(Uint8Array)`. Schema tests run under Vitest with `src/schemas/index.test.ts` included again.
+
 ## 0.0.8
 
 ### Patch Changes
