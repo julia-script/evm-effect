@@ -1,30 +1,21 @@
-import { describe, expect, test } from "vitest";
 import { Effect, Schema } from "effect";
+import { describe, expect, test } from "vitest";
 import { Bytes, Bytes32, padBuffer } from "../bytes.js";
-import { EthSchema } from "./index.js";
+import * as BaseTypes from "./base-types.js";
 
 describe("EthSchema", () => {
   test("HexString", async () =>
     Effect.gen(function* () {
-      const encode = Schema.encodeEffect(EthSchema.HexString);
-      const decode = Schema.decodeEffect(EthSchema.HexString);
+      const encode = Schema.encodeEffect(BaseTypes.HexString);
+      const decode = Schema.decodeEffect(BaseTypes.HexString);
       expect(yield* encode("0x010203")).toBe("0x010203");
       expect(yield* decode("0x010203")).toBe("0x010203");
     }).pipe(Effect.runPromise));
 
-  test("HexStringFromString", async () =>
+  test("BigIntFromString", async () =>
     Effect.gen(function* () {
-      const encode = Schema.encodeEffect(EthSchema.HexStringFromString);
-      const decode = Schema.decodeEffect(EthSchema.HexStringFromString);
-      expect(yield* encode("0x010203")).toBe("0x010203");
-      expect(yield* decode("010203")).toBe("0x010203");
-      expect(yield* decode("")).toBe("0x");
-    }).pipe(Effect.runPromise));
-
-  test("BigIntFromHex", async () =>
-    Effect.gen(function* () {
-      const encode = Schema.encodeEffect(EthSchema.BigIntFromHex);
-      const decode = Schema.decodeEffect(EthSchema.BigIntFromHex);
+      const encode = Schema.encodeEffect(BaseTypes.BigIntFromString);
+      const decode = Schema.decodeEffect(BaseTypes.BigIntFromString);
       expect(yield* encode(123n)).toBe("0x7b");
       expect(yield* decode("0x7b")).toBe(123n);
       expect(yield* decode("7b")).toBe(123n);
@@ -32,8 +23,8 @@ describe("EthSchema", () => {
 
   test("Uint8ArrayFromHex", async () =>
     Effect.gen(function* () {
-      const encode = Schema.encodeEffect(EthSchema.Uint8ArrayFromHex);
-      const decode = Schema.decodeEffect(EthSchema.Uint8ArrayFromHex);
+      const encode = Schema.encodeEffect(BaseTypes.Uint8ArrayFromString);
+      const decode = Schema.decodeEffect(BaseTypes.Uint8ArrayFromString);
       expect(yield* encode(new Uint8Array([1, 2, 3]))).toBe("0x010203");
 
       expect(yield* decode("0x010203")).toEqual(new Uint8Array([1, 2, 3]));
@@ -42,8 +33,8 @@ describe("EthSchema", () => {
 
   test("Bytes32FromHex", async () =>
     Effect.gen(function* () {
-      const encode = Schema.encodeEffect(EthSchema.Bytes32FromHex);
-      const decode = Schema.decodeEffect(EthSchema.Bytes32FromHex);
+      const encode = Schema.encodeEffect(BaseTypes.Bytes32FromString);
+      const decode = Schema.decodeEffect(BaseTypes.Bytes32FromString);
 
       expect(
         yield* encode(
@@ -66,8 +57,8 @@ describe("EthSchema", () => {
 
   test("BytesFromHex", async () =>
     Effect.gen(function* () {
-      const encode = Schema.encodeEffect(EthSchema.BytesFromHex);
-      const decode = Schema.decodeEffect(EthSchema.BytesFromHex);
+      const encode = Schema.encodeEffect(BaseTypes.BytesFromString);
+      const decode = Schema.decodeEffect(BaseTypes.BytesFromString);
       expect(
         yield* encode(new Bytes({ value: new Uint8Array([1, 2, 3]) })),
       ).toBe("0x010203");

@@ -6,126 +6,67 @@
  * @module
  */
 
-import {
-  Bytes,
-  Bytes0,
-  Bytes1,
-  Bytes4,
-  Bytes8,
-  Bytes20,
-  Bytes32,
-  Bytes64,
-  Bytes256,
-  isBytes,
-} from "./bytes.js";
+import * as bytes from "./bytes.js";
+
+export * from "./bytes.js";
+
 import { Address } from "./domain.js";
 import { isUnsignedInt, U8, U64, U256, Uint } from "./numeric.js";
 
 export type { AnyBytes } from "./bytes.js";
-export {
-  Bytes,
-  Bytes0,
-  Bytes1,
-  Bytes4,
-  Bytes8,
-  Bytes20,
-  Bytes32,
-  Bytes64,
-  Bytes256,
-  cloneBytes,
-  concat,
-  equals,
-  extractAndPad,
-  isBytes,
-  pad,
-  slice,
-} from "./bytes.js";
 
-export {
-  Address,
-  type Bloom,
-  type Hash32,
-  type Root,
-  type VersionedHash,
-} from "./domain.js";
-export { EvmTypeError } from "./exceptions.js";
+import * as domain from "./domain.js";
 
-export {
-  type AnyUint,
-  // Arithmetic operations
-  add,
-  addWrap,
-  // Bitwise operations
-  and,
-  // Utility
-  bitLength,
-  div,
-  eq,
-  type FixedUnsigned,
-  fromBeBytes,
-  fromLeBytes,
-  gt,
-  gte,
-  Int,
-  isUnsignedInt,
-  isZero,
-  // Comparison operations
-  lt,
-  lte,
-  mod,
-  mul,
-  mulWrap,
-  not,
-  or,
-  pow,
-  shl,
-  shr,
-  sub,
-  subWrap,
-  toBeBytes,
-  toBeBytes4,
-  toBeBytes8,
-  toBeBytes32,
-  toBeBytes64,
-  // Conversion operations
-  toBigInt,
-  toBytes1,
-  toBytes32,
-  toLeBytes4,
-  toLeBytes8,
-  toNumber,
-  toSigned,
-  U8,
-  U64,
-  U256,
-  Uint,
-  ulen,
-  wrappingPow,
-  xor,
-} from "./numeric.js";
+export * from "./domain.js";
+
+import * as exceptions from "./exceptions.js";
+
+export * from "./exceptions.js";
+
+import * as numeric from "./numeric.js";
+
+export * from "./numeric.js";
+
+import * as EthBaseTypesSchema from "./schemas/base-types.js";
+
+export * from "./schemas/base-types.js";
+
+import * as generatedSchemas from "./schemas/generated-schemas.js";
+
+export * from "./schemas/generated-schemas.js";
+
+export const EthTypes = {
+  ...EthBaseTypesSchema,
+  ...bytes,
+  ...numeric,
+  ...domain,
+  ...exceptions,
+  ...generatedSchemas,
+};
+export default EthTypes;
 
 export const isBytesClass = (
   val: unknown,
 ): val is
-  | typeof Bytes
-  | typeof Bytes0
-  | typeof Bytes1
-  | typeof Bytes4
-  | typeof Bytes8
-  | typeof Bytes20
-  | typeof Bytes32
-  | typeof Bytes64
-  | typeof Bytes256 => {
+  | typeof EthTypes.Bytes
+  | typeof EthTypes.Bytes0
+  | typeof EthTypes.Bytes1
+  | typeof EthTypes.Bytes4
+  | typeof EthTypes.Bytes8
+  | typeof EthTypes.Bytes20
+  | typeof EthTypes.Bytes32
+  | typeof EthTypes.Bytes64
+  | typeof EthTypes.Bytes256 => {
   return (
-    val === Bytes ||
-    val === Bytes0 ||
-    val === Bytes1 ||
-    val === Bytes4 ||
-    val === Bytes8 ||
-    val === Bytes20 ||
-    val === Bytes32 ||
-    val === Bytes64 ||
-    val === Bytes256
+    val === EthTypes.Bytes ||
+    val === EthTypes.Bytes0 ||
+    val === EthTypes.Bytes1 ||
+    val === EthTypes.Bytes4 ||
+    val === EthTypes.Bytes8 ||
+    val === EthTypes.Bytes20 ||
+    val === EthTypes.Bytes32 ||
+    val === EthTypes.Bytes64 ||
+    val === EthTypes.Bytes256
   );
 };
 export const isUnsignedIntClass = (
@@ -143,5 +84,5 @@ export const isAddress = (val: unknown): val is Address => {
   return val instanceof Address;
 };
 export const isEvmType = (val: unknown) => {
-  return isBytes(val) || isUnsignedInt(val) || isAddress(val);
+  return EthTypes.isBytes(val) || isUnsignedInt(val) || isAddress(val);
 };

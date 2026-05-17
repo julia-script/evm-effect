@@ -59,6 +59,60 @@ export class U8 extends Schema.TaggedClass<U8>("U8")(
   static zero = U8.fromBigInt(0n);
 }
 
+export class U32 extends Schema.TaggedClass<U32>("U32")(
+  "U32",
+  {
+    value: Schema.BigInt,
+  },
+  {
+    pretty:
+      () =>
+      (self: U32): string =>
+        `${self._tag}(${self.value})`,
+  },
+) {
+  static MAX_VALUE = 2n ** 32n - 1n;
+
+  constructor({ value }: { value: bigint }) {
+    super({ value: wrap(value, 1n) });
+  }
+  clone(): U32 {
+    return new U32({ value: this.value });
+  }
+  static from(input: Uintish): Result.Result<U32, EvmTypeError> {
+    return Result.flatMap(Uint.from(input), (value) =>
+      U32.fromBigInt(value.value),
+    );
+  }
+  static constant(input: Uintish): U32 {
+    return Result.getOrThrow(U32.from(input));
+  }
+
+  static fromNumber(input: number): Result.Result<U32, EvmTypeError> {
+    if (input < 0 || input > U8.MAX_VALUE) {
+      return Result.fail(
+        new EvmTypeError({
+          message: `U32 value ${input} is out of range`,
+          input,
+        }),
+      );
+    }
+    return Result.succeed(new U32({ value: BigInt(input) }));
+  }
+
+  static fromBigInt(input: bigint): Result.Result<U32, EvmTypeError> {
+    if (input < 0n || input > U32.MAX_VALUE) {
+      return Result.fail(
+        new EvmTypeError({
+          message: `U8 value ${input} is out of range`,
+          input,
+        }),
+      );
+    }
+    return Result.succeed(new U32({ value: input }));
+  }
+  static zero = U32.fromBigInt(0n);
+}
 export class U64 extends Schema.TaggedClass<U64>("U64")(
   "U64",
   {
@@ -421,14 +475,20 @@ export class Uint extends Schema.TaggedClass<Uint>("Uint")(
   }
   static zero = Uint.fromBigInt(0n);
 }
-export type AnyUintClass = typeof U256 | typeof U64 | typeof U8 | typeof Uint;
-export type AnyUint = U256 | U64 | U8 | Uint;
-export type FixedUnsigned = U256 | U64 | U8;
+export type AnyUintClass =
+  | typeof U256
+  | typeof U64
+  | typeof U8
+  | typeof U32
+  | typeof Uint;
+export type AnyUint = U256 | U64 | U8 | U32 | Uint;
+export type FixedUnsigned = U256 | U64 | U8 | U32;
 
 const CLASS_BY_TAG = {
   U256: U256,
   U64: U64,
   U8: U8,
+  U32: U32,
   Uint: Uint,
 } as const;
 
@@ -873,6 +933,7 @@ export class Int extends Schema.TaggedClass<Int>("Int")(
 const BIT_LENGTH_BY_TAG = {
   U256: 256,
   U64: 64,
+  U32: 32,
   U8: 8,
 } as const;
 

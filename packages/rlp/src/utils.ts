@@ -19,6 +19,7 @@ import { SchemaAST as AST } from "effect";
 const never = (): never => {
   throw new Error("Never");
 };
+
 export const UINT_CLASSES_BY_TAG = {
   [AST.resolveIdentifier(Uint.ast) ?? never()]: Uint,
   [AST.resolveIdentifier(U256.ast) ?? never()]: U256,

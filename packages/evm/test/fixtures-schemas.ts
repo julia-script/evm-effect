@@ -47,7 +47,7 @@ export const Index = Schema.Struct({
   test_cases: Schema.Array(IndexEntry),
 });
 
-const BigIntFromHex = Schema.String.pipe(
+const BigIntFromString = Schema.String.pipe(
   Schema.decodeTo(Schema.BigInt, {
     decode: SchemaGetter.transformOrFail((fromA) => {
       try {
@@ -62,7 +62,7 @@ const BigIntFromHex = Schema.String.pipe(
   }),
 );
 
-const UintFromHex = BigIntFromHex.pipe(
+const UintFromHex = BigIntFromString.pipe(
   Schema.decodeTo(Uint, {
     decode: SchemaGetter.transformOrFail((fromA) => {
       if (!isBigInt(fromA)) {

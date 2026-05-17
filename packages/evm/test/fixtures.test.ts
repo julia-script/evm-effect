@@ -234,11 +234,10 @@ const matchesExpectedException = (
   return { matches, actualException, expectedOptions };
 };
 
-type FlatStateTestFixture = ReturnType<
-  typeof flattenStateTestFixtures
-> extends Generator<infer T, void>
-  ? T
-  : never;
+type FlatStateTestFixture =
+  ReturnType<typeof flattenStateTestFixtures> extends Generator<infer T, void>
+    ? T
+    : never;
 
 type TestState = {
   shortHash: string | null;
@@ -280,525 +279,514 @@ describe("StateTest", TEST_CONFIG, () => {
         ...value,
         index: SKIP + index,
       })),
-  )(
-    `$shortHash - [$index] $id`,
-    TEST_CONFIG,
-    async (testCaseIndex) => {
-      testState.shortHash = testCaseIndex.shortHash;
-      testState.passed = false;
-      testState.skipped = false;
-      testState.startTime = performance.now();
-      testState.error = undefined;
+  )(`$shortHash - [$index] $id`, TEST_CONFIG, async (testCaseIndex) => {
+    testState.shortHash = testCaseIndex.shortHash;
+    testState.passed = false;
+    testState.skipped = false;
+    testState.startTime = performance.now();
+    testState.error = undefined;
 
-      if (await checkTestCache(testCaseIndex.shortHash)) {
-        testState.skipped = true;
-        return;
-      }
-      const testCaseRaw: unknown = (
-        await readFile(
-          path.join(root, "fixtures", testCaseIndex.json_path),
-          "utf-8",
-        ).then(JSON.parse)
-      )[testCaseIndex.id];
+    if (await checkTestCache(testCaseIndex.shortHash)) {
+      testState.skipped = true;
+      return;
+    }
+    const testCaseRaw: unknown = (
+      await readFile(
+        path.join(root, "fixtures", testCaseIndex.json_path),
+        "utf-8",
+      ).then(JSON.parse)
+    )[testCaseIndex.id];
 
-      const runStateTest = Effect.fn("runStateTest")(function* (
-        fixture: FlatStateTestFixture,
-      ) {
-        const state = State.empty();
-        const fork = yield* Fork;
-        yield* Console.log(`Fork: ${fork.name}`);
+    const runStateTest = Effect.fn("runStateTest")(function* (
+      fixture: FlatStateTestFixture,
+    ) {
+      const state = State.empty();
+      const fork = yield* Fork;
+      yield* Console.log(`Fork: ${fork.name}`);
 
-        for (const [addrStr, value] of Object.entries(fixture.pre)) {
-          const addr = new Address({ value: bufferFromHex(addrStr) });
-          const account = new Account({
-            nonce: value.nonce,
-            balance: new U256({ value: value.balance.value }),
-            code: value.code,
-          });
-          yield* State.setAccount(state, addr, account);
-
-          if (value.storage) {
-            for (const [storageKeyStr, storageValue] of Object.entries(
-              value.storage,
-            )) {
-              const keyBytes = new Bytes32({
-                value: bufferFromHex(storageKeyStr),
-              });
-              const valueU256 = U256.fromBeBytes(storageValue.value);
-
-              yield* State.setStorage(state, addr, keyBytes, valueU256);
-            }
-          }
-        }
-        const blockEnv = new BlockEnvironment({
-          chainId: new U64({ value: fixture.config.chainid.value }),
-          state: state,
-          blockGasLimit: fixture.env.currentGasLimit,
-          blockHashes: [],
-          coinbase: fixture.env.currentCoinbase,
-          number: fixture.env.currentNumber,
-          baseFeePerGas: fixture.env.currentBaseFee ?? new Uint({ value: 0n }),
-          time: new U256({ value: fixture.env.currentTimestamp.value }),
-          prevRandao: new Bytes32({
-            value: fixture.env.currentRandom?.value ?? new Uint8Array(32),
-          }),
-          difficulty: fixture.env.currentDifficulty ?? new Uint({ value: 0n }),
-          excessBlobGas: new U64({
-            value: fixture.env.currentExcessBlobGas?.value ?? 0n,
-          }),
-          parentBeaconBlockRoot: new Bytes32({ value: new Uint8Array(32) }),
+      for (const [addrStr, value] of Object.entries(fixture.pre)) {
+        const addr = new Address({ value: bufferFromHex(addrStr) });
+        const account = new Account({
+          nonce: value.nonce,
+          balance: new U256({ value: value.balance.value }),
+          code: value.code,
         });
-        const block_output = emptyBlockOutput();
+        yield* State.setAccount(state, addr, account);
 
-        let transaction: Transaction = Match.value(fixture.transaction).pipe(
-          Match.when(
-            {
-              accessLists: (value) => typeof value !== "undefined",
-              gasPrice: (value) => typeof value !== "undefined",
-              accessList: (value) => typeof value !== "undefined",
-            },
-            (value): AccessListTransaction => ({
-              _tag: "AccessListTransaction",
-              chainId: new U64({ value: fixture.config.chainid.value }),
-              nonce: new U256({
-                value: value.nonce.value,
-              }),
-              gasPrice: value.gasPrice,
-              gas: value.gasLimit,
-              to: value.to,
-              value: new U256({
-                value: value.value.value,
-              }),
-              data: value.data,
-              r: new U256({ value: 0n }),
-              s: new U256({ value: 0n }),
-              yParity: new U8({ value: 0n }),
-              accessList: value.accessList.map(
-                (access): Access => ({
-                  _tag: "Access",
+        if (value.storage) {
+          for (const [storageKeyStr, storageValue] of Object.entries(
+            value.storage,
+          )) {
+            const keyBytes = new Bytes32({
+              value: bufferFromHex(storageKeyStr),
+            });
+            const valueU256 = U256.fromBeBytes(storageValue.value);
 
-                  account: access.address,
-                  slots: access.storageKeys.map(
-                    (slot): Bytes32 => new Bytes32({ value: slot.value }),
-                  ),
-                }),
-              ),
-            }),
-          ),
-          Match.when(
-            {
-              gasPrice: (value) => typeof value !== "undefined",
-            },
-            (value): LegacyTransaction => ({
-              _tag: "LegacyTransaction",
-              nonce: new U256({
-                value: value.nonce.value,
-              }),
-              gasPrice: value.gasPrice,
-              gas: value.gasLimit,
-              to: value.to,
-              value: new U256({
-                value: value.value.value,
-              }),
-              data: value.data,
-              v: new U256({ value: 0n }),
-              r: new U256({ value: 0n }),
-              s: new U256({ value: 0n }),
-            }),
-          ),
-          Match.when(
-            {
-              maxFeePerBlobGas: (value) => typeof value !== "undefined",
-              blobVersionedHashes: (value) => typeof value !== "undefined",
-              maxFeePerGas: (value) => typeof value !== "undefined",
-              maxPriorityFeePerGas: (value) => typeof value !== "undefined",
-              accessList: (value) => typeof value !== "undefined",
-            },
-            (value): BlobTransaction => ({
-              _tag: "BlobTransaction",
-              chainId: new U64({ value: fixture.config.chainid.value }),
-              nonce: new U256({
-                value: value.nonce.value,
-              }),
-              maxFeePerBlobGas: new U256({
-                value: value.maxFeePerBlobGas.value,
-              }),
-              blobVersionedHashes: value.blobVersionedHashes.map(
-                (hash): Bytes32 => new Bytes32({ value: hash.value }),
-              ),
-              maxFeePerGas: value.maxFeePerGas,
-              maxPriorityFeePerGas: value.maxPriorityFeePerGas,
-              gas: value.gasLimit,
-              to: value.to,
-              value: new U256({
-                value: value.value.value,
-              }),
-              data: value.data,
-              r: new U256({ value: 0n }),
-              s: new U256({ value: 0n }),
-              yParity: new U8({ value: 0n }),
-              accessList: value.accessList.map(
-                (access): Access => ({
-                  _tag: "Access",
-                  account: access.address,
-                  slots: access.storageKeys.map(
-                    (slot): Bytes32 => new Bytes32({ value: slot.value }),
-                  ),
-                }),
-              ),
-            }),
-          ),
-          Match.when(
-            {
-              authorizationList: (value) => typeof value !== "undefined",
-              maxPriorityFeePerGas: (value) => typeof value !== "undefined",
-              maxFeePerGas: (value) => typeof value !== "undefined",
-              gasLimit: (value) => typeof value !== "undefined",
-              value: (value) => typeof value !== "undefined",
-              data: (value) => typeof value !== "undefined",
-              accessList: (value) => typeof value !== "undefined",
-            },
-            (value): SetCodeTransaction => ({
-              _tag: "SetCodeTransaction",
-              chainId: new U64({ value: fixture.config.chainid.value }),
-              nonce: new U64({
-                value: value.nonce.value,
-              }),
-              gas: value.gasLimit,
-              to: value.to,
-              value: new U256({
-                value: value.value.value,
-              }),
-              data: value.data,
-              accessList: value.accessList.map(
-                (access): Access => ({
-                  _tag: "Access",
-                  account: access.address,
-                  slots: access.storageKeys.map(
-                    (slot): Bytes32 => new Bytes32({ value: slot.value }),
-                  ),
-                }),
-              ),
-              maxPriorityFeePerGas: value.maxPriorityFeePerGas,
-              maxFeePerGas: value.maxFeePerGas,
-              authorizations: value.authorizationList?.map(
-                (auth): Authorization =>
-                  Authorization.make({
-                    chainId: new U256({ value: auth.chainId.value }),
-                    address: auth.address,
-                    nonce: new U64({ value: auth.nonce.value }),
-                    yParity: new U8({
-                      value: auth.yParity?.value ?? auth.v?.value ?? 0n,
-                    }),
-                    r: new U256({ value: auth.r.value }),
-                    s: new U256({ value: auth.s.value }),
-                  }),
-              ),
-              r: new U256({ value: 0n }),
-              s: new U256({ value: 0n }),
-              yParity: new U8({ value: 0n }),
-            }),
-          ),
-
-          Match.when(
-            {
-              maxPriorityFeePerGas: (value) => typeof value !== "undefined",
-              maxFeePerGas: (value) => typeof value !== "undefined",
-              gasLimit: (value) => typeof value !== "undefined",
-              value: (value) => typeof value !== "undefined",
-              data: (value) => typeof value !== "undefined",
-              accessList: (value) => typeof value !== "undefined",
-            },
-            (value): FeeMarketTransaction => ({
-              _tag: "FeeMarketTransaction",
-              chainId: new U64({ value: fixture.config.chainid.value }),
-              nonce: new U256({
-                value: value.nonce.value,
-              }),
-              gas: value.gasLimit,
-              to: value.to,
-              value: new U256({
-                value: value.value.value,
-              }),
-              data: value.data,
-
-              accessList: value.accessList.map(
-                (access): Access => ({
-                  _tag: "Access",
-                  account: access.address,
-                  slots: access.storageKeys.map(
-                    (slot): Bytes32 => new Bytes32({ value: slot.value }),
-                  ),
-                }),
-              ),
-              maxPriorityFeePerGas: value.maxPriorityFeePerGas,
-              maxFeePerGas: value.maxFeePerGas,
-              r: new U256({ value: 0n }),
-              s: new U256({ value: 0n }),
-              yParity: new U8({ value: 0n }),
-            }),
-          ),
-          Match.orElseAbsurd,
-        );
-
-        if (fixture.transaction.secretKey) {
-          const privateKey = new Bytes32({
-            value: fixture.transaction.secretKey.value,
-          });
-
-          const signature = signTransaction({
-            transaction,
-            privateKey: privateKey,
-          });
-
-          if ("v" in transaction) {
-            transaction = {
-              ...transaction,
-              v: signature.v,
-              r: signature.r,
-              s: signature.s,
-            };
-          } else {
-            transaction = {
-              ...transaction,
-              yParity: new U8({ value: signature.yParity.value }),
-              r: signature.r,
-              s: signature.s,
-            };
+            yield* State.setStorage(state, addr, keyBytes, valueU256);
           }
         }
-
-        const post = fixture.post;
-        const processTransactionResult = yield* processTransaction(
-          blockEnv,
-          block_output,
-          transaction,
-          new Uint({ value: BigInt(0) }),
-        ).pipe(Effect.result);
-        if (post.expectException) {
-          if (Result.isSuccess(processTransactionResult)) {
-            return yield* Effect.fail(
-              new Error(
-                `Expected exception ${post.expectException} but transaction succeeded`,
-              ),
-            );
-          }
-          const actualError = processTransactionResult.failure;
-          const { matches, actualException, expectedOptions } =
-            matchesExpectedException(actualError, post.expectException);
-
-          yield* Console.log(`Exception expected: ${post.expectException}`);
-          yield* Console.log(
-            `  Actual exception: ${actualException ?? "UNKNOWN (no mapping)"}`,
-          );
-
-          if (!matches) {
-            const errorTag =
-              actualError !== null &&
-              typeof actualError === "object" &&
-              "_tag" in actualError
-                ? String(actualError._tag)
-                : "unknown";
-            return yield* Effect.fail(
-              new Error(
-                actualException === null
-                  ? `Unmapped exception: got error tag "${errorTag}", expected one of: ${expectedOptions.join(
-                      " | ",
-                    )}`
-                  : `Exception mismatch: expected ${expectedOptions.join(
-                      " | ",
-                    )}, got ${actualException}`,
-              ),
-            );
-          }
-        } else {
-          yield* processTransactionResult;
-        }
-
-        const stateRoot = yield* State.stateRoot(blockEnv.state);
-        const expectedHash = post.hash.toHex();
-        const actualHash = stateRoot.toHex();
-        const testFailed = actualHash !== expectedHash;
-
-        if (testFailed) {
-          yield* Console.log("\n=== ACCOUNT EXISTENCE COMPARISON ===");
-          const expectedAddrs = new Set<string>();
-          for (const [address] of Object.entries(post.state)) {
-            const addrHex = address.toLowerCase();
-            expectedAddrs.add(addrHex);
-            const exists = yield* State.accountExists(
-              blockEnv.state,
-              new Address({ value: bufferFromHex(address) }),
-            );
-            if (!exists) {
-              yield* Console.log(`  MISSING in actual: ${addrHex}`);
-            }
-          }
-          yield* Console.log("====================================\n");
-          const gasUsed = block_output.blockGasUsed.value;
-          const gasPrice =
-            "maxFeePerGas" in fixture.transaction &&
-            fixture.transaction.maxFeePerGas
-              ? fixture.transaction.maxFeePerGas.value
-              : "gasPrice" in fixture.transaction &&
-                  fixture.transaction.gasPrice
-                ? fixture.transaction.gasPrice.value
-                : undefined;
-
-          const senderAddr = fixture.transaction.sender;
-          let estimatedGasFromBalance: bigint | undefined;
-          if (gasPrice !== undefined && gasPrice > 0n) {
-            for (const [addrString, preAcct] of Object.entries(fixture.pre)) {
-              const addr = new Address({ value: bufferFromHex(addrString) });
-              if (addr.toHex() === senderAddr?.toHex()) {
-                for (const [postAddrStr, expectedAcct] of Object.entries(
-                  post.state,
-                )) {
-                  const postAddr = new Address({
-                    value: bufferFromHex(postAddrStr),
-                  });
-                  if (postAddr.toHex() === senderAddr?.toHex()) {
-                    const preBalance = preAcct.balance.value;
-                    const expectedPostBalance = expectedAcct.balance.value;
-                    const txValue = fixture.transaction.value?.value ?? 0n;
-                    const expectedWeiCost =
-                      preBalance - expectedPostBalance - txValue;
-                    if (expectedWeiCost >= 0n) {
-                      estimatedGasFromBalance = expectedWeiCost / gasPrice;
-                    }
-                    break;
-                  }
-                }
-                break;
-              }
-            }
-          }
-
-          if (estimatedGasFromBalance !== undefined) {
-            const gasDiff = gasUsed - estimatedGasFromBalance;
-            yield* Console.log(
-              "\n\x1b[36m%s\x1b[0m",
-              "=== GAS USAGE SUMMARY (approximate) ===",
-            );
-            yield* Console.log(
-              `Estimated gas (from balance): ${estimatedGasFromBalance}`,
-            );
-            yield* Console.log(`Actual gas used:              ${gasUsed}`);
-            if (gasDiff !== 0n) {
-              yield* Console.log(
-                "\x1b[33m%s\x1b[0m",
-                `Difference: ${gasDiff > 0n ? "+" : ""}${gasDiff}`,
-              );
-            } else {
-              yield* Console.log(
-                "\x1b[32m%s\x1b[0m",
-                `Difference: ${gasDiff} ✓`,
-              );
-            }
-            yield* Console.log("========================================\n");
-          }
-
-          for (const [address, expectedAccount] of Object.entries(post.state)) {
-            const actualAccount = yield* State.getAccount(
-              blockEnv.state,
-              new Address({ value: bufferFromHex(address) }),
-            );
-            yield* Console.log("- Address: ", `${address}`);
-            if (actualAccount.nonce.value !== expectedAccount.nonce.value) {
-              yield* Console.log(
-                "\x1b[31m%s\x1b[0m",
-                `    Nonce mismatch: expected ${expectedAccount.nonce.value}, actual ${actualAccount.nonce.value}`,
-              );
-            } else {
-              yield* Console.log(
-                `    Nonce match: expected ${expectedAccount.nonce.value}, actual ${actualAccount.nonce.value}`,
-              );
-            }
-            if (actualAccount.balance.value !== expectedAccount.balance.value) {
-              yield* Console.log("\x1b[31m%s\x1b[0m", `    Balance mismatch:`);
-              yield* Console.log(
-                `      Expected: ${expectedAccount.balance.value}`,
-              );
-              yield* Console.log(
-                `      Actual:   ${actualAccount.balance.value}`,
-              );
-              const offset =
-                actualAccount.balance.value - expectedAccount.balance.value;
-              yield* Console.log(
-                `               ${offset > 0 ? "+" : ""}${offset}`,
-              );
-            } else {
-              yield* Console.log(
-                `    Balance match: expected ${expectedAccount.balance.value}, actual ${actualAccount.balance.value}`,
-              );
-            }
-            if (actualAccount.code.toHex() !== expectedAccount.code.toHex()) {
-              yield* Console.log(
-                "\x1b[31m%s\x1b[0m",
-                `    Code mismatch: expected ${expectedAccount.code.toHex()}, actual ${actualAccount.code.toHex()}`,
-              );
-            } else {
-              yield* Console.log(`    Code match`);
-            }
-
-            for (const [slot, expectedValueBytes] of Object.entries(
-              expectedAccount.storage,
-            )) {
-              const actualValue = (yield* State.getStorage(
-                blockEnv.state,
-                new Address({ value: bufferFromHex(address) }),
-                new Bytes32({ value: bufferFromHex(slot) }),
-              ))
-                .toBeBytes32()
-                .toHex();
-              const expectedValue = new Bytes32({
-                value: expectedValueBytes.value,
-              }).toHex();
-              if (actualValue !== expectedValue) {
-                yield* Console.log(
-                  "\x1b[31m%s\x1b[0m",
-                  `    Storage mismatch:`,
-                );
-                yield* Console.log(`          Slot:     ${slot}`);
-                yield* Console.log(`          Expected: ${expectedValue}`);
-                yield* Console.log(`          Actual:   ${actualValue}`);
-              } else {
-                yield* Console.log(`    Storage match:`);
-                yield* Console.log(`          Expected: ${expectedValue}`);
-                yield* Console.log(`          Actual:   ${actualValue}`);
-              }
-            }
-          }
-        }
-        expect(actualHash).toBe(expectedHash);
-
-        const logsRlpEncoded = yield* rlp.encodeTo(
-          Schema.Array(Log),
-          block_output.blockLogs,
-        );
-        const actualLogsHash = keccak256(logsRlpEncoded).toHex();
-        const expectedLogsHash = post.logs.toHex();
-        expect(actualLogsHash).toBe(expectedLogsHash);
-      });
-
-      try {
-        await Effect.gen(function* () {
-          yield* Effect.log(`Running test case: ${testCaseIndex.id}`);
-          yield* Effect.log(testCaseRaw);
-          const fixturesSource =
-            yield* Schema.decodeUnknownEffect(StateTestFix)(testCaseRaw);
-          for (const fixture of flattenStateTestFixtures(fixturesSource)) {
-            const fork = yield* resolveFork(fixture.fork);
-            yield* runStateTest(fixture).pipe(Effect.provide(fork));
-          }
-        }).pipe(runWithTestLogger);
-        testState.passed = true;
-      } catch (error) {
-        testState.error = error;
-        throw error;
       }
-    },
-  );
+      const blockEnv = new BlockEnvironment({
+        chainId: new U64({ value: fixture.config.chainid.value }),
+        state: state,
+        blockGasLimit: fixture.env.currentGasLimit,
+        blockHashes: [],
+        coinbase: fixture.env.currentCoinbase,
+        number: fixture.env.currentNumber,
+        baseFeePerGas: fixture.env.currentBaseFee ?? new Uint({ value: 0n }),
+        time: new U256({ value: fixture.env.currentTimestamp.value }),
+        prevRandao: new Bytes32({
+          value: fixture.env.currentRandom?.value ?? new Uint8Array(32),
+        }),
+        difficulty: fixture.env.currentDifficulty ?? new Uint({ value: 0n }),
+        excessBlobGas: new U64({
+          value: fixture.env.currentExcessBlobGas?.value ?? 0n,
+        }),
+        parentBeaconBlockRoot: new Bytes32({ value: new Uint8Array(32) }),
+      });
+      const block_output = emptyBlockOutput();
+
+      let transaction: Transaction = Match.value(fixture.transaction).pipe(
+        Match.when(
+          {
+            accessLists: (value) => typeof value !== "undefined",
+            gasPrice: (value) => typeof value !== "undefined",
+            accessList: (value) => typeof value !== "undefined",
+          },
+          (value): AccessListTransaction => ({
+            _tag: "AccessListTransaction",
+            chainId: new U64({ value: fixture.config.chainid.value }),
+            nonce: new U256({
+              value: value.nonce.value,
+            }),
+            gasPrice: value.gasPrice,
+            gas: value.gasLimit,
+            to: value.to,
+            value: new U256({
+              value: value.value.value,
+            }),
+            data: value.data,
+            r: new U256({ value: 0n }),
+            s: new U256({ value: 0n }),
+            yParity: new U8({ value: 0n }),
+            accessList: value.accessList.map(
+              (access): Access => ({
+                _tag: "Access",
+
+                account: access.address,
+                slots: access.storageKeys.map(
+                  (slot): Bytes32 => new Bytes32({ value: slot.value }),
+                ),
+              }),
+            ),
+          }),
+        ),
+        Match.when(
+          {
+            gasPrice: (value) => typeof value !== "undefined",
+          },
+          (value): LegacyTransaction => ({
+            _tag: "LegacyTransaction",
+            nonce: new U256({
+              value: value.nonce.value,
+            }),
+            gasPrice: value.gasPrice,
+            gas: value.gasLimit,
+            to: value.to,
+            value: new U256({
+              value: value.value.value,
+            }),
+            data: value.data,
+            v: new U256({ value: 0n }),
+            r: new U256({ value: 0n }),
+            s: new U256({ value: 0n }),
+          }),
+        ),
+        Match.when(
+          {
+            maxFeePerBlobGas: (value) => typeof value !== "undefined",
+            blobVersionedHashes: (value) => typeof value !== "undefined",
+            maxFeePerGas: (value) => typeof value !== "undefined",
+            maxPriorityFeePerGas: (value) => typeof value !== "undefined",
+            accessList: (value) => typeof value !== "undefined",
+          },
+          (value): BlobTransaction => ({
+            _tag: "BlobTransaction",
+            chainId: new U64({ value: fixture.config.chainid.value }),
+            nonce: new U256({
+              value: value.nonce.value,
+            }),
+            maxFeePerBlobGas: new U256({
+              value: value.maxFeePerBlobGas.value,
+            }),
+            blobVersionedHashes: value.blobVersionedHashes.map(
+              (hash): Bytes32 => new Bytes32({ value: hash.value }),
+            ),
+            maxFeePerGas: value.maxFeePerGas,
+            maxPriorityFeePerGas: value.maxPriorityFeePerGas,
+            gas: value.gasLimit,
+            to: value.to,
+            value: new U256({
+              value: value.value.value,
+            }),
+            data: value.data,
+            r: new U256({ value: 0n }),
+            s: new U256({ value: 0n }),
+            yParity: new U8({ value: 0n }),
+            accessList: value.accessList.map(
+              (access): Access => ({
+                _tag: "Access",
+                account: access.address,
+                slots: access.storageKeys.map(
+                  (slot): Bytes32 => new Bytes32({ value: slot.value }),
+                ),
+              }),
+            ),
+          }),
+        ),
+        Match.when(
+          {
+            authorizationList: (value) => typeof value !== "undefined",
+            maxPriorityFeePerGas: (value) => typeof value !== "undefined",
+            maxFeePerGas: (value) => typeof value !== "undefined",
+            gasLimit: (value) => typeof value !== "undefined",
+            value: (value) => typeof value !== "undefined",
+            data: (value) => typeof value !== "undefined",
+            accessList: (value) => typeof value !== "undefined",
+          },
+          (value): SetCodeTransaction => ({
+            _tag: "SetCodeTransaction",
+            chainId: new U64({ value: fixture.config.chainid.value }),
+            nonce: new U64({
+              value: value.nonce.value,
+            }),
+            gas: value.gasLimit,
+            to: value.to,
+            value: new U256({
+              value: value.value.value,
+            }),
+            data: value.data,
+            accessList: value.accessList.map(
+              (access): Access => ({
+                _tag: "Access",
+                account: access.address,
+                slots: access.storageKeys.map(
+                  (slot): Bytes32 => new Bytes32({ value: slot.value }),
+                ),
+              }),
+            ),
+            maxPriorityFeePerGas: value.maxPriorityFeePerGas,
+            maxFeePerGas: value.maxFeePerGas,
+            authorizations: value.authorizationList?.map(
+              (auth): Authorization =>
+                Authorization.make({
+                  chainId: new U256({ value: auth.chainId.value }),
+                  address: auth.address,
+                  nonce: new U64({ value: auth.nonce.value }),
+                  yParity: new U8({
+                    value: auth.yParity?.value ?? auth.v?.value ?? 0n,
+                  }),
+                  r: new U256({ value: auth.r.value }),
+                  s: new U256({ value: auth.s.value }),
+                }),
+            ),
+            r: new U256({ value: 0n }),
+            s: new U256({ value: 0n }),
+            yParity: new U8({ value: 0n }),
+          }),
+        ),
+
+        Match.when(
+          {
+            maxPriorityFeePerGas: (value) => typeof value !== "undefined",
+            maxFeePerGas: (value) => typeof value !== "undefined",
+            gasLimit: (value) => typeof value !== "undefined",
+            value: (value) => typeof value !== "undefined",
+            data: (value) => typeof value !== "undefined",
+            accessList: (value) => typeof value !== "undefined",
+          },
+          (value): FeeMarketTransaction => ({
+            _tag: "FeeMarketTransaction",
+            chainId: new U64({ value: fixture.config.chainid.value }),
+            nonce: new U256({
+              value: value.nonce.value,
+            }),
+            gas: value.gasLimit,
+            to: value.to,
+            value: new U256({
+              value: value.value.value,
+            }),
+            data: value.data,
+
+            accessList: value.accessList.map(
+              (access): Access => ({
+                _tag: "Access",
+                account: access.address,
+                slots: access.storageKeys.map(
+                  (slot): Bytes32 => new Bytes32({ value: slot.value }),
+                ),
+              }),
+            ),
+            maxPriorityFeePerGas: value.maxPriorityFeePerGas,
+            maxFeePerGas: value.maxFeePerGas,
+            r: new U256({ value: 0n }),
+            s: new U256({ value: 0n }),
+            yParity: new U8({ value: 0n }),
+          }),
+        ),
+        Match.orElseAbsurd,
+      );
+
+      if (fixture.transaction.secretKey) {
+        const privateKey = new Bytes32({
+          value: fixture.transaction.secretKey.value,
+        });
+
+        const signature = signTransaction({
+          transaction,
+          privateKey: privateKey,
+        });
+
+        if ("v" in transaction) {
+          transaction = {
+            ...transaction,
+            v: signature.v,
+            r: signature.r,
+            s: signature.s,
+          };
+        } else {
+          transaction = {
+            ...transaction,
+            yParity: new U8({ value: signature.yParity.value }),
+            r: signature.r,
+            s: signature.s,
+          };
+        }
+      }
+
+      const post = fixture.post;
+      const processTransactionResult = yield* processTransaction(
+        blockEnv,
+        block_output,
+        transaction,
+        new Uint({ value: BigInt(0) }),
+      ).pipe(Effect.result);
+      if (post.expectException) {
+        if (Result.isSuccess(processTransactionResult)) {
+          return yield* Effect.fail(
+            new Error(
+              `Expected exception ${post.expectException} but transaction succeeded`,
+            ),
+          );
+        }
+        const actualError = processTransactionResult.failure;
+        const { matches, actualException, expectedOptions } =
+          matchesExpectedException(actualError, post.expectException);
+
+        yield* Console.log(`Exception expected: ${post.expectException}`);
+        yield* Console.log(
+          `  Actual exception: ${actualException ?? "UNKNOWN (no mapping)"}`,
+        );
+
+        if (!matches) {
+          const errorTag =
+            actualError !== null &&
+            typeof actualError === "object" &&
+            "_tag" in actualError
+              ? String(actualError._tag)
+              : "unknown";
+          return yield* Effect.fail(
+            new Error(
+              actualException === null
+                ? `Unmapped exception: got error tag "${errorTag}", expected one of: ${expectedOptions.join(
+                    " | ",
+                  )}`
+                : `Exception mismatch: expected ${expectedOptions.join(
+                    " | ",
+                  )}, got ${actualException}`,
+            ),
+          );
+        }
+      } else {
+        yield* processTransactionResult;
+      }
+
+      const stateRoot = yield* State.stateRoot(blockEnv.state);
+      const expectedHash = post.hash.toHex();
+      const actualHash = stateRoot.toHex();
+      const testFailed = actualHash !== expectedHash;
+
+      if (testFailed) {
+        yield* Console.log("\n=== ACCOUNT EXISTENCE COMPARISON ===");
+        const expectedAddrs = new Set<string>();
+        for (const [address] of Object.entries(post.state)) {
+          const addrHex = address.toLowerCase();
+          expectedAddrs.add(addrHex);
+          const exists = yield* State.accountExists(
+            blockEnv.state,
+            new Address({ value: bufferFromHex(address) }),
+          );
+          if (!exists) {
+            yield* Console.log(`  MISSING in actual: ${addrHex}`);
+          }
+        }
+        yield* Console.log("====================================\n");
+        const gasUsed = block_output.blockGasUsed.value;
+        const gasPrice =
+          "maxFeePerGas" in fixture.transaction &&
+          fixture.transaction.maxFeePerGas
+            ? fixture.transaction.maxFeePerGas.value
+            : "gasPrice" in fixture.transaction && fixture.transaction.gasPrice
+              ? fixture.transaction.gasPrice.value
+              : undefined;
+
+        const senderAddr = fixture.transaction.sender;
+        let estimatedGasFromBalance: bigint | undefined;
+        if (gasPrice !== undefined && gasPrice > 0n) {
+          for (const [addrString, preAcct] of Object.entries(fixture.pre)) {
+            const addr = new Address({ value: bufferFromHex(addrString) });
+            if (addr.toHex() === senderAddr?.toHex()) {
+              for (const [postAddrStr, expectedAcct] of Object.entries(
+                post.state,
+              )) {
+                const postAddr = new Address({
+                  value: bufferFromHex(postAddrStr),
+                });
+                if (postAddr.toHex() === senderAddr?.toHex()) {
+                  const preBalance = preAcct.balance.value;
+                  const expectedPostBalance = expectedAcct.balance.value;
+                  const txValue = fixture.transaction.value?.value ?? 0n;
+                  const expectedWeiCost =
+                    preBalance - expectedPostBalance - txValue;
+                  if (expectedWeiCost >= 0n) {
+                    estimatedGasFromBalance = expectedWeiCost / gasPrice;
+                  }
+                  break;
+                }
+              }
+              break;
+            }
+          }
+        }
+
+        if (estimatedGasFromBalance !== undefined) {
+          const gasDiff = gasUsed - estimatedGasFromBalance;
+          yield* Console.log(
+            "\n\x1b[36m%s\x1b[0m",
+            "=== GAS USAGE SUMMARY (approximate) ===",
+          );
+          yield* Console.log(
+            `Estimated gas (from balance): ${estimatedGasFromBalance}`,
+          );
+          yield* Console.log(`Actual gas used:              ${gasUsed}`);
+          if (gasDiff !== 0n) {
+            yield* Console.log(
+              "\x1b[33m%s\x1b[0m",
+              `Difference: ${gasDiff > 0n ? "+" : ""}${gasDiff}`,
+            );
+          } else {
+            yield* Console.log("\x1b[32m%s\x1b[0m", `Difference: ${gasDiff} ✓`);
+          }
+          yield* Console.log("========================================\n");
+        }
+
+        for (const [address, expectedAccount] of Object.entries(post.state)) {
+          const actualAccount = yield* State.getAccount(
+            blockEnv.state,
+            new Address({ value: bufferFromHex(address) }),
+          );
+          yield* Console.log("- Address: ", `${address}`);
+          if (actualAccount.nonce.value !== expectedAccount.nonce.value) {
+            yield* Console.log(
+              "\x1b[31m%s\x1b[0m",
+              `    Nonce mismatch: expected ${expectedAccount.nonce.value}, actual ${actualAccount.nonce.value}`,
+            );
+          } else {
+            yield* Console.log(
+              `    Nonce match: expected ${expectedAccount.nonce.value}, actual ${actualAccount.nonce.value}`,
+            );
+          }
+          if (actualAccount.balance.value !== expectedAccount.balance.value) {
+            yield* Console.log("\x1b[31m%s\x1b[0m", `    Balance mismatch:`);
+            yield* Console.log(
+              `      Expected: ${expectedAccount.balance.value}`,
+            );
+            yield* Console.log(
+              `      Actual:   ${actualAccount.balance.value}`,
+            );
+            const offset =
+              actualAccount.balance.value - expectedAccount.balance.value;
+            yield* Console.log(
+              `               ${offset > 0 ? "+" : ""}${offset}`,
+            );
+          } else {
+            yield* Console.log(
+              `    Balance match: expected ${expectedAccount.balance.value}, actual ${actualAccount.balance.value}`,
+            );
+          }
+          if (actualAccount.code.toHex() !== expectedAccount.code.toHex()) {
+            yield* Console.log(
+              "\x1b[31m%s\x1b[0m",
+              `    Code mismatch: expected ${expectedAccount.code.toHex()}, actual ${actualAccount.code.toHex()}`,
+            );
+          } else {
+            yield* Console.log(`    Code match`);
+          }
+
+          for (const [slot, expectedValueBytes] of Object.entries(
+            expectedAccount.storage,
+          )) {
+            const actualValue = (yield* State.getStorage(
+              blockEnv.state,
+              new Address({ value: bufferFromHex(address) }),
+              new Bytes32({ value: bufferFromHex(slot) }),
+            ))
+              .toBeBytes32()
+              .toHex();
+            const expectedValue = new Bytes32({
+              value: expectedValueBytes.value,
+            }).toHex();
+            if (actualValue !== expectedValue) {
+              yield* Console.log("\x1b[31m%s\x1b[0m", `    Storage mismatch:`);
+              yield* Console.log(`          Slot:     ${slot}`);
+              yield* Console.log(`          Expected: ${expectedValue}`);
+              yield* Console.log(`          Actual:   ${actualValue}`);
+            } else {
+              yield* Console.log(`    Storage match:`);
+              yield* Console.log(`          Expected: ${expectedValue}`);
+              yield* Console.log(`          Actual:   ${actualValue}`);
+            }
+          }
+        }
+      }
+      expect(actualHash).toBe(expectedHash);
+
+      const logsRlpEncoded = yield* rlp.encodeTo(
+        Schema.Array(Log),
+        block_output.blockLogs,
+      );
+      const actualLogsHash = keccak256(logsRlpEncoded).toHex();
+      const expectedLogsHash = post.logs.toHex();
+      expect(actualLogsHash).toBe(expectedLogsHash);
+    });
+
+    try {
+      await Effect.gen(function* () {
+        yield* Effect.log(`Running test case: ${testCaseIndex.id}`);
+        yield* Effect.log(testCaseRaw);
+        const fixturesSource =
+          yield* Schema.decodeUnknownEffect(StateTestFix)(testCaseRaw);
+        for (const fixture of flattenStateTestFixtures(fixturesSource)) {
+          const fork = yield* resolveFork(fixture.fork);
+          yield* runStateTest(fixture).pipe(Effect.provide(fork));
+        }
+      }).pipe(runWithTestLogger);
+      testState.passed = true;
+    } catch (error) {
+      testState.error = error;
+      throw error;
+    }
+  });
 });
 
 describe("BlockchainTest", TEST_CONFIG, () => {

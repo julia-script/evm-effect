@@ -35,5 +35,5 @@ generated/
 
 *.heapsnapshot
 
-.tmp-*/
+.tmp-*
 
