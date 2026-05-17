@@ -148,21 +148,6 @@ importers:
         specifier: ^2.2.0
         version: 2.2.0
     devDependencies:
-      '@biomejs/biome':
-        specifier: ^2.4.15
-        version: 2.4.15
-      '@biomejs/js-api':
-        specifier: 4.0.0
-        version: 4.0.0(@biomejs/wasm-nodejs@2.4.15)(@biomejs/wasm-web@2.4.15)
-      '@biomejs/wasm-nodejs':
-        specifier: 2.4.15
-        version: 2.4.15
-      '@biomejs/wasm-web':
-        specifier: 2.4.15
-        version: 2.4.15
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-beta.66(effect@4.0.0-beta.66)(ioredis@5.10.1)
       '@types/node':
         specifier: ^24.8.1
         version: 24.12.4
@@ -280,6 +265,43 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@25.8.0)(jiti@2.7.0)(terser@5.47.1)(tsx@4.22.0)(yaml@2.9.0)
+
+  packages/rpc:
+    dependencies:
+      '@evm-effect/ethereum-types':
+        specifier: workspace:*
+        version: link:../ethereum-types
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-beta.66
+      ts-dedent:
+        specifier: ^2.2.0
+        version: 2.2.0
+    devDependencies:
+      '@biomejs/biome':
+        specifier: ^2.4.15
+        version: 2.4.15
+      '@biomejs/js-api':
+        specifier: 4.0.0
+        version: 4.0.0(@biomejs/wasm-nodejs@2.4.15)(@biomejs/wasm-web@2.4.15)
+      '@biomejs/wasm-nodejs':
+        specifier: 2.4.15
+        version: 2.4.15
+      '@biomejs/wasm-web':
+        specifier: 2.4.15
+        version: 2.4.15
+      '@effect/platform-node':
+        specifier: 'catalog:'
+        version: 4.0.0-beta.66(effect@4.0.0-beta.66)(ioredis@5.10.1)
+      '@types/node':
+        specifier: ^24.8.1
+        version: 24.12.4
+      tsx:
+        specifier: ^4.22.0
+        version: 4.22.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
 
   packages/shared:
     dependencies:

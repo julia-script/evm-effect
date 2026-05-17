@@ -135,15 +135,13 @@ export const SolcNext = Effect.fn("SolcNext")(function* ({
       ...message,
       params: [url.toString(), version, ...message.params],
     });
-    const exit = yield* Fiber.await(fork).pipe();
-    const [event] = yield* exit
-      .asEffect()
-      .pipe(
-        Effect.mapError(
-          (error) =>
-            new SolcWorkerError({ message: `Failed to await fork: ${error}` }),
-        ),
-      );
+    const exit = yield* Fiber.await(fork);
+    const [event] = yield* exit.pipe(
+      Effect.mapError(
+        (error) =>
+          new SolcWorkerError({ message: `Failed to await fork: ${error}` }),
+      ),
+    );
     if (event.type === "message") {
       return yield* Effect.succeed(
         (event as MessageEvent).data as JSONRpcResponse,

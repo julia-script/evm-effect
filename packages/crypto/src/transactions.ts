@@ -540,7 +540,9 @@ export const SET_CODE_TX_MAGIC = new Uint8Array([0x05]);
 const SECP256K1N =
   0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
 
-export const recoverAuthority = (authorization: Authorization) => {
+export const recoverAuthority = (
+  authorization: Authorization,
+): Effect.Effect<Address, FailedToRecoverPublicKeyError> => {
   const yParity = authorization.yParity;
   const r = authorization.r;
   const s = authorization.s;
@@ -558,7 +560,7 @@ export const recoverAuthority = (authorization: Authorization) => {
   }
 
   if (r.value <= 0n || r.value >= SECP256K1N) {
-    return Result.fail(
+    return Effect.fail(
       new FailedToRecoverPublicKeyError({
         message: "Invalid r value in authorization",
       }),
@@ -566,7 +568,7 @@ export const recoverAuthority = (authorization: Authorization) => {
   }
 
   if (s.value <= 0n || s.value > SECP256K1N / 2n) {
-    return Result.fail(
+    return Effect.fail(
       new FailedToRecoverPublicKeyError({
         message: "Invalid s value in authorization",
       }),

@@ -78,11 +78,11 @@ export type Header = (typeof Header)["Type"];
 export const decodeHeader = Effect.fn("decodeHeader")(function* (
   header: Bytes,
 ) {
-  return yield* rlp.decodeTo(Header, header);
+  return yield* rlp.decodeTo(Header, header).pipe(Effect.fromResult);
 });
 
 export const decodeBlock = Effect.fn("decodeBlock")(function* (block: Bytes) {
-  return yield* rlp.decodeTo(Block, block);
+  return yield* rlp.decodeTo(Block, block).pipe(Effect.fromResult);
 });
 export const Block = Schema.TaggedStruct("Block", {
   header: Header,

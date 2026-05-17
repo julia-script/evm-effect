@@ -85,7 +85,10 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
   );
 
   const encodedIndex = rlp.encode(index);
-  const encodedTx = yield* encodeTransaction(tx).asEffect().pipe(Effect.orDie);
+  const encodedTx = yield* encodeTransaction(tx).pipe(
+    Effect.fromResult,
+    Effect.orDie,
+  );
 
   blockOutput.transactionsTrie.set(encodedIndex, encodedTx);
 

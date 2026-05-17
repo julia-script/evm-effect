@@ -292,9 +292,9 @@ const prepareTrie = Effect.fn("prepareTrie")(function* <
       encoded = yield* encodeNode(
         value,
         Option.some(new Bytes({ value: storageRoot.value })),
-      ).asEffect();
+      ).pipe(Effect.fromResult);
     } else {
-      encoded = yield* encodeNode(value, Option.none()).asEffect();
+      encoded = yield* encodeNode(value, Option.none()).pipe(Effect.fromResult);
     }
     if (encoded.value.length === 0) {
       return yield* Effect.fail(

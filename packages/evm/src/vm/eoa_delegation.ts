@@ -59,9 +59,10 @@ export const setDelegation = Effect.fn("setDelegation")(function* (
       continue;
     }
     const baseKey = `message.txEnv.authorizations.${index}.recoverAuthority`;
-    const authority = yield* recoverAuthority(auth)
-      .asEffect()
-      .pipe(Effect.option, Effect.map(Option.getOrNull));
+    const authority = yield* recoverAuthority(auth).pipe(
+      Effect.option,
+      Effect.map(Option.getOrNull),
+    );
     if (!authority) {
       yield* annotateSafe({
         [`${baseKey}.error`]: "Invalid signature",

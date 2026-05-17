@@ -31,17 +31,12 @@ import * as EthBaseTypesSchema from "./schemas/base-types.js";
 
 export * from "./schemas/base-types.js";
 
-import * as generatedSchemas from "./schemas/generated-schemas.js";
-
-export * from "./schemas/generated-schemas.js";
-
 export const EthTypes = {
   ...EthBaseTypesSchema,
   ...bytes,
   ...numeric,
   ...domain,
   ...exceptions,
-  ...generatedSchemas,
 };
 export default EthTypes;
 

@@ -1,5 +1,5 @@
-import { Schema, Tuple } from 'effect';
-import * as EthTypes from './base-types.js';
+import * as EthTypes from "@evm-effect/ethereum-types/schemas/base-types";
+import { Schema, Tuple } from "effect";
 
 /**
  * AccessListEntry
@@ -10,11 +10,11 @@ export const AccessListEntry = Schema.Struct({
   /**
    * address
    */
-  address: EthTypes.AddressFromString,
+  address: EthTypes.HexString,
   /**
    * storageKeys
    */
-  storageKeys: Schema.Array(EthTypes.Bytes32FromString),
+  storageKeys: Schema.Array(EthTypes.HexString),
 });
 
 /**
@@ -29,9 +29,9 @@ export const AccessList = Schema.Array(AccessListEntry);
  *
  * Storage slots for an account
  */
-export const AccountStorage = EthTypes.EntriesFromRecord(
-  EthTypes.Bytes32FromString,
-  EthTypes.Bytes32FromString,
+export const AccountStorage = Schema.Record(
+  EthTypes.HexString,
+  EthTypes.HexString,
 );
 
 /**
@@ -46,26 +46,26 @@ export const AccountOverrideState = Schema.Struct({
    *
    * Balance
    */
-  balance: EthTypes.U256FromString.pipe(Schema.optional),
+  balance: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * code
    *
    * Code
    */
-  code: EthTypes.BytesFromString.pipe(Schema.optional),
+  code: EthTypes.HexString.pipe(Schema.optional),
   /**
    * movePrecompileToAddress
    *
    * MovePrecompileToAddress
    * Moves addresses precompile into the specified address. This move is done before the 'code' override is set. When the specified address is not a precompile, the behaviour is undefined and different clients might behave differently.
    */
-  movePrecompileToAddress: EthTypes.AddressFromString.pipe(Schema.optional),
+  movePrecompileToAddress: EthTypes.HexString.pipe(Schema.optional),
   /**
    * nonce
    *
    * Nonce
    */
-  nonce: EthTypes.U64FromString.pipe(Schema.optional),
+  nonce: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * state
    *
@@ -86,26 +86,26 @@ export const AccountOverrideStateDiff = Schema.Struct({
    *
    * Balance
    */
-  balance: EthTypes.U256FromString.pipe(Schema.optional),
+  balance: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * code
    *
    * Code
    */
-  code: EthTypes.BytesFromString.pipe(Schema.optional),
+  code: EthTypes.HexString.pipe(Schema.optional),
   /**
    * movePrecompileToAddress
    *
    * MovePrecompileToAddress
    * Moves addresses precompile into the specified address. This move is done before the 'code' override is set. Can only move precompiles.
    */
-  movePrecompileToAddress: EthTypes.AddressFromString.pipe(Schema.optional),
+  movePrecompileToAddress: EthTypes.HexString.pipe(Schema.optional),
   /**
    * nonce
    *
    * Nonce
    */
-  nonce: EthTypes.U64FromString.pipe(Schema.optional),
+  nonce: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * stateDiff
    *
@@ -136,39 +136,39 @@ export const AuthorizationList = Schema.Array(
     /**
      * address
      */
-    address: EthTypes.AddressFromString,
+    address: EthTypes.HexString,
     /**
      * chainId
      *
      * chainId
      * Chain ID on which this transaction is valid
      */
-    chainId: EthTypes.UintFromString,
+    chainId: EthTypes.BigIntFromString,
     /**
      * nonce
      *
      * nonce
      */
-    nonce: EthTypes.UintFromString,
+    nonce: EthTypes.BigIntFromString,
     /**
      * r
      *
      * r
      */
-    r: EthTypes.U256FromString,
+    r: EthTypes.BigIntFromString,
     /**
      * s
      *
      * s
      */
-    s: EthTypes.U256FromString,
+    s: EthTypes.BigIntFromString,
     /**
      * yParity
      *
      * yParity
      * The parity (0 for even, 1 for odd) of the y-value of the secp256k1 signature
      */
-    yParity: EthTypes.U8FromString,
+    yParity: EthTypes.HexString,
   }),
 );
 
@@ -181,11 +181,11 @@ export const BalanceChange = Schema.Struct({
   /**
    * index
    */
-  index: EthTypes.U32FromString,
+  index: EthTypes.BigIntFromString,
   /**
    * value
    */
-  value: EthTypes.U256FromString,
+  value: EthTypes.BigIntFromString,
 });
 
 /**
@@ -199,13 +199,13 @@ export const BlobAndProofV1 = Schema.Struct({
    *
    * Blob
    */
-  blob: EthTypes.BytesFromString,
+  blob: EthTypes.HexString,
   /**
    * proof
    *
    * proof
    */
-  proof: EthTypes.BytesFromString,
+  proof: EthTypes.HexString,
 });
 
 /**
@@ -219,13 +219,13 @@ export const BlobAndProofV2 = Schema.Struct({
    *
    * Blob
    */
-  blob: EthTypes.BytesFromString,
+  blob: EthTypes.HexString,
   /**
    * proofs
    *
    * Cell Proofs
    */
-  proofs: Schema.Array(EthTypes.BytesFromString),
+  proofs: Schema.Array(EthTypes.HexString),
 });
 
 /**
@@ -239,15 +239,13 @@ export const BlobCellsAndProofsV1 = Schema.Struct({
    *
    * Blob Cells
    */
-  blob_cells: Schema.Array(
-    Schema.Union([EthTypes.BytesFromString, Schema.Null]),
-  ),
+  blob_cells: Schema.Array(Schema.Union([EthTypes.HexString, Schema.Null])),
   /**
    * proofs
    *
    * Cell Proofs
    */
-  proofs: Schema.Array(Schema.Union([EthTypes.BytesFromString, Schema.Null])),
+  proofs: Schema.Array(Schema.Union([EthTypes.HexString, Schema.Null])),
 });
 
 /**
@@ -261,19 +259,19 @@ export const BlobsBundleV1 = Schema.Struct({
    *
    * Blobs
    */
-  blobs: Schema.Array(EthTypes.BytesFromString),
+  blobs: Schema.Array(EthTypes.HexString),
   /**
    * commitments
    *
    * Commitments
    */
-  commitments: Schema.Array(EthTypes.BytesFromString),
+  commitments: Schema.Array(EthTypes.HexString),
   /**
    * proofs
    *
    * Proofs
    */
-  proofs: Schema.Array(EthTypes.BytesFromString),
+  proofs: Schema.Array(EthTypes.HexString),
 });
 
 /**
@@ -287,19 +285,19 @@ export const BlobsBundleV2 = Schema.Struct({
    *
    * Blobs
    */
-  blobs: Schema.Array(EthTypes.BytesFromString),
+  blobs: Schema.Array(EthTypes.HexString),
   /**
    * commitments
    *
    * Commitments
    */
-  commitments: Schema.Array(EthTypes.BytesFromString),
+  commitments: Schema.Array(EthTypes.HexString),
   /**
    * proofs
    *
    * Proofs
    */
-  proofs: Schema.Array(EthTypes.BytesFromString),
+  proofs: Schema.Array(EthTypes.HexString),
 });
 
 /**
@@ -330,7 +328,7 @@ export const BlockTag = Schema.Literals([
  * Block number or tag
  */
 export const BlockNumberOrTag = Schema.Union([
-  EthTypes.UintFromString,
+  EthTypes.BigIntFromString,
   BlockTag,
 ]);
 
@@ -340,9 +338,9 @@ export const BlockNumberOrTag = Schema.Union([
  * Block number, tag, or block hash
  */
 export const BlockNumberOrTagOrHash = Schema.Union([
-  EthTypes.UintFromString,
+  EthTypes.BigIntFromString,
   BlockTag,
-  EthTypes.Bytes32FromString,
+  EthTypes.HexString,
 ]);
 
 /**
@@ -382,19 +380,19 @@ export const CallResultFailure = Schema.Struct({
    *
    * Return gasUsed
    */
-  gasUsed: EthTypes.U64FromString,
+  gasUsed: EthTypes.BigIntFromString,
   /**
    * maxUsedGas
    *
    * Maximum gas used during execution before refunds
    */
-  maxUsedGas: EthTypes.U64FromString.pipe(Schema.optional),
+  maxUsedGas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * returnData
    *
    * Return data
    */
-  returnData: EthTypes.BytesFromString,
+  returnData: EthTypes.HexString,
   /**
    * status
    *
@@ -414,11 +412,11 @@ export const CodeChange = Schema.Struct({
   /**
    * code
    */
-  code: EthTypes.BytesFromString,
+  code: EthTypes.HexString,
   /**
    * index
    */
-  index: EthTypes.U32FromString,
+  index: EthTypes.BigIntFromString,
 });
 
 /**
@@ -470,85 +468,85 @@ export const ExecutionPayloadV1 = Schema.Struct({
    *
    * Base fee per gas
    */
-  baseFeePerGas: EthTypes.U256FromString,
+  baseFeePerGas: EthTypes.BigIntFromString,
   /**
    * blockHash
    *
    * Block hash
    */
-  blockHash: EthTypes.Bytes32FromString,
+  blockHash: EthTypes.HexString,
   /**
    * blockNumber
    *
    * Block number
    */
-  blockNumber: EthTypes.U64FromString,
+  blockNumber: EthTypes.BigIntFromString,
   /**
    * extraData
    *
    * Extra data
    */
-  extraData: EthTypes.BytesFromString,
+  extraData: EthTypes.HexString,
   /**
    * feeRecipient
    *
    * Recipient of transaction priority fees
    */
-  feeRecipient: EthTypes.AddressFromString,
+  feeRecipient: EthTypes.HexString,
   /**
    * gasLimit
    *
    * Gas limit
    */
-  gasLimit: EthTypes.U64FromString,
+  gasLimit: EthTypes.BigIntFromString,
   /**
    * gasUsed
    *
    * Gas used
    */
-  gasUsed: EthTypes.U64FromString,
+  gasUsed: EthTypes.BigIntFromString,
   /**
    * logsBloom
    *
    * Bloom filter
    */
-  logsBloom: EthTypes.Bytes256FromString,
+  logsBloom: EthTypes.HexString,
   /**
    * parentHash
    *
    * Parent block hash
    */
-  parentHash: EthTypes.Bytes32FromString,
+  parentHash: EthTypes.HexString,
   /**
    * prevRandao
    *
    * Previous randao value
    */
-  prevRandao: EthTypes.Bytes32FromString,
+  prevRandao: EthTypes.HexString,
   /**
    * receiptsRoot
    *
    * Receipts root
    */
-  receiptsRoot: EthTypes.Bytes32FromString,
+  receiptsRoot: EthTypes.HexString,
   /**
    * stateRoot
    *
    * State root
    */
-  stateRoot: EthTypes.Bytes32FromString,
+  stateRoot: EthTypes.HexString,
   /**
    * timestamp
    *
    * Timestamp
    */
-  timestamp: EthTypes.U64FromString,
+  timestamp: EthTypes.BigIntFromString,
   /**
    * transactions
    *
    * Transactions
    */
-  transactions: Schema.Array(EthTypes.BytesFromString),
+  transactions: Schema.Array(EthTypes.HexString),
 });
 
 /**
@@ -557,8 +555,8 @@ export const ExecutionPayloadV1 = Schema.Struct({
  * Filter Topic List Entry
  */
 export const FilterTopic = Schema.Union([
-  EthTypes.Bytes32FromString,
-  Schema.Array(EthTypes.Bytes32FromString),
+  EthTypes.HexString,
+  Schema.Array(EthTypes.HexString),
 ]);
 
 /**
@@ -585,21 +583,21 @@ export const Filter = Schema.Union([
      */
     address: Schema.Union([
       Schema.Null,
-      EthTypes.AddressFromString,
-      Schema.Array(EthTypes.AddressFromString),
+      EthTypes.HexString,
+      Schema.Array(EthTypes.HexString),
     ]).pipe(Schema.optional),
     /**
      * fromBlock
      *
      * from block
      */
-    fromBlock: EthTypes.UintFromString.pipe(Schema.optional),
+    fromBlock: EthTypes.BigIntFromString.pipe(Schema.optional),
     /**
      * toBlock
      *
      * to block
      */
-    toBlock: EthTypes.UintFromString.pipe(Schema.optional),
+    toBlock: EthTypes.BigIntFromString.pipe(Schema.optional),
     /**
      * topics
      *
@@ -615,15 +613,15 @@ export const Filter = Schema.Union([
      */
     address: Schema.Union([
       Schema.Null,
-      EthTypes.AddressFromString,
-      Schema.Array(EthTypes.AddressFromString),
+      EthTypes.HexString,
+      Schema.Array(EthTypes.HexString),
     ]).pipe(Schema.optional),
     /**
      * blockHash
      *
      * block hash
      */
-    blockHash: EthTypes.Bytes32FromString,
+    blockHash: EthTypes.HexString,
     /**
      * topics
      *
@@ -644,19 +642,19 @@ export const ForkchoiceStateV1 = Schema.Struct({
    *
    * Finalized block hash
    */
-  finalizedBlockHash: EthTypes.Bytes32FromString,
+  finalizedBlockHash: EthTypes.HexString,
   /**
    * headBlockHash
    *
    * Head block hash
    */
-  headBlockHash: EthTypes.Bytes32FromString,
+  headBlockHash: EthTypes.HexString,
   /**
    * safeBlockHash
    *
    * Safe block hash
    */
-  safeBlockHash: EthTypes.Bytes32FromString,
+  safeBlockHash: EthTypes.HexString,
 });
 
 /**
@@ -680,21 +678,21 @@ Default: []
  * EIP-4844 versioned hashes
 Default: []
  */
-  blobVersionedHashes: EthTypes.Bytes32FromString.pipe(Schema.optional),
+  blobVersionedHashes: EthTypes.HexString.pipe(Schema.optional),
   /**
    * from
    *
    * from address
    * Default: null
    */
-  from: EthTypes.AddressFromString.pipe(Schema.optional),
+  from: EthTypes.HexString.pipe(Schema.optional),
   /**
    * gas
    *
    * gas limit
    * Default: Remaining gas in the current block
    */
-  gas: EthTypes.U64FromString.pipe(Schema.optional),
+  gas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
  * gasPrice
  *
@@ -702,14 +700,14 @@ Default: []
  * The gas price willing to be paid by the sender in wei
 Default: 0
  */
-  gasPrice: EthTypes.U256FromString.pipe(Schema.optional),
+  gasPrice: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * input
    *
    * input data
    * Default: no data
    */
-  input: EthTypes.BytesFromString.pipe(Schema.optional),
+  input: EthTypes.HexString.pipe(Schema.optional),
   /**
  * maxFeePerBlobGas
  *
@@ -717,7 +715,7 @@ Default: 0
  * The maximum total fee per blob gas the sender is willing to pay in wei
 Default: 0
  */
-  maxFeePerBlobGas: EthTypes.U256FromString.pipe(Schema.optional),
+  maxFeePerBlobGas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
  * maxFeePerGas
  *
@@ -725,7 +723,7 @@ Default: 0
  * The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei
 Default: 0
  */
-  maxFeePerGas: EthTypes.U256FromString.pipe(Schema.optional),
+  maxFeePerGas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
  * maxPriorityFeePerGas
  *
@@ -733,35 +731,35 @@ Default: 0
  * Maximum fee per gas the sender is willing to pay to miners in wei
 Default: 0
  */
-  maxPriorityFeePerGas: EthTypes.U256FromString.pipe(Schema.optional),
+  maxPriorityFeePerGas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * nonce
    *
    * nonce
    * Default: Defaults to correct nonce
    */
-  nonce: EthTypes.U64FromString.pipe(Schema.optional),
+  nonce: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * to
    *
    * to address
    * Default: 0x0
    */
-  to: EthTypes.AddressFromString.pipe(Schema.optional),
+  to: EthTypes.HexString.pipe(Schema.optional),
   /**
    * type
    *
    * type
    * Default: 0x2
    */
-  type: EthTypes.U8FromString.pipe(Schema.optional),
+  type: EthTypes.HexString.pipe(Schema.optional),
   /**
    * value
    *
    * value
    * Default: 0
    */
-  value: EthTypes.U256FromString.pipe(Schema.optional),
+  value: EthTypes.BigIntFromString.pipe(Schema.optional),
 });
 
 /**
@@ -790,95 +788,91 @@ export const GenericTransaction = Schema.Struct({
    * blobVersionedHashes
    * List of versioned blob hashes associated with the transaction's EIP-4844 data blobs.
    */
-  blobVersionedHashes: Schema.Array(EthTypes.Bytes32FromString).pipe(
-    Schema.optional,
-  ),
+  blobVersionedHashes: Schema.Array(EthTypes.HexString).pipe(Schema.optional),
   /**
    * blobs
    *
    * blobs
    * Raw blob data.
    */
-  blobs: Schema.Array(EthTypes.BytesFromString).pipe(Schema.optional),
+  blobs: Schema.Array(EthTypes.HexString).pipe(Schema.optional),
   /**
    * chainId
    *
    * chainId
    * Chain ID that this transaction is valid on.
    */
-  chainId: EthTypes.UintFromString.pipe(Schema.optional),
+  chainId: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * from
    *
    * from address
    */
-  from: EthTypes.AddressFromString.pipe(Schema.optional),
+  from: EthTypes.HexString.pipe(Schema.optional),
   /**
    * gas
    *
    * gas limit
    */
-  gas: EthTypes.UintFromString.pipe(Schema.optional),
+  gas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * gasPrice
    *
    * gas price
    * The gas price willing to be paid by the sender in wei
    */
-  gasPrice: EthTypes.UintFromString.pipe(Schema.optional),
+  gasPrice: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * input
    *
    * input data
    */
-  input: EthTypes.BytesFromString.pipe(Schema.optional),
+  input: EthTypes.HexString.pipe(Schema.optional),
   /**
    * maxFeePerBlobGas
    *
    * max fee per blob gas
    * The maximum total fee per gas the sender is willing to pay for blob gas in wei
    */
-  maxFeePerBlobGas: EthTypes.UintFromString.pipe(Schema.optional),
+  maxFeePerBlobGas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * maxFeePerGas
    *
    * max fee per gas
    * The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei
    */
-  maxFeePerGas: EthTypes.UintFromString.pipe(Schema.optional),
+  maxFeePerGas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * maxPriorityFeePerGas
    *
    * max priority fee per gas
    * Maximum fee per gas the sender is willing to pay to miners in wei
    */
-  maxPriorityFeePerGas: EthTypes.UintFromString.pipe(Schema.optional),
+  maxPriorityFeePerGas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * nonce
    *
    * nonce
    */
-  nonce: EthTypes.UintFromString.pipe(Schema.optional),
+  nonce: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * to
    *
    * to address
    */
-  to: Schema.Union([Schema.Null, EthTypes.AddressFromString]).pipe(
-    Schema.optional,
-  ),
+  to: Schema.Union([Schema.Null, EthTypes.HexString]).pipe(Schema.optional),
   /**
    * type
    *
    * type
    */
-  type: EthTypes.U8FromString.pipe(Schema.optional),
+  type: EthTypes.HexString.pipe(Schema.optional),
   /**
    * value
    *
    * value
    */
-  value: EthTypes.UintFromString.pipe(Schema.optional),
+  value: EthTypes.BigIntFromString.pipe(Schema.optional),
 });
 
 /**
@@ -892,37 +886,37 @@ export const Log = Schema.Struct({
    *
    * address
    */
-  address: EthTypes.AddressFromString.pipe(Schema.optional),
+  address: EthTypes.HexString.pipe(Schema.optional),
   /**
    * blockHash
    *
    * block hash
    */
-  blockHash: EthTypes.Bytes32FromString.pipe(Schema.optional),
+  blockHash: EthTypes.HexString.pipe(Schema.optional),
   /**
    * blockNumber
    *
    * block number
    */
-  blockNumber: EthTypes.UintFromString.pipe(Schema.optional),
+  blockNumber: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * blockTimestamp
    *
    * block timestamp
    */
-  blockTimestamp: EthTypes.UintFromString.pipe(Schema.optional),
+  blockTimestamp: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * data
    *
    * data
    */
-  data: EthTypes.BytesFromString.pipe(Schema.optional),
+  data: EthTypes.HexString.pipe(Schema.optional),
   /**
    * logIndex
    *
    * log index
    */
-  logIndex: EthTypes.UintFromString.pipe(Schema.optional),
+  logIndex: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * removed
    *
@@ -934,19 +928,19 @@ export const Log = Schema.Struct({
    *
    * topics
    */
-  topics: Schema.Array(EthTypes.Bytes32FromString).pipe(Schema.optional),
+  topics: Schema.Array(EthTypes.HexString).pipe(Schema.optional),
   /**
    * transactionHash
    *
    * transaction hash
    */
-  transactionHash: EthTypes.Bytes32FromString,
+  transactionHash: EthTypes.HexString,
   /**
    * transactionIndex
    *
    * transaction index
    */
-  transactionIndex: EthTypes.UintFromString.pipe(Schema.optional),
+  transactionIndex: EthTypes.BigIntFromString.pipe(Schema.optional),
 });
 
 /**
@@ -960,7 +954,7 @@ export const CallResultSuccess = Schema.Struct({
    *
    * Return gasUsed
    */
-  gasUsed: EthTypes.U64FromString,
+  gasUsed: EthTypes.BigIntFromString,
   /**
    * logs
    *
@@ -972,13 +966,13 @@ export const CallResultSuccess = Schema.Struct({
    *
    * Maximum gas used during execution before refunds
    */
-  maxUsedGas: EthTypes.U64FromString.pipe(Schema.optional),
+  maxUsedGas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * returnData
    *
    * Return data
    */
-  returnData: EthTypes.BytesFromString,
+  returnData: EthTypes.HexString,
   /**
    * status
    *
@@ -1004,7 +998,7 @@ export const CallResults = Schema.Array(
  * Filter results
  */
 export const FilterResults = Schema.Union([
-  Schema.Array(EthTypes.Bytes32FromString),
+  Schema.Array(EthTypes.HexString),
   Schema.Array(Log),
 ]);
 
@@ -1017,11 +1011,11 @@ export const NonceChange = Schema.Struct({
   /**
    * index
    */
-  index: EthTypes.U32FromString,
+  index: EthTypes.BigIntFromString,
   /**
    * value
    */
-  value: EthTypes.U64FromString,
+  value: EthTypes.BigIntFromString,
 });
 
 /**
@@ -1035,19 +1029,19 @@ export const PayloadAttributesV1 = Schema.Struct({
    *
    * Previous randao value
    */
-  prevRandao: EthTypes.Bytes32FromString,
+  prevRandao: EthTypes.HexString,
   /**
    * suggestedFeeRecipient
    *
    * Suggested fee recipient
    */
-  suggestedFeeRecipient: EthTypes.AddressFromString,
+  suggestedFeeRecipient: EthTypes.HexString,
   /**
    * timestamp
    *
    * Timestamp
    */
-  timestamp: EthTypes.U64FromString,
+  timestamp: EthTypes.BigIntFromString,
 });
 
 /**
@@ -1059,7 +1053,7 @@ export const PayloadStatusNoInvalidBlockHash = Schema.Struct({
   /**
    * latestValidHash
    */
-  latestValidHash: EthTypes.Bytes32FromString.pipe(Schema.optional),
+  latestValidHash: EthTypes.HexString.pipe(Schema.optional),
   /**
    * status
    */
@@ -1087,7 +1081,7 @@ export const PayloadStatusV1 = Schema.Struct({
    *
    * The hash of the most recent valid block
    */
-  latestValidHash: EthTypes.Bytes32FromString.pipe(Schema.optional),
+  latestValidHash: EthTypes.HexString.pipe(Schema.optional),
   /**
    * status
    *
@@ -1120,33 +1114,33 @@ export const ReceiptInfo = Schema.Struct({
    * blob gas price
    * The actual value per gas deducted from the sender's account for blob gas. Only specified for blob transactions as defined by EIP-4844.
    */
-  blobGasPrice: EthTypes.UintFromString.pipe(Schema.optional),
+  blobGasPrice: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * blobGasUsed
    *
    * blob gas used
    * The amount of blob gas used for this specific transaction. Only specified for blob transactions as defined by EIP-4844.
    */
-  blobGasUsed: EthTypes.UintFromString.pipe(Schema.optional),
+  blobGasUsed: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * blockHash
    *
    * block hash
    */
-  blockHash: EthTypes.Bytes32FromString,
+  blockHash: EthTypes.HexString,
   /**
    * blockNumber
    *
    * block number
    */
-  blockNumber: EthTypes.UintFromString,
+  blockNumber: EthTypes.BigIntFromString,
   /**
    * contractAddress
    *
    * contract address
    * The contract address created, if the transaction was a contract creation, otherwise null.
    */
-  contractAddress: Schema.Union([EthTypes.AddressFromString, Schema.Null]).pipe(
+  contractAddress: Schema.Union([EthTypes.HexString, Schema.Null]).pipe(
     Schema.optional,
   ),
   /**
@@ -1155,27 +1149,27 @@ export const ReceiptInfo = Schema.Struct({
    * cumulative gas used
    * The sum of gas used by this transaction and all preceding transactions in the same block.
    */
-  cumulativeGasUsed: EthTypes.UintFromString,
+  cumulativeGasUsed: EthTypes.BigIntFromString,
   /**
    * effectiveGasPrice
    *
    * effective gas price
    * The actual value per gas deducted from the sender's account. Before EIP-1559, this is equal to the transaction's gas price. After, it is equal to baseFeePerGas + min(maxFeePerGas - baseFeePerGas, maxPriorityFeePerGas).
    */
-  effectiveGasPrice: EthTypes.UintFromString,
+  effectiveGasPrice: EthTypes.BigIntFromString,
   /**
    * from
    *
    * from
    */
-  from: EthTypes.AddressFromString,
+  from: EthTypes.HexString,
   /**
    * gasUsed
    *
    * gas used
    * The amount of gas used for this specific transaction alone.
    */
-  gasUsed: EthTypes.UintFromString,
+  gasUsed: EthTypes.BigIntFromString,
   /**
    * logs
    *
@@ -1187,48 +1181,46 @@ export const ReceiptInfo = Schema.Struct({
    *
    * logs bloom
    */
-  logsBloom: EthTypes.Bytes256FromString,
+  logsBloom: EthTypes.HexString,
   /**
    * root
    *
    * state root
    * The post-transaction state root. Only specified for transactions included before the Byzantium upgrade.
    */
-  root: EthTypes.Bytes32FromString.pipe(Schema.optional),
+  root: EthTypes.HexString.pipe(Schema.optional),
   /**
    * status
    *
    * status
    * Either 1 (success) or 0 (failure). Only specified for transactions included after the Byzantium upgrade.
    */
-  status: EthTypes.UintFromString.pipe(Schema.optional),
+  status: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * to
    *
    * to
    * Address of the receiver or null in a contract creation transaction.
    */
-  to: Schema.Union([Schema.Null, EthTypes.AddressFromString]).pipe(
-    Schema.optional,
-  ),
+  to: Schema.Union([Schema.Null, EthTypes.HexString]).pipe(Schema.optional),
   /**
    * transactionHash
    *
    * transaction hash
    */
-  transactionHash: EthTypes.Bytes32FromString,
+  transactionHash: EthTypes.HexString,
   /**
    * transactionIndex
    *
    * transaction index
    */
-  transactionIndex: EthTypes.UintFromString,
+  transactionIndex: EthTypes.BigIntFromString,
   /**
    * type
    *
    * type
    */
-  type: EthTypes.U8FromString.pipe(Schema.optional),
+  type: EthTypes.HexString.pipe(Schema.optional),
 });
 
 /**
@@ -1238,7 +1230,7 @@ export const RestrictedPayloadStatusV1 = Schema.Struct({
   /**
    * latestValidHash
    */
-  latestValidHash: EthTypes.Bytes32FromString.pipe(Schema.optional),
+  latestValidHash: EthTypes.HexString.pipe(Schema.optional),
   /**
    * status
    *
@@ -1268,7 +1260,7 @@ export const ForkchoiceUpdatedResponseV1 = Schema.Struct({
    *
    * Payload id
    */
-  payloadId: EthTypes.Bytes8FromString.pipe(Schema.optional),
+  payloadId: EthTypes.HexString.pipe(Schema.optional),
   /**
    * payloadStatus
    *
@@ -1282,8 +1274,8 @@ export const ForkchoiceUpdatedResponseV1 = Schema.Struct({
  *
  * Dictionary of addresses in the state to be overridden
  */
-export const StateOverrides = EthTypes.EntriesFromRecord(
-  EthTypes.AddressFromString,
+export const StateOverrides = Schema.Record(
+  EthTypes.HexString,
   AccountOverride,
 );
 
@@ -1296,11 +1288,11 @@ export const StorageChange = Schema.Struct({
   /**
    * index
    */
-  index: EthTypes.U32FromString,
+  index: EthTypes.BigIntFromString,
   /**
    * value
    */
-  value: EthTypes.Bytes32FromString,
+  value: EthTypes.HexString,
 });
 
 /**
@@ -1316,7 +1308,7 @@ export const SlotChanges = Schema.Struct({
   /**
    * key
    */
-  key: EthTypes.Bytes32FromString,
+  key: EthTypes.HexString,
 });
 
 /**
@@ -1328,7 +1320,7 @@ export const AccountAccess = Schema.Struct({
   /**
    * address
    */
-  address: EthTypes.AddressFromString,
+  address: EthTypes.HexString,
   /**
    * balanceChanges
    */
@@ -1348,7 +1340,7 @@ export const AccountAccess = Schema.Struct({
   /**
    * storageReads
    */
-  storageReads: Schema.Array(EthTypes.Bytes32FromString).pipe(Schema.optional),
+  storageReads: Schema.Array(EthTypes.HexString).pipe(Schema.optional),
 });
 
 /**
@@ -1369,19 +1361,19 @@ export const StorageProof = Schema.Struct({
    *
    * key
    */
-  key: EthTypes.BytesFromString,
+  key: EthTypes.HexString,
   /**
    * proof
    *
    * proof
    */
-  proof: Schema.Array(EthTypes.BytesFromString),
+  proof: Schema.Array(EthTypes.HexString),
   /**
    * value
    *
    * value
    */
-  value: EthTypes.U256FromString,
+  value: EthTypes.BigIntFromString,
 });
 
 /**
@@ -1395,37 +1387,37 @@ export const AccountProof = Schema.Struct({
    *
    * accountProof
    */
-  accountProof: Schema.Array(EthTypes.BytesFromString),
+  accountProof: Schema.Array(EthTypes.HexString),
   /**
    * address
    *
    * address
    */
-  address: EthTypes.AddressFromString,
+  address: EthTypes.HexString,
   /**
    * balance
    *
    * balance
    */
-  balance: EthTypes.U256FromString,
+  balance: EthTypes.BigIntFromString,
   /**
    * codeHash
    *
    * codeHash
    */
-  codeHash: EthTypes.Bytes32FromString,
+  codeHash: EthTypes.HexString,
   /**
    * nonce
    *
    * nonce
    */
-  nonce: EthTypes.U64FromString,
+  nonce: EthTypes.BigIntFromString,
   /**
    * storageHash
    *
    * storageHash
    */
-  storageHash: EthTypes.Bytes32FromString,
+  storageHash: EthTypes.HexString,
   /**
    * storageProof
    *
@@ -1446,19 +1438,19 @@ export const SyncingStatus = Schema.Union([
      *
      * Current block
      */
-    currentBlock: EthTypes.UintFromString.pipe(Schema.optional),
+    currentBlock: EthTypes.BigIntFromString.pipe(Schema.optional),
     /**
      * highestBlock
      *
      * Highest block
      */
-    highestBlock: EthTypes.UintFromString.pipe(Schema.optional),
+    highestBlock: EthTypes.BigIntFromString.pipe(Schema.optional),
     /**
      * startingBlock
      *
      * Starting block
      */
-    startingBlock: EthTypes.UintFromString.pipe(Schema.optional),
+    startingBlock: EthTypes.BigIntFromString.pipe(Schema.optional),
   }),
   Schema.Boolean,
 ]);
@@ -1482,54 +1474,52 @@ export const Transaction1559Unsigned = Schema.Struct({
    * chainId
    * Chain ID that this transaction is valid on.
    */
-  chainId: EthTypes.UintFromString,
+  chainId: EthTypes.BigIntFromString,
   /**
    * gas
    *
    * gas limit
    */
-  gas: EthTypes.UintFromString,
+  gas: EthTypes.BigIntFromString,
   /**
    * gasPrice
    *
    * gas price
    * The effective gas price paid by the sender in wei. For transactions not yet included in a block, this value should be set equal to the max fee per gas. This field is DEPRECATED, please transition to using effectiveGasPrice in the receipt object going forward.
    */
-  gasPrice: EthTypes.UintFromString,
+  gasPrice: EthTypes.BigIntFromString,
   /**
    * input
    *
    * input data
    */
-  input: EthTypes.BytesFromString,
+  input: EthTypes.HexString,
   /**
    * maxFeePerGas
    *
    * max fee per gas
    * The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei
    */
-  maxFeePerGas: EthTypes.UintFromString,
+  maxFeePerGas: EthTypes.BigIntFromString,
   /**
    * maxPriorityFeePerGas
    *
    * max priority fee per gas
    * Maximum fee per gas the sender is willing to pay to miners in wei
    */
-  maxPriorityFeePerGas: EthTypes.UintFromString,
+  maxPriorityFeePerGas: EthTypes.BigIntFromString,
   /**
    * nonce
    *
    * nonce
    */
-  nonce: EthTypes.UintFromString,
+  nonce: EthTypes.BigIntFromString,
   /**
    * to
    *
    * to address
    */
-  to: Schema.Union([Schema.Null, EthTypes.AddressFromString]).pipe(
-    Schema.optional,
-  ),
+  to: Schema.Union([Schema.Null, EthTypes.HexString]).pipe(Schema.optional),
   /**
    * type
    *
@@ -1543,7 +1533,7 @@ export const Transaction1559Unsigned = Schema.Struct({
    *
    * value
    */
-  value: EthTypes.UintFromString,
+  value: EthTypes.BigIntFromString,
 });
 
 /**
@@ -1554,10 +1544,10 @@ export const Transaction1559Unsigned = Schema.Struct({
 export const Transaction1559Signed = Transaction1559Unsigned.mapFields(
   (fields) => ({
     ...fields,
-    r: EthTypes.UintFromString,
-    s: EthTypes.UintFromString,
-    v: EthTypes.U8FromString.pipe(Schema.optional),
-    yParity: EthTypes.U8FromString,
+    r: EthTypes.BigIntFromString,
+    s: EthTypes.BigIntFromString,
+    v: EthTypes.HexString.pipe(Schema.optional),
+    yParity: EthTypes.HexString,
   }),
 );
 
@@ -1580,40 +1570,38 @@ export const Transaction2930Unsigned = Schema.Struct({
    * chainId
    * Chain ID that this transaction is valid on.
    */
-  chainId: EthTypes.UintFromString,
+  chainId: EthTypes.BigIntFromString,
   /**
    * gas
    *
    * gas limit
    */
-  gas: EthTypes.UintFromString,
+  gas: EthTypes.BigIntFromString,
   /**
    * gasPrice
    *
    * gas price
    * The gas price willing to be paid by the sender in wei
    */
-  gasPrice: EthTypes.UintFromString,
+  gasPrice: EthTypes.BigIntFromString,
   /**
    * input
    *
    * input data
    */
-  input: EthTypes.BytesFromString,
+  input: EthTypes.HexString,
   /**
    * nonce
    *
    * nonce
    */
-  nonce: EthTypes.UintFromString,
+  nonce: EthTypes.BigIntFromString,
   /**
    * to
    *
    * to address
    */
-  to: Schema.Union([Schema.Null, EthTypes.AddressFromString]).pipe(
-    Schema.optional,
-  ),
+  to: Schema.Union([Schema.Null, EthTypes.HexString]).pipe(Schema.optional),
   /**
    * type
    *
@@ -1627,7 +1615,7 @@ export const Transaction2930Unsigned = Schema.Struct({
    *
    * value
    */
-  value: EthTypes.UintFromString,
+  value: EthTypes.BigIntFromString,
 });
 
 /**
@@ -1638,10 +1626,10 @@ export const Transaction2930Unsigned = Schema.Struct({
 export const Transaction2930Signed = Transaction2930Unsigned.mapFields(
   (fields) => ({
     ...fields,
-    r: EthTypes.UintFromString,
-    s: EthTypes.UintFromString,
-    v: EthTypes.U8FromString.pipe(Schema.optional),
-    yParity: EthTypes.U8FromString,
+    r: EthTypes.BigIntFromString,
+    s: EthTypes.BigIntFromString,
+    v: EthTypes.HexString.pipe(Schema.optional),
+    yParity: EthTypes.HexString,
   }),
 );
 
@@ -1664,66 +1652,66 @@ export const Transaction4844Unsigned = Schema.Struct({
    * blobVersionedHashes
    * List of versioned blob hashes associated with the transaction's EIP-4844 data blobs
    */
-  blobVersionedHashes: Schema.Array(EthTypes.Bytes32FromString),
+  blobVersionedHashes: Schema.Array(EthTypes.HexString),
   /**
    * chainId
    *
    * chainId
    * Chain ID that this transaction is valid on
    */
-  chainId: EthTypes.UintFromString,
+  chainId: EthTypes.BigIntFromString,
   /**
    * gas
    *
    * gas limit
    */
-  gas: EthTypes.UintFromString,
+  gas: EthTypes.BigIntFromString,
   /**
    * gasPrice
    *
    * gas price
    * The effective gas price paid by the sender in wei. For transactions not yet included in a block, this value should be set equal to the max fee per gas. This field is DEPRECATED, please transition to using effectiveGasPrice in the receipt object going forward.
    */
-  gasPrice: EthTypes.UintFromString.pipe(Schema.optional),
+  gasPrice: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * input
    *
    * input data
    */
-  input: EthTypes.BytesFromString,
+  input: EthTypes.HexString,
   /**
    * maxFeePerBlobGas
    *
    * max fee per blob gas
    * The maximum total fee per gas the sender is willing to pay for blob gas in wei
    */
-  maxFeePerBlobGas: EthTypes.UintFromString,
+  maxFeePerBlobGas: EthTypes.BigIntFromString,
   /**
    * maxFeePerGas
    *
    * max fee per gas
    * The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei
    */
-  maxFeePerGas: EthTypes.UintFromString,
+  maxFeePerGas: EthTypes.BigIntFromString,
   /**
    * maxPriorityFeePerGas
    *
    * max priority fee per gas
    * Maximum fee per gas the sender is willing to pay to miners in wei
    */
-  maxPriorityFeePerGas: EthTypes.UintFromString,
+  maxPriorityFeePerGas: EthTypes.BigIntFromString,
   /**
    * nonce
    *
    * nonce
    */
-  nonce: EthTypes.UintFromString,
+  nonce: EthTypes.BigIntFromString,
   /**
    * to
    *
    * to address
    */
-  to: EthTypes.AddressFromString,
+  to: EthTypes.HexString,
   /**
    * type
    *
@@ -1737,7 +1725,7 @@ export const Transaction4844Unsigned = Schema.Struct({
    *
    * value
    */
-  value: EthTypes.UintFromString,
+  value: EthTypes.BigIntFromString,
 });
 
 /**
@@ -1748,10 +1736,10 @@ export const Transaction4844Unsigned = Schema.Struct({
 export const Transaction4844Signed = Transaction4844Unsigned.mapFields(
   (fields) => ({
     ...fields,
-    r: EthTypes.UintFromString,
-    s: EthTypes.UintFromString,
-    v: EthTypes.U8FromString.pipe(Schema.optional),
-    yParity: EthTypes.U8FromString,
+    r: EthTypes.BigIntFromString,
+    s: EthTypes.BigIntFromString,
+    v: EthTypes.HexString.pipe(Schema.optional),
+    yParity: EthTypes.HexString,
   }),
 );
 
@@ -1780,52 +1768,52 @@ export const Transaction7702Unsigned = Schema.Struct({
    * chainId
    * Chain ID that this transaction is valid on
    */
-  chainId: EthTypes.UintFromString,
+  chainId: EthTypes.BigIntFromString,
   /**
    * gas
    *
    * gas limit
    */
-  gas: EthTypes.UintFromString,
+  gas: EthTypes.BigIntFromString,
   /**
    * gasPrice
    *
    * gas price
    * The effective gas price paid by the sender in wei. For transactions not yet included in a block, this value should be set equal to the max fee per gas. This field is DEPRECATED, please transition to using effectiveGasPrice in the receipt object going forward.
    */
-  gasPrice: EthTypes.UintFromString.pipe(Schema.optional),
+  gasPrice: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * input
    *
    * input data
    */
-  input: EthTypes.BytesFromString,
+  input: EthTypes.HexString,
   /**
    * maxFeePerGas
    *
    * max fee per gas
    * The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei
    */
-  maxFeePerGas: EthTypes.UintFromString,
+  maxFeePerGas: EthTypes.BigIntFromString,
   /**
    * maxPriorityFeePerGas
    *
    * max priority fee per gas
    * Maximum fee per gas the sender is willing to pay to miners in wei
    */
-  maxPriorityFeePerGas: EthTypes.UintFromString,
+  maxPriorityFeePerGas: EthTypes.BigIntFromString,
   /**
    * nonce
    *
    * nonce
    */
-  nonce: EthTypes.UintFromString,
+  nonce: EthTypes.BigIntFromString,
   /**
    * to
    *
    * to address
    */
-  to: EthTypes.AddressFromString,
+  to: EthTypes.HexString,
   /**
    * type
    *
@@ -1839,7 +1827,7 @@ export const Transaction7702Unsigned = Schema.Struct({
    *
    * value
    */
-  value: EthTypes.UintFromString,
+  value: EthTypes.BigIntFromString,
 });
 
 /**
@@ -1850,10 +1838,10 @@ export const Transaction7702Unsigned = Schema.Struct({
 export const Transaction7702Signed = Transaction7702Unsigned.mapFields(
   (fields) => ({
     ...fields,
-    r: EthTypes.UintFromString,
-    s: EthTypes.UintFromString,
-    v: EthTypes.U8FromString.pipe(Schema.optional),
-    yParity: EthTypes.U8FromString,
+    r: EthTypes.BigIntFromString,
+    s: EthTypes.BigIntFromString,
+    v: EthTypes.HexString.pipe(Schema.optional),
+    yParity: EthTypes.HexString,
   }),
 );
 
@@ -1869,40 +1857,38 @@ export const TransactionLegacyUnsigned = Schema.Struct({
    * chainId
    * Chain ID that this transaction is valid on.
    */
-  chainId: EthTypes.UintFromString.pipe(Schema.optional),
+  chainId: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * gas
    *
    * gas limit
    */
-  gas: EthTypes.UintFromString,
+  gas: EthTypes.BigIntFromString,
   /**
    * gasPrice
    *
    * gas price
    * The gas price willing to be paid by the sender in wei
    */
-  gasPrice: EthTypes.UintFromString,
+  gasPrice: EthTypes.BigIntFromString,
   /**
    * input
    *
    * input data
    */
-  input: EthTypes.BytesFromString,
+  input: EthTypes.HexString,
   /**
    * nonce
    *
    * nonce
    */
-  nonce: EthTypes.UintFromString,
+  nonce: EthTypes.BigIntFromString,
   /**
    * to
    *
    * to address
    */
-  to: Schema.Union([Schema.Null, EthTypes.AddressFromString]).pipe(
-    Schema.optional,
-  ),
+  to: Schema.Union([Schema.Null, EthTypes.HexString]).pipe(Schema.optional),
   /**
    * type
    *
@@ -1916,7 +1902,7 @@ export const TransactionLegacyUnsigned = Schema.Struct({
    *
    * value
    */
-  value: EthTypes.UintFromString,
+  value: EthTypes.BigIntFromString,
 });
 
 /**
@@ -1927,9 +1913,9 @@ export const TransactionLegacyUnsigned = Schema.Struct({
 export const TransactionLegacySigned = TransactionLegacyUnsigned.mapFields(
   (fields) => ({
     ...fields,
-    r: EthTypes.UintFromString,
-    s: EthTypes.UintFromString,
-    v: EthTypes.UintFromString,
+    r: EthTypes.BigIntFromString,
+    s: EthTypes.BigIntFromString,
+    v: EthTypes.BigIntFromString,
   }),
 );
 
@@ -1956,8 +1942,8 @@ export const PendingTransactionInfo = TransactionSigned.mapMembers(
       blockHash: Schema.Null.pipe(Schema.optional),
       blockNumber: Schema.Null.pipe(Schema.optional),
       blockTimestamp: Schema.Null.pipe(Schema.optional),
-      from: EthTypes.AddressFromString,
-      hash: EthTypes.Bytes32FromString,
+      from: EthTypes.HexString,
+      hash: EthTypes.HexString,
       transactionIndex: Schema.Null.pipe(Schema.optional),
     }),
   ),
@@ -1971,12 +1957,12 @@ export const PendingTransactionInfo = TransactionSigned.mapMembers(
 export const TransactionInfo = TransactionSigned.mapMembers(
   Tuple.map(
     Schema.fieldsAssign({
-      blockHash: EthTypes.Bytes32FromString,
-      blockNumber: EthTypes.UintFromString,
-      blockTimestamp: EthTypes.UintFromString,
-      from: EthTypes.AddressFromString,
-      hash: EthTypes.Bytes32FromString,
-      transactionIndex: EthTypes.UintFromString,
+      blockHash: EthTypes.HexString,
+      blockNumber: EthTypes.BigIntFromString,
+      blockTimestamp: EthTypes.BigIntFromString,
+      from: EthTypes.HexString,
+      hash: EthTypes.HexString,
+      transactionIndex: EthTypes.BigIntFromString,
     }),
   ),
 );
@@ -2003,19 +1989,19 @@ export const TransitionConfigurationV1 = Schema.Struct({
    *
    * Terminal block hash
    */
-  terminalBlockHash: EthTypes.Bytes32FromString,
+  terminalBlockHash: EthTypes.HexString,
   /**
    * terminalBlockNumber
    *
    * Terminal block number
    */
-  terminalBlockNumber: EthTypes.U64FromString,
+  terminalBlockNumber: EthTypes.BigIntFromString,
   /**
    * terminalTotalDifficulty
    *
    * Terminal total difficulty
    */
-  terminalTotalDifficulty: EthTypes.U256FromString,
+  terminalTotalDifficulty: EthTypes.BigIntFromString,
 });
 
 /**
@@ -2093,14 +2079,14 @@ export const TxpoolStatus = Schema.Struct({
    * pending count
    * Number of transactions ready for inclusion in the next block(s)
    */
-  pending: EthTypes.UintFromString,
+  pending: EthTypes.BigIntFromString,
   /**
    * queued
    *
    * queued count
    * Number of transactions with nonce gaps awaiting preceding transactions before they can be executed
    */
-  queued: EthTypes.UintFromString,
+  queued: EthTypes.BigIntFromString,
 });
 
 /**
@@ -2114,25 +2100,25 @@ export const Withdrawal = Schema.Struct({
    *
    * recipient address for withdrawal value
    */
-  address: EthTypes.AddressFromString,
+  address: EthTypes.HexString,
   /**
    * amount
    *
    * value contained in withdrawal
    */
-  amount: EthTypes.U256FromString,
+  amount: EthTypes.BigIntFromString,
   /**
    * index
    *
    * index of withdrawal
    */
-  index: EthTypes.U64FromString,
+  index: EthTypes.BigIntFromString,
   /**
    * validatorIndex
    *
    * index of validator that generated withdrawal
    */
-  validatorIndex: EthTypes.U64FromString,
+  validatorIndex: EthTypes.BigIntFromString,
 });
 
 /**
@@ -2146,138 +2132,138 @@ export const Block = Schema.Struct({
    *
    * Base fee per gas
    */
-  baseFeePerGas: EthTypes.UintFromString.pipe(Schema.optional),
+  baseFeePerGas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * blobGasUsed
    *
    * Blob gas used
    */
-  blobGasUsed: EthTypes.UintFromString.pipe(Schema.optional),
+  blobGasUsed: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * blockAccessListHash
    *
    * EIP-7928 block access list hash
    */
-  blockAccessListHash: EthTypes.Bytes32FromString.pipe(Schema.optional),
+  blockAccessListHash: EthTypes.HexString.pipe(Schema.optional),
   /**
    * difficulty
    *
    * Difficulty
    */
-  difficulty: EthTypes.UintFromString.pipe(Schema.optional),
+  difficulty: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * excessBlobGas
    *
    * Excess blob gas
    */
-  excessBlobGas: EthTypes.UintFromString.pipe(Schema.optional),
+  excessBlobGas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * extraData
    *
    * Extra data
    */
-  extraData: EthTypes.BytesFromString,
+  extraData: EthTypes.HexString,
   /**
    * gasLimit
    *
    * Gas limit
    */
-  gasLimit: EthTypes.UintFromString,
+  gasLimit: EthTypes.BigIntFromString,
   /**
    * gasUsed
    *
    * Gas used
    */
-  gasUsed: EthTypes.UintFromString,
+  gasUsed: EthTypes.BigIntFromString,
   /**
    * hash
    *
    * Hash
    */
-  hash: EthTypes.Bytes32FromString,
+  hash: EthTypes.HexString,
   /**
    * logsBloom
    *
    * Bloom filter
    */
-  logsBloom: EthTypes.Bytes256FromString,
+  logsBloom: EthTypes.HexString,
   /**
    * miner
    *
    * Coinbase
    */
-  miner: EthTypes.AddressFromString,
+  miner: EthTypes.HexString,
   /**
    * mixHash
    *
    * Mix hash
    */
-  mixHash: EthTypes.Bytes32FromString,
+  mixHash: EthTypes.HexString,
   /**
    * nonce
    *
    * Nonce
    */
-  nonce: EthTypes.Bytes8FromString,
+  nonce: EthTypes.HexString,
   /**
    * number
    *
    * Number
    */
-  number: EthTypes.UintFromString,
+  number: EthTypes.BigIntFromString,
   /**
    * parentBeaconBlockRoot
    *
    * Parent Beacon Block Root
    */
-  parentBeaconBlockRoot: EthTypes.Bytes32FromString.pipe(Schema.optional),
+  parentBeaconBlockRoot: EthTypes.HexString.pipe(Schema.optional),
   /**
    * parentHash
    *
    * Parent block hash
    */
-  parentHash: EthTypes.Bytes32FromString,
+  parentHash: EthTypes.HexString,
   /**
    * receiptsRoot
    *
    * Receipts root
    */
-  receiptsRoot: EthTypes.Bytes32FromString,
+  receiptsRoot: EthTypes.HexString,
   /**
    * requestsHash
    *
    * EIP-7685 requests hash
    */
-  requestsHash: EthTypes.Bytes32FromString.pipe(Schema.optional),
+  requestsHash: EthTypes.HexString.pipe(Schema.optional),
   /**
    * sha3Uncles
    *
    * Ommers hash
    */
-  sha3Uncles: EthTypes.Bytes32FromString,
+  sha3Uncles: EthTypes.HexString,
   /**
    * size
    *
    * Block size
    */
-  size: EthTypes.UintFromString,
+  size: EthTypes.BigIntFromString,
   /**
    * stateRoot
    *
    * State root
    */
-  stateRoot: EthTypes.Bytes32FromString,
+  stateRoot: EthTypes.HexString,
   /**
    * timestamp
    *
    * Timestamp
    */
-  timestamp: EthTypes.UintFromString,
+  timestamp: EthTypes.BigIntFromString,
   /**
    * transactions
    */
   transactions: Schema.Union([
-    Schema.Array(EthTypes.Bytes32FromString),
+    Schema.Array(EthTypes.HexString),
     Schema.Array(TransactionInfo),
   ]),
   /**
@@ -2285,13 +2271,13 @@ export const Block = Schema.Struct({
    *
    * Transactions root
    */
-  transactionsRoot: EthTypes.Bytes32FromString,
+  transactionsRoot: EthTypes.HexString,
   /**
    * uncles
    *
    * Uncles
    */
-  uncles: Schema.Array(EthTypes.Bytes32FromString),
+  uncles: Schema.Array(EthTypes.HexString),
   /**
    * withdrawals
    *
@@ -2303,7 +2289,7 @@ export const Block = Schema.Struct({
    *
    * Withdrawals root
    */
-  withdrawalsRoot: EthTypes.Bytes32FromString.pipe(Schema.optional),
+  withdrawalsRoot: EthTypes.HexString.pipe(Schema.optional),
 });
 
 /**
@@ -2323,13 +2309,13 @@ export const BadBlock = Schema.Struct({
    *
    * Hash
    */
-  hash: EthTypes.Bytes32FromString,
+  hash: EthTypes.HexString,
   /**
    * rlp
    *
    * RLP
    */
-  rlp: EthTypes.BytesFromString,
+  rlp: EthTypes.HexString,
 });
 
 /**
@@ -2364,25 +2350,25 @@ export const WithdrawalV1 = Schema.Struct({
    *
    * Withdrawal address
    */
-  address: EthTypes.AddressFromString,
+  address: EthTypes.HexString,
   /**
    * amount
    *
    * Withdrawal amount
    */
-  amount: EthTypes.U64FromString,
+  amount: EthTypes.BigIntFromString,
   /**
    * index
    *
    * Withdrawal index
    */
-  index: EthTypes.U64FromString,
+  index: EthTypes.BigIntFromString,
   /**
    * validatorIndex
    *
    * Validator index
    */
-  validatorIndex: EthTypes.U64FromString,
+  validatorIndex: EthTypes.BigIntFromString,
 });
 
 /**
@@ -2394,7 +2380,7 @@ export const ExecutionPayloadBodyV1 = Schema.Struct({
   /**
    * transactions
    */
-  transactions: Schema.Array(EthTypes.BytesFromString),
+  transactions: Schema.Array(EthTypes.HexString),
   /**
    * withdrawals
    *
@@ -2415,13 +2401,13 @@ export const ExecutionPayloadBodyV2 = Schema.Struct({
    * Block access list
    * RLP-encoded block access list as defined in EIP-7928, or null if unavailable
    */
-  blockAccessList: Schema.Union([EthTypes.BytesFromString, Schema.Null]).pipe(
+  blockAccessList: Schema.Union([EthTypes.HexString, Schema.Null]).pipe(
     Schema.optional,
   ),
   /**
    * transactions
    */
-  transactions: Schema.Array(EthTypes.BytesFromString),
+  transactions: Schema.Array(EthTypes.HexString),
   /**
    * withdrawals
    *
@@ -2439,59 +2425,59 @@ export const ExecutionPayloadV2 = Schema.Struct({
   /**
    * baseFeePerGas
    */
-  baseFeePerGas: EthTypes.U256FromString,
+  baseFeePerGas: EthTypes.BigIntFromString,
   /**
    * blockHash
    */
-  blockHash: EthTypes.Bytes32FromString,
+  blockHash: EthTypes.HexString,
   /**
    * blockNumber
    */
-  blockNumber: EthTypes.U64FromString,
+  blockNumber: EthTypes.BigIntFromString,
   /**
    * extraData
    */
-  extraData: EthTypes.BytesFromString,
+  extraData: EthTypes.HexString,
   /**
    * feeRecipient
    */
-  feeRecipient: EthTypes.AddressFromString,
+  feeRecipient: EthTypes.HexString,
   /**
    * gasLimit
    */
-  gasLimit: EthTypes.U64FromString,
+  gasLimit: EthTypes.BigIntFromString,
   /**
    * gasUsed
    */
-  gasUsed: EthTypes.U64FromString,
+  gasUsed: EthTypes.BigIntFromString,
   /**
    * logsBloom
    */
-  logsBloom: EthTypes.Bytes256FromString,
+  logsBloom: EthTypes.HexString,
   /**
    * parentHash
    */
-  parentHash: EthTypes.Bytes32FromString,
+  parentHash: EthTypes.HexString,
   /**
    * prevRandao
    */
-  prevRandao: EthTypes.Bytes32FromString,
+  prevRandao: EthTypes.HexString,
   /**
    * receiptsRoot
    */
-  receiptsRoot: EthTypes.Bytes32FromString,
+  receiptsRoot: EthTypes.HexString,
   /**
    * stateRoot
    */
-  stateRoot: EthTypes.Bytes32FromString,
+  stateRoot: EthTypes.HexString,
   /**
    * timestamp
    */
-  timestamp: EthTypes.U64FromString,
+  timestamp: EthTypes.BigIntFromString,
   /**
    * transactions
    */
-  transactions: Schema.Array(EthTypes.BytesFromString),
+  transactions: Schema.Array(EthTypes.HexString),
   /**
    * withdrawals
    *
@@ -2509,71 +2495,71 @@ export const ExecutionPayloadV3 = Schema.Struct({
   /**
    * baseFeePerGas
    */
-  baseFeePerGas: EthTypes.U256FromString,
+  baseFeePerGas: EthTypes.BigIntFromString,
   /**
    * blobGasUsed
    *
    * Blob gas used
    */
-  blobGasUsed: EthTypes.U64FromString,
+  blobGasUsed: EthTypes.BigIntFromString,
   /**
    * blockHash
    */
-  blockHash: EthTypes.Bytes32FromString,
+  blockHash: EthTypes.HexString,
   /**
    * blockNumber
    */
-  blockNumber: EthTypes.U64FromString,
+  blockNumber: EthTypes.BigIntFromString,
   /**
    * excessBlobGas
    *
    * Excess blob gas
    */
-  excessBlobGas: EthTypes.U64FromString,
+  excessBlobGas: EthTypes.BigIntFromString,
   /**
    * extraData
    */
-  extraData: EthTypes.BytesFromString,
+  extraData: EthTypes.HexString,
   /**
    * feeRecipient
    */
-  feeRecipient: EthTypes.AddressFromString,
+  feeRecipient: EthTypes.HexString,
   /**
    * gasLimit
    */
-  gasLimit: EthTypes.U64FromString,
+  gasLimit: EthTypes.BigIntFromString,
   /**
    * gasUsed
    */
-  gasUsed: EthTypes.U64FromString,
+  gasUsed: EthTypes.BigIntFromString,
   /**
    * logsBloom
    */
-  logsBloom: EthTypes.Bytes256FromString,
+  logsBloom: EthTypes.HexString,
   /**
    * parentHash
    */
-  parentHash: EthTypes.Bytes32FromString,
+  parentHash: EthTypes.HexString,
   /**
    * prevRandao
    */
-  prevRandao: EthTypes.Bytes32FromString,
+  prevRandao: EthTypes.HexString,
   /**
    * receiptsRoot
    */
-  receiptsRoot: EthTypes.Bytes32FromString,
+  receiptsRoot: EthTypes.HexString,
   /**
    * stateRoot
    */
-  stateRoot: EthTypes.Bytes32FromString,
+  stateRoot: EthTypes.HexString,
   /**
    * timestamp
    */
-  timestamp: EthTypes.U64FromString,
+  timestamp: EthTypes.BigIntFromString,
   /**
    * transactions
    */
-  transactions: Schema.Array(EthTypes.BytesFromString),
+  transactions: Schema.Array(EthTypes.HexString),
   /**
    * withdrawals
    */
@@ -2589,79 +2575,79 @@ export const ExecutionPayloadV4 = Schema.Struct({
   /**
    * baseFeePerGas
    */
-  baseFeePerGas: EthTypes.U256FromString,
+  baseFeePerGas: EthTypes.BigIntFromString,
   /**
    * blobGasUsed
    */
-  blobGasUsed: EthTypes.U64FromString,
+  blobGasUsed: EthTypes.BigIntFromString,
   /**
    * blockAccessList
    *
    * Block access list
    */
-  blockAccessList: EthTypes.BytesFromString,
+  blockAccessList: EthTypes.HexString,
   /**
    * blockHash
    */
-  blockHash: EthTypes.Bytes32FromString,
+  blockHash: EthTypes.HexString,
   /**
    * blockNumber
    */
-  blockNumber: EthTypes.U64FromString,
+  blockNumber: EthTypes.BigIntFromString,
   /**
    * excessBlobGas
    */
-  excessBlobGas: EthTypes.U64FromString,
+  excessBlobGas: EthTypes.BigIntFromString,
   /**
    * extraData
    */
-  extraData: EthTypes.BytesFromString,
+  extraData: EthTypes.HexString,
   /**
    * feeRecipient
    */
-  feeRecipient: EthTypes.AddressFromString,
+  feeRecipient: EthTypes.HexString,
   /**
    * gasLimit
    */
-  gasLimit: EthTypes.U64FromString,
+  gasLimit: EthTypes.BigIntFromString,
   /**
    * gasUsed
    */
-  gasUsed: EthTypes.U64FromString,
+  gasUsed: EthTypes.BigIntFromString,
   /**
    * logsBloom
    */
-  logsBloom: EthTypes.Bytes256FromString,
+  logsBloom: EthTypes.HexString,
   /**
    * parentHash
    */
-  parentHash: EthTypes.Bytes32FromString,
+  parentHash: EthTypes.HexString,
   /**
    * prevRandao
    */
-  prevRandao: EthTypes.Bytes32FromString,
+  prevRandao: EthTypes.HexString,
   /**
    * receiptsRoot
    */
-  receiptsRoot: EthTypes.Bytes32FromString,
+  receiptsRoot: EthTypes.HexString,
   /**
    * slotNumber
    *
    * Slot number
    */
-  slotNumber: EthTypes.U64FromString,
+  slotNumber: EthTypes.BigIntFromString,
   /**
    * stateRoot
    */
-  stateRoot: EthTypes.Bytes32FromString,
+  stateRoot: EthTypes.HexString,
   /**
    * timestamp
    */
-  timestamp: EthTypes.U64FromString,
+  timestamp: EthTypes.BigIntFromString,
   /**
    * transactions
    */
-  transactions: Schema.Array(EthTypes.BytesFromString),
+  transactions: Schema.Array(EthTypes.HexString),
   /**
    * withdrawals
    */
@@ -2677,15 +2663,15 @@ export const PayloadAttributesV2 = Schema.Struct({
   /**
    * prevRandao
    */
-  prevRandao: EthTypes.Bytes32FromString,
+  prevRandao: EthTypes.HexString,
   /**
    * suggestedFeeRecipient
    */
-  suggestedFeeRecipient: EthTypes.AddressFromString,
+  suggestedFeeRecipient: EthTypes.HexString,
   /**
    * timestamp
    */
-  timestamp: EthTypes.U64FromString,
+  timestamp: EthTypes.BigIntFromString,
   /**
    * withdrawals
    *
@@ -2705,19 +2691,19 @@ export const PayloadAttributesV3 = Schema.Struct({
    *
    * Parent beacon block root
    */
-  parentBeaconBlockRoot: EthTypes.Bytes32FromString,
+  parentBeaconBlockRoot: EthTypes.HexString,
   /**
    * prevRandao
    */
-  prevRandao: EthTypes.Bytes32FromString,
+  prevRandao: EthTypes.HexString,
   /**
    * suggestedFeeRecipient
    */
-  suggestedFeeRecipient: EthTypes.AddressFromString,
+  suggestedFeeRecipient: EthTypes.HexString,
   /**
    * timestamp
    */
-  timestamp: EthTypes.U64FromString,
+  timestamp: EthTypes.BigIntFromString,
   /**
    * withdrawals
    */
@@ -2733,25 +2719,25 @@ export const PayloadAttributesV4 = Schema.Struct({
   /**
    * parentBeaconBlockRoot
    */
-  parentBeaconBlockRoot: EthTypes.Bytes32FromString,
+  parentBeaconBlockRoot: EthTypes.HexString,
   /**
    * prevRandao
    */
-  prevRandao: EthTypes.Bytes32FromString,
+  prevRandao: EthTypes.HexString,
   /**
    * slotNumber
    *
    * Slot number
    */
-  slotNumber: EthTypes.U64FromString,
+  slotNumber: EthTypes.BigIntFromString,
   /**
    * suggestedFeeRecipient
    */
-  suggestedFeeRecipient: EthTypes.AddressFromString,
+  suggestedFeeRecipient: EthTypes.HexString,
   /**
    * timestamp
    */
-  timestamp: EthTypes.U64FromString,
+  timestamp: EthTypes.BigIntFromString,
   /**
    * withdrawals
    */
@@ -2777,45 +2763,45 @@ export const BlockOverrides = Schema.Struct({
    *
    * Base fee per unit of gas
    */
-  baseFeePerGas: EthTypes.U256FromString.pipe(Schema.optional),
+  baseFeePerGas: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * blobBaseFee
    *
    * Base fee per unit of blob gas
    */
-  blobBaseFee: EthTypes.U64FromString.pipe(Schema.optional),
+  blobBaseFee: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * feeRecipient
    *
    * Fee Recipient (also known as coinbase)
    */
-  feeRecipient: EthTypes.AddressFromString.pipe(Schema.optional),
+  feeRecipient: EthTypes.HexString.pipe(Schema.optional),
   /**
    * gasLimit
    *
    * Gas limit
    */
-  gasLimit: EthTypes.U64FromString.pipe(Schema.optional),
+  gasLimit: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * number
    *
    * Number
    * When overriding block numbers across multiple blocks, block number need to be increasing. Skipping over blocks numbers is possible. If block number is not specified, it's incremented by one for each block.
    */
-  number: EthTypes.U64FromString.pipe(Schema.optional),
+  number: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * prevRandao
    *
    * The Previous value of randomness beacon
    */
-  prevRandao: EthTypes.U256FromString.pipe(Schema.optional),
+  prevRandao: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * time
    *
    * Time
    * Time must either increase or remain constant relative to the previous block. If time is not specified, it's incremented by one for each block.
    */
-  time: EthTypes.U64FromString.pipe(Schema.optional),
+  time: EthTypes.BigIntFromString.pipe(Schema.optional),
   /**
    * withdrawals
    *
@@ -2824,3 +2810,16 @@ export const BlockOverrides = Schema.Struct({
   withdrawals: Withdrawals.pipe(Schema.optional),
 });
 
+/**
+ * notFound
+ *
+ * Not Found (null)
+ */
+export const notFound = Schema.Null;
+
+/**
+ * ratio
+ *
+ * normalized ratio
+ */
+export const ratio = Schema.Number;
