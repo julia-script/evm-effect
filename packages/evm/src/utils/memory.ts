@@ -38,5 +38,8 @@ export function memoryWrite(
   value: Bytes,
 ): void {
   const start = Number(startPosition.value);
+  if (start > memory.length) {
+    return;
+  }
   memory.set(value.value, start);
 }

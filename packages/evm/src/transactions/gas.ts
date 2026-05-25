@@ -3,7 +3,6 @@ import { Data, Effect } from "effect";
 import {
   BLOB_BASE_FEE_UPDATE_FRACTION,
   FLOOR_CALLDATA_COST,
-  GAS_PER_BLOB,
   MIN_BLOB_GASPRICE,
   STANDARD_CALLDATA_TOKEN_COST,
   TX_ACCESS_LIST_ADDRESS_COST,
@@ -17,9 +16,9 @@ import type {
   FeeMarketTransaction,
   SetCodeTransaction,
   Transaction,
-} from "../types/Transaction.js";
+} from "../transactions.js";
 import { Fork } from "../vm/ForkService.js";
-import { initCodeCost } from "../vm/gas.js";
+import { GasCosts, initCodeCost } from "../vm/gas.js";
 
 const PER_EMPTY_ACCOUNT_COST = 25000;
 
@@ -151,7 +150,7 @@ export const calculateIntrinsicGas = Effect.fn("calculateIntrinsicGas")(
 // ============================================================================
 
 const isContractCreation = (tx: Transaction): boolean => {
-  return tx.to === undefined;
+  return tx.to._tag === "Bytes0";
 };
 
 const hasAccessList = (
@@ -190,7 +189,7 @@ const isBlobTransaction = (tx: Transaction): tx is BlobTransaction => {
 export const calculateTotalBlobGas = (tx: Transaction): U64 => {
   if (isBlobTransaction(tx)) {
     return new U64({
-      value: GAS_PER_BLOB.value * BigInt(tx.blobVersionedHashes.length),
+      value: GasCosts.PER_BLOB.value * BigInt(tx.blobVersionedHashes.length),
     });
   } else {
     return new U64({ value: 0n });

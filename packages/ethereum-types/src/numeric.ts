@@ -18,8 +18,12 @@ export class U8 extends Schema.TaggedClass<U8>("U8")(
 ) {
   static MAX_VALUE = 2n ** 8n - 1n;
 
+  static readonly LENGTH = 1;
   constructor({ value }: { value: bigint }) {
     super({ value: wrap(value, 1n) });
+  }
+  static wrap(value: bigint): U8 {
+    return new U8({ value: wrap(value, 1n) });
   }
   clone(): U8 {
     return new U8({ value: this.value });
@@ -29,6 +33,7 @@ export class U8 extends Schema.TaggedClass<U8>("U8")(
       U8.fromBigInt(value.value),
     );
   }
+
   static constant(input: Uintish): U8 {
     return Result.getOrThrow(U8.from(input));
   }
@@ -56,6 +61,13 @@ export class U8 extends Schema.TaggedClass<U8>("U8")(
     }
     return Result.succeed(new U8({ value: input }));
   }
+  static fromBeBytes(bytes: Uint8Array | ArrayLike<number>): U8 {
+    let value = 0n;
+    for (let i = 0; i < bytes.length; i++) {
+      value = (value << 8n) | BigInt(bytes[i]);
+    }
+    return new U8({ value });
+  }
   static zero = U8.fromBigInt(0n);
 }
 
@@ -73,8 +85,13 @@ export class U32 extends Schema.TaggedClass<U32>("U32")(
 ) {
   static MAX_VALUE = 2n ** 32n - 1n;
 
+  static readonly LENGTH = 4;
+
   constructor({ value }: { value: bigint }) {
-    super({ value: wrap(value, 1n) });
+    super({ value: wrap(value, 4n) });
+  }
+  static wrap(value: bigint): U32 {
+    return new U32({ value: wrap(value, 4n) });
   }
   clone(): U32 {
     return new U32({ value: this.value });
@@ -111,7 +128,23 @@ export class U32 extends Schema.TaggedClass<U32>("U32")(
     }
     return Result.succeed(new U32({ value: input }));
   }
+  static fromBeBytes(bytes: Uint8Array | ArrayLike<number>): U32 {
+    let value = 0n;
+    for (let i = 0; i < bytes.length; i++) {
+      value = (value << 8n) | BigInt(bytes[i]);
+    }
+    return new U32({ value });
+  }
   static zero = U32.fromBigInt(0n);
+  [Equal.symbol](that: Equal.Equal): boolean {
+    if (!(that instanceof U32)) {
+      return false;
+    }
+    return this.value === that.value;
+  }
+  [Hash.symbol](): number {
+    return HashMap.getHash(this.value);
+  }
 }
 export class U64 extends Schema.TaggedClass<U64>("U64")(
   "U64",
@@ -126,10 +159,11 @@ export class U64 extends Schema.TaggedClass<U64>("U64")(
   },
 ) {
   static MAX_VALUE = 2n ** 64n - 1n;
-  constructor({ value }: { value: bigint }) {
-    super({ value: wrap(value, 8n) });
-  }
+  static readonly LENGTH = 8;
 
+  static wrap(value: bigint): U64 {
+    return new U64({ value: wrap(value, 8n) });
+  }
   clone(): U64 {
     return new U64({ value: this.value });
   }
@@ -142,6 +176,13 @@ export class U64 extends Schema.TaggedClass<U64>("U64")(
     return Result.getOrThrow(U64.from(input));
   }
 
+  static fromBeBytes(bytes: Uint8Array | ArrayLike<number>): U64 {
+    let value = 0n;
+    for (let i = 0; i < bytes.length; i++) {
+      value = (value << 8n) | BigInt(bytes[i]);
+    }
+    return new U64({ value });
+  }
   static fromNumber(input: number): Result.Result<U64, EvmTypeError> {
     if (input < 0 || input > U64.MAX_VALUE) {
       return Result.fail(
@@ -164,7 +205,19 @@ export class U64 extends Schema.TaggedClass<U64>("U64")(
     }
     return Result.succeed(new U64({ value: input }));
   }
-  static zero = U64.fromBigInt(0n);
+  static zero = U64.wrap(0n);
+  static one = U64.wrap(1n);
+  static two = U64.wrap(2n);
+  static three = U64.wrap(3n);
+  [Equal.symbol](that: Equal.Equal): boolean {
+    if (!(that instanceof U64)) {
+      return false;
+    }
+    return this.value === that.value;
+  }
+  [Hash.symbol](): number {
+    return Hash.hash(this.value);
+  }
 }
 
 export class U256 extends Schema.TaggedClass<U256>("U256")(
@@ -180,9 +233,13 @@ export class U256 extends Schema.TaggedClass<U256>("U256")(
   },
 ) {
   static MAX_VALUE = 2n ** 256n - 1n;
-  constructor(value: { value: bigint } | bigint) {
-    const bn = typeof value === "bigint" ? value : value.value;
-    super({ value: wrap(bn, 32n) });
+  static readonly LENGTH = 32;
+  constructor({ value }: { value: bigint }) {
+    super({ value: wrap(value, 32n) });
+  }
+
+  static wrap(value: bigint): U256 {
+    return new U256({ value: wrap(value, 32n) });
   }
 
   clone(): U256 {
@@ -197,7 +254,7 @@ export class U256 extends Schema.TaggedClass<U256>("U256")(
   }
 
   [Hash.symbol](): number {
-    return hash(this.toBeBytes32().value);
+    return HashMap.getHash(this.value);
   }
 
   static from(input: Uintish): Result.Result<U256, EvmTypeError> {
@@ -231,7 +288,7 @@ export class U256 extends Schema.TaggedClass<U256>("U256")(
     }
     return Result.succeed(new U256({ value: input }));
   }
-  static zero = U256.fromBigInt(0n);
+  static zero = U256.wrap(0n);
 
   /**
    * Wrapping add - returns (self + right) mod 2^256
@@ -397,6 +454,21 @@ export class U256 extends Schema.TaggedClass<U256>("U256")(
     }
     return BigInt(this.value.toString(2).length);
   }
+  static eth(value: bigint | `0x${string}` | number = 1n): Uint {
+    return new Uint({ value: BigInt(value) * 10n ** 18n });
+  }
+  static gwei(value: bigint | `0x${string}` | number = 1n): Uint {
+    return new Uint({ value: BigInt(value) * 10n ** 9n });
+  }
+  static finney(value: bigint | `0x${string}` | number = 1n): Uint {
+    return new Uint({ value: BigInt(value) * 10n ** 15n });
+  }
+  static szabo(value: bigint | `0x${string}` | number = 1n): Uint {
+    return new Uint({ value: BigInt(value) * 10n ** 12n });
+  }
+  static wei(value: bigint | `0x${string}` | number = 1n): Uint {
+    return new Uint({ value: BigInt(value) });
+  }
 }
 
 type Uintish = bigint | number | U256 | U64 | U8 | Uint;
@@ -412,8 +484,8 @@ export class Uint extends Schema.TaggedClass<Uint>("Uint")(
         `${self._tag}(${self.value})`,
   },
 ) {
-  constructor({ value }: { value: bigint }) {
-    super({ value: value < 0n ? 0n : value });
+  static wrap(value: bigint): Uint {
+    return new Uint({ value: value < 0n ? 0n : value });
   }
   clone(): Uint {
     return new Uint({ value: this.value });
@@ -473,7 +545,19 @@ export class Uint extends Schema.TaggedClass<Uint>("Uint")(
     }
     return new Uint({ value: value });
   }
-  static zero = Uint.fromBigInt(0n);
+  [Equal.symbol](that: Equal.Equal): boolean {
+    if (!(that instanceof Uint)) {
+      return false;
+    }
+    return this.value === that.value;
+  }
+  [Hash.symbol](): number {
+    return HashMap.getHash(this.value);
+  }
+  static zero = Uint.wrap(0n);
+  static one = Uint.wrap(1n);
+  static two = Uint.wrap(2n);
+  static three = Uint.wrap(3n);
 }
 export type AnyUintClass =
   | typeof U256
@@ -819,9 +903,9 @@ export function isZero<T extends FixedUnsigned>(a: T): boolean {
 // CONVERSION OPERATIONS
 // ============================================================================
 
+import { HashMap } from "@evm-effect/shared/hashmap";
 // Import bytes types (will be available after bytes.ts is created)
 import { type AnyBytes, Bytes32 } from "./bytes.js";
-import { hash } from "./utils.js";
 
 /**
  * Convert to native bigint
@@ -871,6 +955,7 @@ export function fromBeBytes<T extends AnyUintClass>(
   targetClass: T,
 ): Result.Result<InstanceType<T>, EvmTypeError> {
   let result = 0n;
+
   for (let i = 0; i < bytes.value.length; i++) {
     result = (result << 8n) | BigInt(bytes.value[i]);
   }
@@ -986,6 +1071,34 @@ export function ceil32(value: Uint): Uint {
   return new Uint({ value: value.value + ceiling - remainder });
 }
 
-export const min = <T extends AnyUint>(a: T, b: T): T => {
-  return a.value < b.value ? a : b;
+export const min = <T extends AnyUint | bigint>(a: T, b: T): T => {
+  let aValue: bigint;
+  let bValue: bigint;
+  if (typeof a === "bigint") {
+    aValue = a;
+  } else {
+    aValue = a.value;
+  }
+  if (typeof b === "bigint") {
+    bValue = b;
+  } else {
+    bValue = b.value;
+  }
+  return aValue < bValue ? a : b;
+};
+
+export const max = <T extends AnyUint | bigint>(a: T, b: T): NoInfer<T> => {
+  let aValue: bigint;
+  let bValue: bigint;
+  if (typeof a === "bigint") {
+    aValue = a;
+  } else {
+    aValue = a.value;
+  }
+  if (typeof b === "bigint") {
+    bValue = b;
+  } else {
+    bValue = b.value;
+  }
+  return aValue > bValue ? a : b;
 };

@@ -40,8 +40,6 @@ import {
 } from "../exceptions.js";
 import * as State from "../state.js";
 import { processTransaction } from "../transactions/processor.js";
-import type { Header, Withdrawal } from "../types/Block.js";
-import { Receipt } from "../types/Receipt.js";
 import {
   AccessListTransaction,
   BlobTransaction,
@@ -49,7 +47,9 @@ import {
   LegacyTransaction,
   SetCodeTransaction,
   type Transaction,
-} from "../types/Transaction.js";
+} from "../transactions.js";
+import type { Header, Withdrawal } from "../types/Block.js";
+import { Receipt } from "../types/Receipt.js";
 import { Fork } from "../vm/ForkService.js";
 import type { BlockEnvironment } from "../vm/message.js";
 import {
@@ -107,7 +107,7 @@ export const applyBody = (
               value:
                 blockEnv.blockHashes[blockEnv.blockHashes.length - 1].value,
             })
-          : new Bytes({ value: new Uint8Array(32) });
+          : Bytes.empty;
 
       yield* processUncheckedSystemTransaction(
         blockEnv,

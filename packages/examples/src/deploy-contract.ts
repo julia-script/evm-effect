@@ -12,12 +12,9 @@
 
 import { getRandomPrivateKey } from "@evm-effect/crypto/getRandomPrivateKey";
 import {
-  getAddressFromPrivateKey,
-  signTransaction,
-} from "@evm-effect/crypto/transactions";
-import {
   Address,
   Bytes,
+  Bytes0,
   Bytes8,
   Bytes32,
   Bytes256,
@@ -37,6 +34,10 @@ import {
   LegacyTransaction,
   State,
 } from "@evm-effect/evm";
+import {
+  getAddressFromPrivateKey,
+  signTransaction,
+} from "@evm-effect/evm/transactions";
 import { Console, Effect, Layer, Logger } from "effect";
 
 // Helper to create ETH amounts
@@ -127,7 +128,7 @@ const program = Effect.gen(function* () {
     Account.make({
       nonce: Uint.constant(0n),
       balance: eth(10),
-      code: Bytes.empty(),
+      code: Bytes.empty,
     }),
   );
 
@@ -147,7 +148,7 @@ const program = Effect.gen(function* () {
     nonce: U256.constant(0n),
     gasPrice: gwei(10),
     gas: Uint.constant(100_000n), // Enough gas for deployment
-    to: undefined, // No recipient = contract creation
+    to: Bytes0.empty, // No recipient = contract creation
     value: U256.constant(0n), // No ETH sent to contract
     data: Bytes.from(initCode), // Init code as transaction data
   });
@@ -177,21 +178,21 @@ const program = Effect.gen(function* () {
   const baseFeePerGas = gwei(10);
 
   const header = Header.make({
-    parentHash: Bytes32.zero(),
-    ommersHash: Bytes32.zero(),
+    parentHash: Bytes32.zero,
+    ommersHash: Bytes32.zero,
     coinbase,
-    stateRoot: Bytes32.zero(),
-    transactionsRoot: Bytes32.zero(),
-    receiptRoot: Bytes32.zero(),
-    bloom: Bytes256.zero(),
+    stateRoot: Bytes32.zero,
+    transactionsRoot: Bytes32.zero,
+    receiptRoot: Bytes32.zero,
+    bloom: Bytes256.zero,
     difficulty: Uint.constant(131072n),
     number: blockNumber,
     gasLimit: Uint.constant(30_000_000n),
     gasUsed: Uint.constant(0n),
     timestamp,
-    extraData: Bytes.empty(),
-    prevRandao: Bytes32.zero(),
-    nonce: Bytes8.zero(),
+    extraData: Bytes.empty,
+    prevRandao: Bytes32.zero,
+    nonce: Bytes8.zero,
     baseFeePerGas,
   });
 
@@ -208,7 +209,7 @@ const program = Effect.gen(function* () {
     prevRandao: header.prevRandao,
     difficulty: header.difficulty,
     excessBlobGas: U64.constant(0n),
-    parentBeaconBlockRoot: Bytes32.zero(),
+    parentBeaconBlockRoot: Bytes32.zero,
   });
 
   // 8. Execute the block

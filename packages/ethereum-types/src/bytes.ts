@@ -7,6 +7,21 @@ import {
   normalizeToUint8Array,
   uint8ArrayEquals,
 } from "./utils.js";
+export const leftPadBuffer = (
+  value: Uint8Array | undefined,
+  length: number,
+) => {
+  if (!value) {
+    return new Uint8Array(length);
+  }
+  const padded = new Uint8Array(length);
+  if (value.length < length) {
+    // Left-pad with zeros
+    padded.set(value, length - value.length);
+    return padded;
+  }
+  return value.slice(-length);
+};
 
 /**
  * Variable-length byte array
@@ -15,10 +30,7 @@ export class Bytes extends Schema.TaggedClass<Bytes>("Bytes")("Bytes", {
   value: Schema.Uint8Array,
 }) {
   constructor({ value }: { value: Uint8Array }) {
-    super({ value: padBuffer(value, value.length) });
-  }
-  clone(): Bytes {
-    return new Bytes({ value: new Uint8Array(this.value) });
+    super({ value: leftPadBuffer(value, value.length) });
   }
 
   get length(): number {
@@ -28,9 +40,7 @@ export class Bytes extends Schema.TaggedClass<Bytes>("Bytes")("Bytes", {
     return bufferToHex(this.value);
   }
 
-  static empty(): Bytes {
-    return new Bytes({ value: new Uint8Array(0) });
-  }
+  static empty = new Bytes({ value: new Uint8Array(0) });
 
   static from(value: Uint8Array | number[]): Bytes {
     if (value instanceof Uint8Array) {
@@ -55,6 +65,15 @@ export class Bytes extends Schema.TaggedClass<Bytes>("Bytes")("Bytes", {
       );
     }
   }
+  static leftPad(value: Uint8Array, length: number): Bytes {
+    return new Bytes({ value: leftPadBuffer(value, length) });
+  }
+
+  bufferRead(start: number, length: number): Bytes {
+    const bytes = new Uint8Array(length);
+    bytes.set(this.value.subarray(start, start + length), 0);
+    return new Bytes({ value: bytes });
+  }
 
   [Equal.symbol](that: Equal.Equal): boolean {
     if ("value" in that && that.value instanceof Uint8Array) {
@@ -76,15 +95,13 @@ export class Bytes0 extends Schema.TaggedClass<Bytes0>("Bytes0")("Bytes0", {
   static readonly LENGTH = 0;
 
   constructor({ value }: { value?: Uint8Array }) {
-    super({ value: padBuffer(value, 0) });
+    super({ value: leftPadBuffer(value, 0) });
   }
-  static empty(): Bytes0 {
-    return new Bytes0({ value: new Uint8Array(0) });
+  static empty = new Bytes0({ value: new Uint8Array(0) });
+  get bytes(): Uint8Array {
+    return this.value;
   }
 
-  clone(): Bytes0 {
-    return new Bytes0({ value: new Uint8Array(0) });
-  }
   toHex(): `0x${string}` {
     return bufferToHex(this.value);
   }
@@ -112,16 +129,11 @@ export class Bytes1 extends Schema.TaggedClass<Bytes1>("Bytes1")("Bytes1", {
   static readonly LENGTH = 1;
 
   constructor({ value }: { value: Uint8Array }) {
-    super({ value: padBuffer(value, 1) });
+    super({ value: leftPadBuffer(value, 1) });
   }
 
-  static zero(): Bytes1 {
-    return new Bytes1({ value: new Uint8Array(1) });
-  }
+  static zero = new Bytes1({ value: new Uint8Array(1) });
 
-  clone(): Bytes1 {
-    return new Bytes1({ value: new Uint8Array(this.value) });
-  }
   toHex(): `0x${string}` {
     return bufferToHex(this.value);
   }
@@ -153,16 +165,11 @@ export class Bytes4 extends Schema.TaggedClass<Bytes4>("Bytes4")("Bytes4", {
   static readonly LENGTH = 4;
 
   constructor({ value }: { value: Uint8Array }) {
-    super({ value: padBuffer(value, 4) });
+    super({ value: leftPadBuffer(value, 4) });
   }
 
-  static zero(): Bytes4 {
-    return new Bytes4({ value: new Uint8Array(4) });
-  }
+  static zero = new Bytes4({ value: new Uint8Array(4) });
 
-  clone(): Bytes4 {
-    return new Bytes4({ value: new Uint8Array(this.value) });
-  }
   toHex(): `0x${string}` {
     return bufferToHex(this.value);
   }
@@ -193,16 +200,11 @@ export class Bytes8 extends Schema.TaggedClass<Bytes8>("Bytes8")("Bytes8", {
   static readonly LENGTH = 8;
 
   constructor({ value }: { value: Uint8Array }) {
-    super({ value: padBuffer(value, 8) });
+    super({ value: leftPadBuffer(value, 8) });
   }
 
-  static zero(): Bytes8 {
-    return new Bytes8({ value: new Uint8Array(8) });
-  }
+  static zero = new Bytes8({ value: new Uint8Array(8) });
 
-  clone(): Bytes8 {
-    return new Bytes8({ value: new Uint8Array(this.value) });
-  }
   toHex(): `0x${string}` {
     return bufferToHex(this.value);
   }
@@ -234,15 +236,13 @@ export class Bytes20 extends Schema.TaggedClass<Bytes20>("Bytes20")("Bytes20", {
   static readonly LENGTH = 20;
 
   constructor({ value }: { value: Uint8Array }) {
-    super({ value: padBuffer(value, 20) });
+    super({ value: leftPadBuffer(value, 20) });
   }
 
-  static zero(): Bytes20 {
-    return new Bytes20({ value: new Uint8Array(20) });
-  }
+  static zero = new Bytes20({ value: new Uint8Array(20) });
 
-  clone(): Bytes20 {
-    return new Bytes20({ value: new Uint8Array(this.value) });
+  get bytes(): Uint8Array {
+    return this.value;
   }
 
   get length(): number {
@@ -259,19 +259,6 @@ export class Bytes20 extends Schema.TaggedClass<Bytes20>("Bytes20")("Bytes20", {
   }
 }
 
-export const padBuffer = (value: Uint8Array | undefined, length: number) => {
-  if (!value) {
-    return new Uint8Array(length);
-  }
-  const padded = new Uint8Array(length);
-  if (value.length < length) {
-    // Left-pad with zeros
-    padded.set(value, length - value.length);
-    return padded;
-  }
-  return value.slice(-length);
-};
-
 /**
  * Fixed-size byte array of exactly 32 bytes (hashes, storage keys)
  */
@@ -281,16 +268,10 @@ export class Bytes32 extends Schema.TaggedClass<Bytes32>("Bytes32")("Bytes32", {
   static readonly LENGTH = 32;
 
   constructor({ value }: { value: Uint8Array }) {
-    super({ value: padBuffer(value, 32) });
+    super({ value: leftPadBuffer(value, 32) });
   }
 
-  static zero(): Bytes32 {
-    return new Bytes32({ value: new Uint8Array(32) });
-  }
-
-  clone(): Bytes32 {
-    return new Bytes32({ value: new Uint8Array(this.value) });
-  }
+  static empty = new Bytes32({ value: new Uint8Array(32) });
   toHex(): `0x${string}` {
     return bufferToHex(this.value);
   }
@@ -302,6 +283,7 @@ export class Bytes32 extends Schema.TaggedClass<Bytes32>("Bytes32")("Bytes32", {
   static constant(value: Byteish): Bytes32 {
     return new Bytes32({ value: normalizeToUint8Array(value) });
   }
+  static zero = new Bytes32({ value: new Uint8Array(32) });
   [Equal.symbol](that: Equal.Equal): boolean {
     if ("value" in that && that.value instanceof Uint8Array) {
       return uint8ArrayEquals(this.value, that.value);
@@ -322,16 +304,11 @@ export class Bytes64 extends Schema.TaggedClass<Bytes64>("Bytes64")("Bytes64", {
   static readonly LENGTH = 64;
 
   constructor({ value }: { value: Uint8Array }) {
-    super({ value: padBuffer(value, 64) });
+    super({ value: leftPadBuffer(value, 64) });
   }
 
-  static zero(): Bytes64 {
-    return new Bytes64({ value: new Uint8Array(64) });
-  }
+  static zero = new Bytes64({ value: new Uint8Array(64) });
 
-  clone(): Bytes64 {
-    return new Bytes64({ value: new Uint8Array(this.value) });
-  }
   toHex(): `0x${string}` {
     return bufferToHex(this.value);
   }
@@ -365,16 +342,10 @@ export class Bytes256 extends Schema.TaggedClass<Bytes256>("Bytes256")(
   static readonly LENGTH = 256;
 
   constructor({ value }: { value: Uint8Array }) {
-    super({ value: padBuffer(value, 256) });
+    super({ value: leftPadBuffer(value, 256) });
   }
 
-  static zero(): Bytes256 {
-    return new Bytes256({ value: new Uint8Array(256) });
-  }
-
-  clone(): Bytes256 {
-    return new Bytes256({ value: new Uint8Array(this.value) });
-  }
+  static zero = new Bytes256({ value: new Uint8Array(256) });
 
   toHex(): `0x${string}` {
     return bufferToHex(this.value);
@@ -447,13 +418,6 @@ export function equals(a: AnyBytes, b: AnyBytes): boolean {
 }
 
 /**
- * Clone/deep copy bytes (creates a new Uint8Array with the same content)
- */
-export function cloneBytes(bytes: Uint8Array): Uint8Array {
-  return new Uint8Array(bytes);
-}
-
-/**
  * Pad bytes to specified length
  * @param bytes - Bytes to pad
  * @param length - Target length
@@ -521,3 +485,14 @@ export const isBytes = (value: unknown): value is AnyBytes => {
     value instanceof Bytes256
   );
 };
+
+export type AnyBytesClass =
+  | typeof Bytes
+  | typeof Bytes0
+  | typeof Bytes1
+  | typeof Bytes4
+  | typeof Bytes8
+  | typeof Bytes20
+  | typeof Bytes32
+  | typeof Bytes64
+  | typeof Bytes256;

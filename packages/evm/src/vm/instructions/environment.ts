@@ -24,6 +24,7 @@ import * as State from "../../state.js";
 import { Evm } from "../evm.js";
 import { Fork } from "../ForkService.js";
 import * as Gas from "../gas.js";
+import { GasCosts } from "../gas.js";
 
 /**
  * Helper to read from a buffer with padding
@@ -100,14 +101,14 @@ export const balance: Effect.Effect<void, EthereumException, Evm | Fork> =
       // EIP-2929 (Berlin+): warm/cold account access
       const accessedAddresses = evm.accessedAddresses;
       if (accessedAddresses.has(addr)) {
-        yield* Gas.chargeGas(Gas.GAS_WARM_ACCESS); // 100
+        yield* Gas.chargeGas(GasCosts.WARM_ACCESS);
       } else {
         evm.accessedAddresses.add(addr);
-        yield* Gas.chargeGas(Gas.GAS_COLD_ACCOUNT_ACCESS); // 2600
+        yield* Gas.chargeGas(GasCosts.COLD_ACCOUNT_ACCESS);
       }
     } else {
       // Pre-EIP-2929: fork-dependent BALANCE cost
-      yield* Gas.chargeGas(yield* Gas.GAS_BALANCE);
+      yield* Gas.chargeGas(yield* GasCosts.OPCODE_BALANCE);
     }
 
     // OPERATION
@@ -132,7 +133,7 @@ export const origin: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     const evm = yield* Evm;
 
     // GAS
-    yield* Gas.chargeGas(Gas.GAS_BASE);
+    yield* Gas.chargeGas(GasCosts.OPCODE_ORIGIN);
 
     // OPERATION
     const originValue = U256.fromBeBytes(evm.message.txEnv.origin.value.value);
@@ -156,7 +157,7 @@ export const caller: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     const evm = yield* Evm;
 
     // GAS
-    yield* Gas.chargeGas(Gas.GAS_BASE);
+    yield* Gas.chargeGas(GasCosts.OPCODE_CALLER);
 
     // OPERATION
     const callerValue = U256.fromBeBytes(evm.message.caller.value.value);
@@ -180,7 +181,7 @@ export const callvalue: Effect.Effect<void, EthereumException, Evm> =
     const evm = yield* Evm;
 
     // GAS
-    yield* Gas.chargeGas(Gas.GAS_BASE);
+    yield* Gas.chargeGas(GasCosts.OPCODE_CALLVALUE);
 
     // OPERATION
     yield* evm.stack.push(evm.message.value);
@@ -206,7 +207,7 @@ export const calldataload: Effect.Effect<void, EthereumException, Evm> =
     const startIndex = yield* evm.stack.pop();
 
     // GAS
-    yield* Gas.chargeGas(Gas.GAS_VERY_LOW);
+    yield* Gas.chargeGas(GasCosts.OPCODE_CALLDATALOAD);
 
     // OPERATION
     const value = bufferRead(
@@ -234,7 +235,7 @@ export const calldatasize: Effect.Effect<void, EthereumException, Evm> =
     const evm = yield* Evm;
 
     // GAS
-    yield* Gas.chargeGas(Gas.GAS_BASE);
+    yield* Gas.chargeGas(GasCosts.OPCODE_CALLDATASIZE);
 
     // OPERATION
     const size = new U256({ value: BigInt(evm.message.data.value.length) });
@@ -265,7 +266,9 @@ export const calldatacopy: Effect.Effect<void, EthereumException, Evm> =
 
     // GAS
     const words = Numeric.ceil32(new Uint({ value: size.value })).value / 32n;
-    const copyGasCost = new Uint({ value: Gas.GAS_COPY.value * words });
+    const copyGasCost = new Uint({
+      value: GasCosts.OPCODE_COPY_PER_WORD.value * words,
+    });
 
     const memory = yield* Ref.get(evm.memory);
     const extension = Gas.calculateGasExtendMemory(memory, [
@@ -275,7 +278,9 @@ export const calldatacopy: Effect.Effect<void, EthereumException, Evm> =
     yield* Gas.chargeGas(
       new Uint({
         value:
-          Gas.GAS_VERY_LOW.value + copyGasCost.value + extension.cost.value,
+          GasCosts.OPCODE_CALLDATACOPY_BASE.value +
+          copyGasCost.value +
+          extension.cost.value,
       }),
     );
 
@@ -315,7 +320,7 @@ export const codesize: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     const evm = yield* Evm;
 
     // GAS
-    yield* Gas.chargeGas(Gas.GAS_BASE);
+    yield* Gas.chargeGas(GasCosts.OPCODE_CODESIZE);
 
     // OPERATION
     const size = new U256({ value: BigInt(evm.code.value.length) });
@@ -347,7 +352,9 @@ export const codecopy: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
 
     // GAS
     const words = Numeric.ceil32(new Uint({ value: size.value })).value / 32n;
-    const copyGasCost = new Uint({ value: Gas.GAS_COPY.value * words });
+    const copyGasCost = new Uint({
+      value: GasCosts.OPCODE_COPY_PER_WORD.value * words,
+    });
 
     const memory = yield* Ref.get(evm.memory);
     const extension = Gas.calculateGasExtendMemory(memory, [
@@ -357,7 +364,9 @@ export const codecopy: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     yield* Gas.chargeGas(
       new Uint({
         value:
-          Gas.GAS_VERY_LOW.value + copyGasCost.value + extension.cost.value,
+          GasCosts.OPCODE_CODECOPY_BASE.value +
+          copyGasCost.value +
+          extension.cost.value,
       }),
     );
 
@@ -401,7 +410,7 @@ export const gasprice: Effect.Effect<void, EthereumException, Evm> = Effect.gen(
     const evm = yield* Evm;
 
     // GAS
-    yield* Gas.chargeGas(Gas.GAS_BASE);
+    yield* Gas.chargeGas(GasCosts.OPCODE_GASPRICE);
 
     // OPERATION
     const gasPriceValue = new U256({ value: evm.message.txEnv.gasPrice.value });
@@ -434,14 +443,14 @@ export const extcodesize: Effect.Effect<void, EthereumException, Evm | Fork> =
       // EIP-2929 (Berlin+): warm/cold account access
       const accessedAddresses = evm.accessedAddresses;
       if (accessedAddresses.has(addr)) {
-        yield* Gas.chargeGas(Gas.GAS_WARM_ACCESS); // 100
+        yield* Gas.chargeGas(GasCosts.WARM_ACCESS); // 100
       } else {
         evm.accessedAddresses.add(addr);
-        yield* Gas.chargeGas(Gas.GAS_COLD_ACCOUNT_ACCESS); // 2600
+        yield* Gas.chargeGas(GasCosts.COLD_ACCOUNT_ACCESS); // 2600
       }
     } else {
       // Pre-EIP-2929: fork-dependent EXTERNAL cost
-      yield* Gas.chargeGas(yield* Gas.GAS_EXTERNAL);
+      yield* Gas.chargeGas(yield* GasCosts.OPCODE_EXTERNAL_BASE);
     }
 
     // OPERATION
@@ -484,27 +493,54 @@ export const extcodecopy: Effect.Effect<void, EthereumException, Evm | Fork> =
 
     // Access gas cost - fork-dependent (EIP-2929 and EIP-150)
     const fork = yield* Fork;
-    let accessGasCost: Uint;
-
     if (fork.eip(2929)) {
-      // EIP-2929 (Berlin+): warm/cold account access
-      const accessedAddresses = evm.accessedAddresses;
-      if (accessedAddresses.has(addr)) {
-        accessGasCost = Gas.GAS_WARM_ACCESS; // 100
-      } else {
+      let accessGasCost = GasCosts.WARM_ACCESS;
+      if (!evm.accessedAddresses.has(addr)) {
         evm.accessedAddresses.add(addr);
-        accessGasCost = Gas.GAS_COLD_ACCOUNT_ACCESS; // 2600
+        accessGasCost = GasCosts.COLD_ACCOUNT_ACCESS;
       }
+      yield* Gas.chargeGas(
+        new Uint({
+          value: accessGasCost.value + copyGasCost.value + extension.cost.value,
+        }),
+      );
     } else {
-      // Pre-EIP-2929: fork-dependent EXTERNAL cost
-      accessGasCost = yield* Gas.GAS_EXTERNAL;
+      yield* Gas.chargeGas(
+        new Uint({
+          value:
+            (yield* GasCosts.OPCODE_EXTERNAL_BASE).value +
+            copyGasCost.value +
+            extension.cost.value,
+        }),
+      );
     }
 
-    yield* Gas.chargeGas(
-      new Uint({
-        value: accessGasCost.value + copyGasCost.value + extension.cost.value,
-      }),
-    );
+    // if (fork.eip(2929)) {
+    //   // EIP-2929 (Berlin+): warm/cold account access
+    //   const accessedAddresses = evm.accessedAddresses;
+    //   let accessGasCost = GasCosts.WARM_ACCESS;
+    //   if (!accessedAddresses.has(addr)) {
+    //     evm.accessedAddresses.add(addr);
+    //     accessGasCost = GasCosts.COLD_ACCOUNT_ACCESS; // 2600
+    //   }
+    //   yield* Gas.chargeGas(
+    //     new Uint({
+    //       value: accessGasCost.value + copyGasCost.value + extension.cost.value,
+    //     }),
+    //   );
+    // } else {
+    //   const words = Numeric.ceil32(Uint.wrap(size.value)); // Uint(32)
+    //   const copy_gas_cost = GasCosts.OPCODE_COPY_PER_WORD.value * words.value;
+
+    //   yield* Gas.chargeGas(
+    //     new Uint({
+    //       value:
+    //         (yield* GasCosts.OPCODE_EXTERNAL_BASE).value +
+    //         copy_gas_cost +
+    //         extension.cost.value,
+    //     }),
+    //   );
+    // }
 
     // OPERATION
     const newMemory = new Uint8Array(
@@ -567,7 +603,7 @@ export const returndatacopy: Effect.Effect<void, EthereumException, Evm> =
     // GAS
     const words = Numeric.ceil32(new Uint({ value: size.value })).value / 32n;
     const copyGasCost = new Uint({
-      value: Gas.GAS_RETURN_DATA_COPY.value * words,
+      value: GasCosts.OPCODE_RETURNDATACOPY_PER_WORD.value * words,
     });
 
     const memory = yield* Ref.get(evm.memory);
@@ -578,7 +614,9 @@ export const returndatacopy: Effect.Effect<void, EthereumException, Evm> =
     yield* Gas.chargeGas(
       new Uint({
         value:
-          Gas.GAS_VERY_LOW.value + copyGasCost.value + extension.cost.value,
+          GasCosts.OPCODE_RETURNDATACOPY_BASE.value +
+          copyGasCost.value +
+          extension.cost.value,
       }),
     );
 
@@ -637,28 +675,26 @@ export const extcodehash: Effect.Effect<void, EthereumException, Evm | Fork> =
 
     // GAS - fork-dependent (EIP-2929, EIP-1884, and EIP-1052)
     const fork = yield* Fork;
+    // 8037
     if (fork.eip(2929)) {
       // EIP-2929 (Berlin+): warm/cold account access
       const accessedAddresses = evm.accessedAddresses;
       if (accessedAddresses.has(addr)) {
-        yield* Gas.chargeGas(Gas.GAS_WARM_ACCESS); // 100
+        yield* Gas.chargeGas(GasCosts.WARM_ACCESS); // 100
       } else {
         evm.accessedAddresses.add(addr);
-        yield* Gas.chargeGas(Gas.GAS_COLD_ACCOUNT_ACCESS); // 2600
+        yield* Gas.chargeGas(GasCosts.COLD_ACCOUNT_ACCESS); // 2600
       }
     } else {
       // Pre-EIP-2929: use GAS_CODE_HASH (400 for Constantinople/Petersburg, 700 for Istanbul+)
-      yield* Gas.chargeGas(yield* Gas.GAS_CODE_HASH);
+      yield* Gas.chargeGas(yield* GasCosts.OPCODE_EXTCODEHASH);
     }
 
     // OPERATION
-    const account = yield* State.getAccountOptional(
-      evm.message.blockEnv.state,
-      addr,
-    );
+    const account = yield* State.getAccount(evm.message.blockEnv.state, addr);
 
     let codehash: U256;
-    if (account === null) {
+    if (account.isEmpty()) {
       // Non-existent account (EMPTY_ACCOUNT equivalent)
       codehash = new U256({ value: 0n });
     } else {
@@ -685,7 +721,7 @@ export const selfbalance: Effect.Effect<void, EthereumException, Evm> =
     const evm = yield* Evm;
 
     // GAS
-    yield* Gas.chargeGas(Gas.GAS_FAST_STEP);
+    yield* Gas.chargeGas(GasCosts.FAST_STEP);
 
     // OPERATION
     const account = yield* State.getAccount(

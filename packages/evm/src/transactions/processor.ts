@@ -1,5 +1,4 @@
 import { keccak256 } from "@evm-effect/crypto";
-import { encodeTransaction } from "@evm-effect/crypto/transactions";
 import {
   type Address,
   Bytes,
@@ -11,6 +10,7 @@ import rlp from "@evm-effect/rlp";
 import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { HashSet } from "@evm-effect/shared/hashset";
 import { Effect, Option, Result, type Schema } from "effect";
+import { encodeTransaction } from "packages/evm/src/transactions.js";
 import type { BlockOutput } from "../blockchain.js";
 import { logsBloom } from "../receipts/bloom.js";
 import * as State from "../state.js";
@@ -25,8 +25,8 @@ import {
   TransactionProcessingEnd,
   TransactionProcessingStart,
 } from "../trace.js";
+import { LegacyTransaction, type Transaction } from "../transactions.js";
 import { LegacyReceipt, Receipt } from "../types/Receipt.js";
-import { LegacyTransaction, type Transaction } from "../types/Transaction.js";
 import { Fork } from "../vm/ForkService.js";
 import { processMessageCall } from "../vm/interpreter.js";
 import {
@@ -85,10 +85,7 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
   );
 
   const encodedIndex = rlp.encode(index);
-  const encodedTx = yield* encodeTransaction(tx).pipe(
-    Effect.fromResult,
-    Effect.orDie,
-  );
+  const encodedTx = yield* encodeTransaction(tx).pipe(Effect.orDie);
 
   blockOutput.transactionsTrie.set(encodedIndex, encodedTx);
 
@@ -108,7 +105,7 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
   const blobGasFee =
     tx._tag === "BlobTransaction"
       ? yield* calculateDataFee(blockEnv.excessBlobGas, tx)
-      : new Uint({ value: 0n });
+      : Uint.zero;
 
   const effectiveGasFee = new Uint({
     value: tx.gas.value * checkResult.effectiveGasPrice.value,
@@ -164,7 +161,7 @@ export const processTransaction = Effect.fn("processTransaction")(function* (
   const txEnv = new TransactionEnvironment({
     origin: checkResult.senderAddress,
     gasPrice: checkResult.effectiveGasPrice,
-    gas: new Uint({ value: gas }),
+    gas: Uint.wrap(gas),
     accessListAddresses: accessListAddresses.clone(),
     accessListStorageKeys: accessListStorageKeys.clone(),
     transientStorage: TransientStorage.empty(),

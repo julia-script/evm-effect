@@ -4,7 +4,6 @@
  * @module
  */
 
-import { encodeTransaction } from "@evm-effect/crypto/transactions";
 import {
   Address,
   Bytes,
@@ -15,9 +14,11 @@ import {
   U256,
   Uint,
 } from "@evm-effect/ethereum-types";
-import rlp, { type Extended } from "@evm-effect/rlp";
-import { Effect, Result, Schema } from "effect";
-import { LegacyTransaction } from "./Transaction.js";
+import type { Extended, Simple } from "@evm-effect/rlp";
+import { Effect, Schema } from "effect";
+import { Rlp } from "../rlp.js";
+import { LegacyTransaction } from "../transactions.js";
+import { Fork } from "../vm/ForkService.js";
 
 /**
  * Withdrawal represents a transfer of ETH from the consensus layer
@@ -25,13 +26,35 @@ import { LegacyTransaction } from "./Transaction.js";
  *
  * Introduced in EIP-4895 (Shanghai/Capella).
  */
-export const Withdrawal = Schema.TaggedStruct("Withdrawal", {
-  index: U64,
-  validatorIndex: U64,
-  address: Address,
-  amount: U256,
-});
-export type Withdrawal = (typeof Withdrawal)["Type"];
+export class Withdrawal
+  extends Schema.TaggedClass<Withdrawal>()("Withdrawal", {
+    index: U64,
+    validatorIndex: U64,
+    address: Address,
+    amount: U256,
+  })
+  implements Rlp.ToExtendedTag
+{
+  [Rlp.ToExtendedTag] = Effect.fn("Withdrawal.ToExtended")(function* (
+    this: Withdrawal,
+  ): Effect.fn.Return<Readonly<Extended>, never, Fork> {
+    return [this.index, this.validatorIndex, this.address, this.amount];
+  });
+
+  static [Rlp.FromSimpleTag] = Effect.fn("Withdrawal.FromSimple")(function* (
+    simple: Readonly<Simple>,
+  ): Effect.fn.Return<Withdrawal, Rlp.RlpError, Fork> {
+    if (!Array.isArray(simple)) {
+      return yield* Effect.fail(Rlp.RlpError.cantDecode("Withdrawal", simple));
+    }
+    return Withdrawal.make({
+      index: yield* Rlp.fromSimple(U64, simple[0]),
+      validatorIndex: yield* Rlp.fromSimple(U64, simple[1]),
+      address: yield* Rlp.fromSimple(Address, simple[2]),
+      amount: yield* Rlp.fromSimple(U256, simple[3]),
+    });
+  });
+}
 
 /**
  * Block header containing metadata and cryptographic commitments.
@@ -50,122 +73,599 @@ export type Withdrawal = (typeof Withdrawal)["Type"];
  * Fork-specific fields are optional - undefined means not present in the block's RLP.
  * This is important for correct hash calculation.
  */
-export const Header = Schema.TaggedStruct("Header", {
-  parentHash: Bytes32,
-  ommersHash: Bytes32,
-  coinbase: Address,
-  stateRoot: Bytes32,
-  transactionsRoot: Bytes32,
-  receiptRoot: Bytes32,
-  bloom: Bytes256,
-  difficulty: Uint,
-  number: Uint,
-  gasLimit: Uint,
-  gasUsed: Uint,
-  timestamp: U256,
-  extraData: Bytes,
-  prevRandao: Bytes32,
-  nonce: Bytes8,
-  baseFeePerGas: Schema.optional(Uint),
-  withdrawalsRoot: Schema.optional(Bytes32),
-  blobGasUsed: Schema.optional(U64),
-  excessBlobGas: Schema.optional(U64),
-  parentBeaconBlockRoot: Schema.optional(Bytes32),
-  requestsHash: Schema.optional(Bytes32),
-});
-export type Header = (typeof Header)["Type"];
+export class Header
+  extends Schema.TaggedClass<Header>()("Header", {
+    // """
+    // Header portion of a block on the chain, containing metadata and
+    // cryptographic commitments to the block's contents.
+    // """
+    parentHash: Bytes32,
+    // Hash ([`keccak256`]) of the ommers (uncle blocks) in this block, encoded
+    // with [RLP]. However, in post merge forks `ommers_hash` is always
+    // [`EMPTY_OMMER_HASH`].
 
-export const decodeHeader = Effect.fn("decodeHeader")(function* (
-  header: Bytes,
-) {
-  return yield* rlp.decodeTo(Header, header).pipe(Effect.fromResult);
-});
+    // [`keccak256`]: ref:ethereum.crypto.hash.keccak256
+    // [RLP]: https://ethereum.github.io/ethereum-rlp/src/ethereum_rlp/rlp.py.html
+    // [`EMPTY_OMMER_HASH`]: ref:ethereum.forks.paris.fork.EMPTY_OMMER_HASH
 
-export const decodeBlock = Effect.fn("decodeBlock")(function* (block: Bytes) {
-  return yield* rlp.decodeTo(Block, block).pipe(Effect.fromResult);
-});
-export const Block = Schema.TaggedStruct("Block", {
-  header: Header,
-  transactions: Schema.Array(Schema.Union([Bytes, LegacyTransaction])),
-  ommers: Schema.Array(Header),
-  withdrawals: Schema.Array(Withdrawal).pipe(
-    Schema.withConstructorDefault(Effect.succeed([])),
-  ),
-});
+    ommersHash: Bytes32,
+    // """
+    // Address of the miner who mined this block.
 
-export type Block = (typeof Block)["Type"];
+    // The coinbase address receives the block reward and all transaction fees
+    // (gas price * gas used) from included transactions in the block.
+    // """
+    coinbase: Address,
 
-/**
- * RLP encode a block header.
- *
- * This function manually encodes the header fields in the correct order
- *
- * Fork-specific fields are only included if they are defined (not undefined).
- * This is critical for correct hash calculation - older forks don't have
- * these fields in their RLP encoding.
- *
- * @param header - The header to encode
- * @returns The RLP-encoded header as Bytes
- */
-export const encodeHeader = (header: Header): Bytes => {
-  const fields: Extended[] = [
-    header.parentHash.value,
-    header.ommersHash.value,
-    header.coinbase.value,
-    header.stateRoot.value,
-    header.transactionsRoot.value,
-    header.receiptRoot.value,
-    header.bloom.value,
-    header.difficulty,
-    header.number,
-    header.gasLimit,
-    header.gasUsed,
-    header.timestamp,
-    header.extraData.value,
-    header.prevRandao.value,
-    header.nonce.value,
-  ];
+    // """
+    // Root hash ([`keccak256`]) of the state trie after executing all
+    // transactions in this block. It represents the state of the Ethereum Virtual
+    // Machine (EVM) after all transactions in this block have been processed. It
+    // is computed using [`compute_state_root_and_trie_changes()`][changes],
+    // which computes the root of the Merkle-Patricia [Trie] representing the
+    // Ethereum world state after applying the block's state changes.
 
-  if (header.baseFeePerGas !== undefined) {
-    fields.push(header.baseFeePerGas);
+    // [`keccak256`]: ref:ethereum.crypto.hash.keccak256
+    // [changes]: ref:ethereum.state.State.compute_state_root_and_trie_changes
+    // [Trie]: ref:ethereum.merkle_patricia_trie.Trie
+    // """  # noqa: E501
+    stateRoot: Bytes32,
 
-    if (header.withdrawalsRoot !== undefined) {
-      fields.push(header.withdrawalsRoot.value);
+    // """
+    // Root hash ([`keccak256`]) of the transactions trie, which contains all
+    // transactions included in this block in their original order. It is computed
+    // using the [`root()`] function over the Merkle-Patricia [trie] of
+    // transactions as the parameter.
 
-      if (
-        header.blobGasUsed !== undefined &&
-        header.excessBlobGas !== undefined &&
-        header.parentBeaconBlockRoot !== undefined
-      ) {
-        fields.push(header.blobGasUsed);
-        fields.push(header.excessBlobGas);
-        fields.push(header.parentBeaconBlockRoot.value);
+    // [`keccak256`]: ref:ethereum.crypto.hash.keccak256
+    // [`root()`]: ref:ethereum.merkle_patricia_trie.root
+    // [Trie]: ref:ethereum.merkle_patricia_trie.Trie
+    // """
+    transactionsRoot: Bytes32,
+    // """
+    // Root hash ([`keccak256`]) of the receipts trie, which contains all receipts
+    // for transactions in this block. It is computed using the [`root()`]
+    // function over the Merkle-Patricia [trie] constructed from the receipts.
 
-        // Prague+ (EIP-7685): requestsHash
-        if (header.requestsHash !== undefined) {
-          fields.push(header.requestsHash.value);
-        }
+    // [`keccak256`]: ref:ethereum.crypto.hash.keccak256
+    // [`root()`]: ref:ethereum.merkle_patricia_trie.root
+    // [Trie]: ref:ethereum.merkle_patricia_trie.Trie
+    // """
+    receiptRoot: Bytes32,
+    // """
+    // Bloom filter for logs generated by transactions in this block.
+    // Constructed from all logs in the block using the [logs bloom] mechanism.
+
+    // [logs bloom]: ref:ethereum.forks.frontier.bloom.logs_bloom
+    // """
+    bloom: Bytes256,
+
+    // """
+    // Difficulty of the block (pre-PoS), or a constant in PoS.
+
+    // used in Proof-of-Work to determine the effort
+    // required to mine the block. This value adjusts over time to maintain a
+    // relatively constant block time and is computed using the
+    // [`calculate_block_difficulty()`] function.
+
+    // [`calculate_block_difficulty()`]:
+    // ref:ethereum.forks.frontier.fork.calculate_block_difficulty
+    // """
+    difficulty: Uint,
+    // """
+    // Block number (height) in the chain.
+    // """
+    number: Uint,
+    // """
+    // Maximum gas allowed in this block. Pre [EIP-1559], this is the maximum
+    // gas that could be consumed by all transactions in the block.
+
+    // [EIP-1559]: https://eips.ethereum.org/EIPS/eip-1559
+    // """
+    gasLimit: Uint,
+    // """
+    // Total gas used by all transactions in this block.
+    // """
+    gasUsed: Uint,
+    // """
+    // Timestamp of when the block was mined, in seconds since the unix epoch.
+    // """
+    timestamp: U256,
+    // """
+    // Arbitrary data included by the miner.
+    // """
+    extraData: Bytes,
+    // Output of the RANDAO beacon for random validator selection.
+    prevRandao: Bytes32,
+    // """
+    // Mix hash used in the mining process, which is a cryptographic commitment
+    // to the block's contents. It [validates][u] that PoW was done on the correct
+    // block.
+
+    // [u]: ref:ethereum.forks.frontier.fork.validate_proof_of_work
+    // """
+    // mixDigest: Bytes32.pipe(Schema.optional),
+    // """
+    //  Nonce used in the mining process (pre-PoS), set to zero in PoS.
+    //
+    // Nonce used in the mining process, which is a value that miners
+    // increment to find a valid block hash. This is also used to [validate][v]
+    // the proof-of-work for this block.
+
+    // [v]: ref:ethereum.forks.frontier.fork.validate_proof_of_work
+    // """
+    nonce: Bytes8,
+
+    // Base fee per gas for transactions in this block, introduced in
+    // [EIP-1559]. This is the minimum fee per gas that must be paid for a
+    // transaction to be included in this block.
+
+    // [EIP-1559]: https://eips.ethereum.org/EIPS/eip-1559
+    baseFeePerGas: Schema.optional(Uint),
+
+    // Root hash of the withdrawals trie, which contains all withdrawals in this
+    // block.
+    withdrawalsRoot: Schema.optional(Bytes32),
+    // Total blob gas consumed by the transactions within this block. Introduced
+    // in [EIP-4844].
+
+    // [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
+    blobGasUsed: Schema.optional(U64),
+    // Running total of blob gas consumed in excess of the target, prior to this
+    // block. Blocks with above-target blob gas consumption increase this value,
+    // while blocks with below-target blob gas consumption decrease it (to a
+    // minimum of zero). Introduced in [EIP-4844].
+
+    // [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
+    excessBlobGas: Schema.optional(U64),
+    // Root hash of the corresponding beacon chain block.
+    parentBeaconBlockRoot: Schema.optional(Bytes32),
+    // [SHA2-256] hash of all the collected requests in this block. Introduced in
+    // [EIP-7685]. See [`compute_requests_hash`][crh] for more details.
+
+    // [EIP-7685]: https://eips.ethereum.org/EIPS/eip-7685
+    // [crh]: ref:ethereum.forks.prague.requests.compute_requests_hash
+    // [SHA2-256]: https://en.wikipedia.org/wiki/SHA-2
+    requestsHash: Schema.optional(Bytes32),
+  })
+  implements Rlp.ToExtendedTag
+{
+  [Rlp.ToExtendedTag] = Effect.fn("Header.ToExtended")(function* (
+    this: Header,
+  ): Effect.fn.Return<Readonly<Extended>, Rlp.RlpError, Fork> {
+    const fork = yield* Fork;
+    const base: Extended[] = [
+      this.parentHash,
+      this.ommersHash,
+      this.coinbase,
+      this.stateRoot,
+      this.transactionsRoot,
+      this.receiptRoot,
+      this.bloom,
+      this.difficulty,
+      this.number,
+      this.gasLimit,
+      this.gasUsed,
+      this.timestamp,
+      this.extraData,
+      this.prevRandao,
+      this.nonce,
+    ];
+    if (fork.eip(1559)) {
+      if (!this.baseFeePerGas) {
+        return yield* Effect.fail(
+          Rlp.RlpError.shouldBeDefinedOnEip("Header.baseFeePerGas", 1559),
+        );
       }
+      base.push(this.baseFeePerGas);
     }
-  }
+    if (fork.eip(4895)) {
+      if (!this.withdrawalsRoot) {
+        return yield* Effect.fail(
+          Rlp.RlpError.shouldBeDefinedOnEip("Header.withdrawalsRoot", 4895),
+        );
+      }
+      base.push(this.withdrawalsRoot);
+    }
+    if (fork.eip(4844)) {
+      if (!this.blobGasUsed) {
+        return yield* Effect.fail(
+          Rlp.RlpError.shouldBeDefinedOnEip("Header.blobGasUsed", 4844),
+        );
+      }
+      if (!this.excessBlobGas) {
+        return yield* Effect.fail(
+          Rlp.RlpError.shouldBeDefinedOnEip("Header.excessBlobGas", 4844),
+        );
+      }
+      if (!this.parentBeaconBlockRoot) {
+        return yield* Effect.fail(
+          Rlp.RlpError.shouldBeDefinedOnEip(
+            "Header.parentBeaconBlockRoot",
+            4844,
+          ),
+        );
+      }
+      base.push(
+        this.blobGasUsed,
+        this.excessBlobGas,
+        this.parentBeaconBlockRoot,
+      );
+    }
+    if (fork.eip(7685)) {
+      if (!this.requestsHash) {
+        return yield* Effect.fail(
+          Rlp.RlpError.shouldBeDefinedOnEip("Header.requestsHash", 7685),
+        );
+      }
+      base.push(this.requestsHash);
+    }
+    return base;
+  });
 
-  return rlp.encode(fields);
-};
+  static [Rlp.FromSimpleTag] = Effect.fn("Header.FromSimple")(function* (
+    simple: Readonly<Simple>,
+  ): Effect.fn.Return<Header, Rlp.RlpError, Fork> {
+    if (!Array.isArray(simple)) {
+      return yield* Effect.fail(Rlp.RlpError.cantDecode("Header", simple));
+    }
+    const fork = yield* Fork;
+    return Header.make({
+      parentHash: yield* Rlp.fromSimple(Bytes32, simple[0]),
+      ommersHash: yield* Rlp.fromSimple(Bytes32, simple[1]),
+      coinbase: yield* Rlp.fromSimple(Address, simple[2]),
+      stateRoot: yield* Rlp.fromSimple(Bytes32, simple[3]),
+      transactionsRoot: yield* Rlp.fromSimple(Bytes32, simple[4]),
+      receiptRoot: yield* Rlp.fromSimple(Bytes32, simple[5]),
+      bloom: yield* Rlp.fromSimple(Bytes256, simple[6]),
+      difficulty: yield* Rlp.fromSimple(Uint, simple[7]),
+      number: yield* Rlp.fromSimple(Uint, simple[8]),
+      gasLimit: yield* Rlp.fromSimple(Uint, simple[9]),
+      gasUsed: yield* Rlp.fromSimple(Uint, simple[10]),
+      timestamp: yield* Rlp.fromSimple(U256, simple[11]),
+      extraData: yield* Rlp.fromSimple(Bytes, simple[12]),
+      prevRandao: yield* Rlp.fromSimple(Bytes32, simple[13]),
+      nonce: yield* Rlp.fromSimple(Bytes8, simple[14]),
+      baseFeePerGas: fork.eip(1559)
+        ? yield* Rlp.fromSimple(Uint, simple[15])
+        : undefined,
+      withdrawalsRoot: fork.eip(4895)
+        ? yield* Rlp.fromSimple(Bytes32, simple[16])
+        : undefined,
+      blobGasUsed: fork.eip(4844)
+        ? yield* Rlp.fromSimple(U64, simple[17])
+        : undefined,
+      excessBlobGas: fork.eip(4844)
+        ? yield* Rlp.fromSimple(U64, simple[18])
+        : undefined,
+      parentBeaconBlockRoot: fork.eip(4844)
+        ? yield* Rlp.fromSimple(Bytes32, simple[19])
+        : undefined,
+      requestsHash: fork.eip(7685)
+        ? yield* Rlp.fromSimple(Bytes32, simple[20])
+        : undefined,
+    });
+  });
+  encode = Effect.fn("encodeHeader")(function* (
+    this: Header,
+  ): Effect.fn.Return<Bytes, Rlp.RlpError, Fork> {
+    return yield* Rlp.encode(this);
+  });
+
+  static decode = Effect.fn("decodeHeader")(function* (
+    header: Bytes,
+  ): Effect.fn.Return<Header, Rlp.RlpError, Fork> {
+    return yield* Rlp.fromSimple(Header, yield* Rlp.decode(header));
+  });
+}
+
+export class Block
+  extends Schema.TaggedClass<Block>()("Block", {
+    header: Header,
+    transactions: Schema.Array(Schema.Union([Bytes, LegacyTransaction])),
+    ommers: Schema.Array(Header),
+    withdrawals: Schema.Array(Withdrawal).pipe(Schema.optional),
+  })
+  implements Rlp.ToExtendedTag
+{
+  [Rlp.ToExtendedTag] = Effect.fn("Block.ToExtended")(function* (
+    this: Block,
+  ): Effect.fn.Return<Readonly<Extended>, Rlp.RlpError, Fork> {
+    const fork = yield* Fork;
+
+    const transactions: Extended[] = yield* Effect.all(
+      this.transactions.map((transaction) =>
+        Effect.gen(function* () {
+          if (transaction instanceof LegacyTransaction) {
+            return yield* Rlp.toExtended(transaction);
+          }
+          return transaction;
+        }),
+      ),
+    );
+
+    const base: Extended[] = [
+      yield* Rlp.toExtended(this.header),
+      transactions,
+      yield* Rlp.toExtendedList(this.ommers),
+    ];
+    if (fork.eip(4895)) {
+      if (!this.withdrawals) {
+        return yield* Effect.fail(
+          Rlp.RlpError.shouldBeDefinedOnEip("Block.withdrawals", 4895),
+        );
+      }
+      base.push(yield* Rlp.toExtendedList(this.withdrawals));
+    }
+    return base;
+  });
+
+  static [Rlp.FromSimpleTag] = Effect.fn("Block.FromSimple")(function* (
+    simple: Simple,
+  ): Effect.fn.Return<Block, Rlp.RlpError, Fork> {
+    if (simple instanceof Bytes) {
+      return yield* Effect.fail(Rlp.RlpError.cantDecode("Block", simple));
+    }
+    const fork = yield* Fork;
+    const transactionsAsSimple = simple[1];
+    const transactions = yield* Effect.gen(function* () {
+      if (!Array.isArray(transactionsAsSimple)) {
+        return yield* Effect.fail(
+          Rlp.RlpError.cantDecode("Block.transactions", transactionsAsSimple),
+        );
+      }
+      return yield* Effect.all(
+        transactionsAsSimple.map((transaction) =>
+          Effect.gen(function* () {
+            if (Array.isArray(transaction)) {
+              return yield* Rlp.fromSimple(LegacyTransaction, transaction);
+            }
+
+            return transaction;
+          }),
+        ),
+      );
+    });
+
+    return Block.make({
+      header: yield* Rlp.fromSimple(Header, simple[0]),
+      transactions: transactions,
+      ommers: yield* Rlp.fromSimpleList(Header, simple[2]),
+      withdrawals: fork.eip(4895)
+        ? yield* Rlp.fromSimpleList(Withdrawal, simple[3])
+        : undefined,
+    });
+  });
+
+  encode = Effect.fn("encodeBlock")(function* (
+    this: Block,
+  ): Effect.fn.Return<Bytes, Rlp.RlpError, Fork> {
+    return yield* Rlp.encode(this);
+  });
+
+  static decode = Effect.fn("decodeBlock")(function* (
+    block: Bytes,
+  ): Effect.fn.Return<Block, Rlp.RlpError, Fork> {
+    return yield* Rlp.fromSimple(Block, yield* Rlp.decode(block));
+  });
+}
+
+// /**
+//  * RLP encode a block header.
+//  *
+//  * This function manually encodes the header fields in the correct order
+//  *
+//  * Fork-specific fields are only included if they are defined (not undefined).
+//  * This is critical for correct hash calculation - older forks don't have
+//  * these fields in their RLP encoding.
+//  *
+//  * @param header - The header to encode
+//  * @returns The RLP-encoded header as Bytes
+//  */
+// export const encodeHeader = Effect.fn("encodeHeader")(function* (
+//   header: Header,
+// ): Effect.fn.Return<Bytes, never> {
+//   const fields: Extended[] = [
+//     header.parentHash,
+//     header.ommersHash,
+//     header.coinbase,
+//     header.stateRoot,
+//     header.transactionsRoot,
+//     header.receiptRoot,
+//     header.bloom,
+//     header.difficulty,
+//     header.number,
+//     header.gasLimit,
+//     header.gasUsed,
+//     header.timestamp,
+//     header.mixDigest ?? new Bytes32({ value: new Uint8Array(32) }),
+//     header.nonce,
+//   ];
+
+// if (header.baseFeePerGas !== undefined) {
+//   fields.push(header.baseFeePerGas);
+
+//   if (header.withdrawalsRoot !== undefined) {
+//     fields.push(header.withdrawalsRoot.value);
+
+//     if (
+//       header.blobGasUsed !== undefined &&
+//       header.excessBlobGas !== undefined &&
+//       header.parentBeaconBlockRoot !== undefined
+//     ) {
+//       fields.push(header.blobGasUsed);
+//       fields.push(header.excessBlobGas);
+//       fields.push(header.parentBeaconBlockRoot.value);
+
+//       // Prague+ (EIP-7685): requestsHash
+//       if (header.requestsHash !== undefined) {
+//         fields.push(header.requestsHash.value);
+//       }
+//     }
+//   }
+// }
+
+//   return rlp.encode(fields);
+// });
+// const ForkAwareHeaderSchema = Effect.gen(function* () {
+//   const fork = yield* Fork;
+//   if (fork.eip(7685)) {
+//     return Schema.Struct(
+//       pick(Header.fields, [
+//         "parentHash",
+//         "ommersHash",
+//         "coinbase",
+//         "stateRoot",
+//         "transactionsRoot",
+//         "receiptRoot",
+//         "bloom",
+//         "difficulty",
+//         "number",
+//         "gasLimit",
+//         "gasUsed",
+//         "timestamp",
+//         "extraData",
+//         "prevRandao",
+//         "nonce",
+//         "baseFeePerGas",
+//         "withdrawalsRoot",
+//         "blobGasUsed",
+//         "excessBlobGas",
+//         "parentBeaconBlockRoot",
+//         "requestsHash",
+//       ]),
+//     );
+//   }
+//   if (fork.eip(4844)) {
+//     return Schema.Struct(
+//       pick(Header.fields, [
+//         "parentHash",
+//         "ommersHash",
+//         "coinbase",
+//         "stateRoot",
+//         "transactionsRoot",
+//         "receiptRoot",
+//         "bloom",
+//         "difficulty",
+//         "number",
+//         "gasLimit",
+//         "gasUsed",
+//         "timestamp",
+//         "extraData",
+//         "prevRandao",
+//         "nonce",
+//         "baseFeePerGas",
+//         "withdrawalsRoot",
+//         "blobGasUsed",
+//         "excessBlobGas",
+//         "parentBeaconBlockRoot",
+//       ]),
+//     );
+//   }
+//   if (fork.eip(4895)) {
+//     return Schema.Struct(
+//       pick(Header.fields, [
+//         "parentHash",
+//         "ommersHash",
+//         "coinbase",
+//         "stateRoot",
+//         "transactionsRoot",
+//         "receiptRoot",
+//         "bloom",
+//         "difficulty",
+//         "number",
+//         "gasLimit",
+//         "gasUsed",
+//         "timestamp",
+//         "extraData",
+//         "prevRandao",
+//         "nonce",
+//         "baseFeePerGas",
+//         "withdrawalsRoot",
+//       ]),
+//     );
+//   }
+//   if (fork.eip(4399)) {
+//     return Schema.Struct(
+//       pick(Header.fields, [
+//         "parentHash",
+//         "ommersHash",
+//         "coinbase",
+//         "stateRoot",
+//         "transactionsRoot",
+//         "receiptRoot",
+//         "bloom",
+//         "difficulty",
+//         "number",
+//         "gasLimit",
+//         "gasUsed",
+//         "timestamp",
+//         "extraData",
+//         "prevRandao",
+//         "nonce",
+//         "baseFeePerGas",
+//       ]),
+//     );
+//   }
+//   if (fork.eip(1559)) {
+//     return Schema.Struct(
+//       pick(Header.fields, [
+//         "parentHash",
+//         "ommersHash",
+//         "coinbase",
+//         "stateRoot",
+//         "transactionsRoot",
+//         "receiptRoot",
+//         "bloom",
+//         "difficulty",
+//         "number",
+//         "gasLimit",
+//         "gasUsed",
+//         "timestamp",
+//         "extraData",
+//         "prevRandao",
+//         "nonce",
+//         "baseFeePerGas",
+//       ]),
+//     );
+//   }
+//   const fields = pick(Header.fields, [
+//     "parentHash",
+//     "ommersHash",
+//     "coinbase",
+//     "stateRoot",
+//     "transactionsRoot",
+//     "receiptRoot",
+//     "bloom",
+//     "difficulty",
+//     "number",
+//     "gasLimit",
+//     "gasUsed",
+//     "timestamp",
+//     "extraData",
+//     "prevRandao",
+//     "nonce",
+//   ]);
+
+//   return Schema.Struct({
+//     ...fields,
+//   });
+// });
 
 /**
  * Encode a withdrawal for RLP.
  *
  * @param withdrawal - The withdrawal to encode
  * @returns The RLP-encoded withdrawal fields
- */
-const encodeWithdrawal = (withdrawal: Withdrawal): Extended[] => {
-  return [
-    withdrawal.index,
-    withdrawal.validatorIndex,
-    withdrawal.address.value,
-    withdrawal.amount,
-  ];
-};
+//  */
+// const encodeWithdrawal = (withdrawal: Withdrawal): Extended[] => {
+//   return [
+//     withdrawal.index,
+//     withdrawal.validatorIndex,
+//     withdrawal.address.value,
+//     withdrawal.amount,
+//   ];
+// };
 
 /**
  * RLP encode a complete block.
@@ -180,114 +680,118 @@ const encodeWithdrawal = (withdrawal: Withdrawal): Extended[] => {
  *
  * @param block - The block to encode
  * @returns Result the RLP-encoded block as Bytes or an error
- */
-export const encodeBlock = (
-  block: Block,
-): Result.Result<Bytes, { message: string }> => {
-  // Encode header fields (as a list, not as bytes)
-  const headerFields: Extended[] = [
-    block.header.parentHash.value,
-    block.header.ommersHash.value,
-    block.header.coinbase.value,
-    block.header.stateRoot.value,
-    block.header.transactionsRoot.value,
-    block.header.receiptRoot.value,
-    block.header.bloom.value,
-    block.header.difficulty,
-    block.header.number,
-    block.header.gasLimit,
-    block.header.gasUsed,
-    block.header.timestamp,
-    block.header.extraData.value,
-    block.header.prevRandao.value,
-    block.header.nonce.value,
-  ];
+//  */
+// export const encodeBlock = Effect.fn("encodeBlock")(function* (
+//   block: Block,
+// ): Effect.fn.Return<Bytes, RlpEncodeError, Fork> {
+//   const fork = yield* Fork;
 
-  if (block.header.baseFeePerGas !== undefined) {
-    headerFields.push(block.header.baseFeePerGas);
+//   // const encodedTransactions = yield* Effect.all(block.transactions.map());
+//   return yield* rlp.encodeTo(Block, block).pipe(Effect.fromResult);
+//   // // Encode header fields (as a list, not as bytes)
+//   // const headerFields: Extended[] = [
+//   //   block.header.parentHash.value,
+//   //   block.header.ommersHash.value,
+//   //   block.header.coinbase.value,
+//   //   block.header.stateRoot.value,
+//   //   block.header.transactionsRoot.value,
+//   //   block.header.receiptRoot.value,
+//   //   block.header.bloom.value,
+//   //   block.header.difficulty,
+//   //   block.header.number,
+//   //   block.header.gasLimit,
+//   //   block.header.gasUsed,
+//   //   block.header.timestamp,
+//   //   block.header.extraData.value,
+//   //   block.header.prevRandao.value,
+//   //   block.header.nonce.value,
+//   // ];
 
-    if (block.header.withdrawalsRoot !== undefined) {
-      headerFields.push(block.header.withdrawalsRoot.value);
+//   // if (block.header.baseFeePerGas !== undefined) {
+//   //   headerFields.push(block.header.baseFeePerGas);
 
-      if (
-        block.header.blobGasUsed !== undefined &&
-        block.header.excessBlobGas !== undefined &&
-        block.header.parentBeaconBlockRoot !== undefined
-      ) {
-        headerFields.push(block.header.blobGasUsed);
-        headerFields.push(block.header.excessBlobGas);
-        headerFields.push(block.header.parentBeaconBlockRoot.value);
+//   //   if (block.header.withdrawalsRoot !== undefined) {
+//   //     headerFields.push(block.header.withdrawalsRoot.value);
 
-        if (block.header.requestsHash !== undefined) {
-          headerFields.push(block.header.requestsHash.value);
-        }
-      }
-    }
-  }
+//   //     if (
+//   //       block.header.blobGasUsed !== undefined &&
+//   //       block.header.excessBlobGas !== undefined &&
+//   //       block.header.parentBeaconBlockRoot !== undefined
+//   //     ) {
+//   //       headerFields.push(block.header.blobGasUsed);
+//   //       headerFields.push(block.header.excessBlobGas);
+//   //       headerFields.push(block.header.parentBeaconBlockRoot.value);
 
-  // Encode transactions
-  const encodedTransactions: Extended[] = [];
-  for (const tx of block.transactions) {
-    if (tx._tag === "Bytes") {
-      // Already encoded transaction bytes
-      encodedTransactions.push(tx.value);
-    } else {
-      // Need to encode the transaction
-      const encodedResult = encodeTransaction(tx);
-      if (Result.isFailure(encodedResult)) {
-        return Result.fail({ message: `Failed to encode transaction` });
-      }
-      const encoded = encodedResult.success;
-      if (encoded._tag === "LegacyTransaction") {
-        // Legacy transactions are RLP encoded directly as a list
-        const legacyResult = rlp.encodeTo(LegacyTransaction, encoded);
-        if (Result.isFailure(legacyResult)) {
-          return Result.fail({
-            message: `Failed to encode legacy transaction`,
-          });
-        }
-        encodedTransactions.push(legacyResult.success.value);
-      } else {
-        // Typed transactions are already prefixed bytes
-        encodedTransactions.push(encoded.value);
-      }
-    }
-  }
+//   //       if (block.header.requestsHash !== undefined) {
+//   //         headerFields.push(block.header.requestsHash.value);
+//   //       }
+//   //     }
+//   //   }
+//   // }
 
-  // Encode ommers (uncle block headers)
-  const encodedOmmers: Extended[] = block.ommers.map((ommer) => [
-    ommer.parentHash.value,
-    ommer.ommersHash.value,
-    ommer.coinbase.value,
-    ommer.stateRoot.value,
-    ommer.transactionsRoot.value,
-    ommer.receiptRoot.value,
-    ommer.bloom.value,
-    ommer.difficulty,
-    ommer.number,
-    ommer.gasLimit,
-    ommer.gasUsed,
-    ommer.timestamp,
-    ommer.extraData.value,
-    ommer.prevRandao.value,
-    ommer.nonce.value,
-    // Ommers are from pre-merge so they don't have post-London fields
-  ]);
+//   // // Encode transactions
+//   // const encodedTransactions: Extended[] = block.transactions.map(encodeTransaction)
+//   // for (const tx of block.transactions) {
+//   //   if (tx._tag === "Bytes") {
+//   //     // Already encoded transaction bytes
+//   //     encodedTransactions.push(tx.value);
+//   //   } else {
+//   //     // Need to encode the transaction
+//   //     const encodedResult = encodeTransaction(tx);
+//   //     if (Result.isFailure(encodedResult)) {
+//   //       return Result.fail({ message: `Failed to encode transaction` });
+//   //     }
+//   //     const encoded = encodedResult.success;
+//   //     if (encoded._tag === "LegacyTransaction") {
+//   //       // Legacy transactions are RLP encoded directly as a list
+//   //       const legacyResult = rlp.encodeTo(LegacyTransaction, encoded);
+//   //       if (Result.isFailure(legacyResult)) {
+//   //         return Result.fail({
+//   //           message: `Failed to encode legacy transaction`,
+//   //         });
+//   //       }
+//   //       encodedTransactions.push(legacyResult.success.value);
+//   //     } else {
+//   //       // Typed transactions are already prefixed bytes
+//   //       encodedTransactions.push(encoded.value);
+//   //     }
+//   //   }
+//   // }
 
-  // Build the block structure
-  // Post-Shanghai blocks include withdrawals
-  const hasWithdrawals = block.header.withdrawalsRoot !== undefined;
+//   // Encode ommers (uncle block headers)
+//   // const encodedOmmers: Extended[] = block.ommers.map((ommer) => [
+//   //   ommer.parentHash.value,
+//   //   ommer.ommersHash.value,
+//   //   ommer.coinbase.value,
+//   //   ommer.stateRoot.value,
+//   //   ommer.transactionsRoot.value,
+//   //   ommer.receiptRoot.value,
+//   //   ommer.bloom.value,
+//   //   ommer.difficulty,
+//   //   ommer.number,
+//   //   ommer.gasLimit,
+//   //   ommer.gasUsed,
+//   //   ommer.timestamp,
+//   //   ommer.extraData.value,
+//   //   ommer.prevRandao?.value ?? Bytes32.empty.value,
+//   //   ommer.nonce.value,
+//   //   // Ommers are from pre-merge so they don't have post-London fields
+//   // ]);
 
-  const blockFields: Extended[] = [
-    headerFields,
-    encodedTransactions,
-    encodedOmmers,
-  ];
+//   // // Build the block structure
+//   // // Post-Shanghai blocks include withdrawals
+//   // const hasWithdrawals = block.header.withdrawalsRoot !== undefined;
 
-  if (hasWithdrawals && block.withdrawals) {
-    const encodedWithdrawals = block.withdrawals.map(encodeWithdrawal);
-    blockFields.push(encodedWithdrawals);
-  }
+//   // const blockFields: Extended[] = [
+//   //   headerFields,
+//   //   encodedTransactions,
+//   //   encodedOmmers,
+//   // ];
 
-  return Result.succeed(rlp.encode(blockFields));
-};
+//   // if (hasWithdrawals && block.withdrawals) {
+//   //   const encodedWithdrawals = block.withdrawals.map(encodeWithdrawal);
+//   //   blockFields.push(encodedWithdrawals);
+//   // }
+
+//   // return Effect.succeed(rlp.encode(blockFields));
+// });

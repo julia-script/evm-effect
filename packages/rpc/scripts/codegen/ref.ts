@@ -48,7 +48,6 @@ export const genEffectRefSchema = Effect.fn("genEffectRefSchema")(function* (
   const refName = ref.split("/").pop() || "";
   if (ref === `${COMPONENTS_SCHEMA_PREFIX}${refName}`) {
     if (ignoredSchemas.has(refName)) {
-      console.log(`Ignored schema: ${refName}`);
       return { name, schema: `Schema.Unknown/* ${ref} */`, deps: [] };
     }
 

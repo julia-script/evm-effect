@@ -4,6 +4,37 @@ import { encode } from "@evm-effect/rlp";
 import { Effect, Result } from "effect";
 import { Fork } from "./vm/ForkService.js";
 
+export const BLOCK_REWARD = 5n * 10n ** 18n;
+
+export const MINIMUM_DIFFICULTY = 131072n;
+export const MAX_OMMER_DEPTH = 6n;
+export const INITIAL_BASE_FEE = 1000000000n;
+export const BOMB_DELAY_BLOCKS = Effect.gen(function* () {
+  const fork = yield* Fork;
+  if (fork.eip(5133)) {
+    return 11400000n;
+  }
+  if (fork.eip(4345)) {
+    return 10700000n;
+  }
+  if (fork.eip(3554)) {
+    return 9700000n;
+  }
+  if (fork.eip(2384)) {
+    return 9000000n;
+  }
+  if (fork.eip(1234)) {
+    return 5000000n;
+  }
+  if (fork.eip(649)) {
+    return 3000000n;
+  }
+  return 0n;
+});
+export const EMPTY_OMMER_HASH = keccak256(encode([]));
+export const BASE_FEE_MAX_CHANGE_DENOMINATOR = 8n;
+export const ELASTICITY_MULTIPLIER = 2n;
+
 // ============================================================================
 // Block Reward Constants (pre-merge only)
 // ============================================================================
@@ -32,36 +63,16 @@ export const BLOCK_REWARD_CONSTANTINOPLE = new Uint({
   value: 2_000_000_000_000_000_000n,
 }); // 2 ETH
 
-// ============================================================================
-// Base Fee and Gas Constants
-// ============================================================================
-
-/**
- * Maximum change denominator for base fee adjustments.
- * Used in EIP-1559 base fee calculation.
- */
-export const BASE_FEE_MAX_CHANGE_DENOMINATOR = Result.getOrThrow(
-  Uint.fromNumber(8),
-);
-
-/**
- * Elasticity multiplier for gas limit calculations.
- * Used to determine gas target from gas limit.
- */
-export const ELASTICITY_MULTIPLIER = Result.getOrThrow(Uint.fromNumber(2));
-
 /**
  * Gas limit adjustment factor between blocks.
  * Maximum factor by which gas limit can change between blocks.
  */
-export const GAS_LIMIT_ADJUSTMENT_FACTOR = Result.getOrThrow(
-  Uint.fromNumber(1024),
-);
+export const LIMIT_ADJUSTMENT_FACTOR = Result.getOrThrow(Uint.fromNumber(1024));
 
 /**
  * Minimum gas limit for any block.
  */
-export const GAS_LIMIT_MINIMUM = Result.getOrThrow(Uint.fromNumber(5000));
+export const LIMIT_MINIMUM = Result.getOrThrow(Uint.fromNumber(5000));
 
 /**
  * Gas allocated for system transactions.
@@ -71,49 +82,21 @@ export const SYSTEM_TRANSACTION_GAS = Result.getOrThrow(
   Uint.fromNumber(30000000),
 );
 
-// ============================================================================
-// Block Size and RLP Constants
-// ============================================================================
-
 /**
  * Maximum block size in bytes.
  */
-const MAX_BLOCK_SIZE = 10_485_760;
+const MAX_BLOCK_SIZE = 10_485_760n;
 
 /**
  * Safety margin for block size calculations.
  */
-const SAFETY_MARGIN = 2_097_152;
+const SAFETY_MARGIN = 2_097_152n;
 
 /**
  * Maximum RLP-encoded block size.
  * Calculated as MAX_BLOCK_SIZE - SAFETY_MARGIN.
  */
 export const MAX_RLP_BLOCK_SIZE = MAX_BLOCK_SIZE - SAFETY_MARGIN;
-
-// ============================================================================
-// Blob Gas Constants
-// ============================================================================
-
-/**
- * Maximum blob gas that can be consumed per block.
- * Prague (EIP-7691) increased from 6 blobs (786432) to 9 blobs (1179648).
- * Osaka (EIP-7825) maintains 9 blobs.
- */
-export const MAX_BLOB_GAS_PER_BLOCK = Effect.gen(function* () {
-  const fork = yield* Fork;
-  return new U64({ value: fork.eipSelect(7691, 1179648n, 786432n) });
-});
-
-/**
- * Maximum number of blobs allowed per transaction.
- * Prague (EIP-7691) increased from 6 to 9 blobs.
- * Osaka (EIP-7825) maintains 9 blobs.
- */
-export const BLOB_COUNT_LIMIT = Effect.gen(function* () {
-  const fork = yield* Fork;
-  return fork.eipSelect(7691, 9, 6);
-});
 
 /**
  * Version byte for KZG commitment versioned hashes.
@@ -123,32 +106,36 @@ export const VERSIONED_HASH_VERSION_KZG = new Uint8Array([0x01]);
 /**
  * Gas consumed per blob.
  */
-export const GAS_PER_BLOB = Result.getOrThrow(U64.fromNumber(2 ** 17)); // 131072
 
 /**
  * Target number of blobs per block for blob gas pricing.
  */
-export const BLOB_SCHEDULE_TARGET = Result.getOrThrow(U64.fromNumber(6));
+export const BLOB_SCHEDULE_TARGET = U64.wrap(6n);
 
 /**
  * Target blob gas per block for blob gas pricing.
  * EIP-4844 (Cancun): 393216 (131072 * 3)
  * EIP-7691 (Prague): 786432 (131072 * 6)
  */
-export const TARGET_BLOB_GAS_PER_BLOCK = Effect.gen(function* () {
+export const BLOB_TARGET_GAS_PER_BLOCK = Effect.gen(function* () {
   const fork = yield* Fork;
-  return new U64({ value: fork.eipSelect(7691, 786432n, 393216n) });
+  if (fork.eip(7918)) {
+    return U64.wrap(1179648n);
+  }
+  if (fork.eip(7691)) {
+    return U64.wrap(786432n);
+  }
+  return U64.wrap(393216n);
 });
 
 /**
  * Base cost for blob gas pricing.
  */
-export const BLOB_BASE_COST = Result.getOrThrow(Uint.fromNumber(2 ** 13)); // 8192
+export const BLOB_BASE_COST = Uint.wrap(2n ** 13n); // 8192
 
 /**
  * Maximum blob schedule value for gas pricing.
  */
-export const BLOB_SCHEDULE_MAX = Result.getOrThrow(U64.fromNumber(9));
 
 /**
  * Minimum blob gas price.
@@ -173,40 +160,40 @@ export const BLOB_BASE_FEE_UPDATE_FRACTION = Effect.gen(function* () {
  * System address used as the caller for system transactions.
  * Address: 0xfffffffffffffffffffffffffffffffffffffffe
  */
-export const SYSTEM_ADDRESS = Result.getOrThrow(
-  Address.fromHex("0xfffffffffffffffffffffffffffffffffffffffe"),
+export const SYSTEM_ADDRESS = Address.unsafe(
+  "0xfffffffffffffffffffffffffffffffffffffffe",
 );
 
 /**
  * Address of the beacon roots contract.
  * Address: 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02
  */
-export const BEACON_ROOTS_ADDRESS = Result.getOrThrow(
-  Address.fromHex("0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02"),
+export const BEACON_ROOTS_ADDRESS = Address.unsafe(
+  "0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02",
 );
 
 /**
  * Address of the withdrawal request predeploy contract.
  * Address: 0x00000961Ef480Eb55e80D19ad83579A64c007002
  */
-export const WITHDRAWAL_REQUEST_PREDEPLOY_ADDRESS = Result.getOrThrow(
-  Address.fromHex("0x00000961Ef480Eb55e80D19ad83579A64c007002"),
+export const WITHDRAWAL_REQUEST_PREDEPLOY_ADDRESS = Address.unsafe(
+  "0x00000961Ef480Eb55e80D19ad83579A64c007002",
 );
 
 /**
  * Address of the consolidation request predeploy contract.
  * Address: 0x0000BBdDc7CE488642fb579F8B00f3a590007251
  */
-export const CONSOLIDATION_REQUEST_PREDEPLOY_ADDRESS = Result.getOrThrow(
-  Address.fromHex("0x0000BBdDc7CE488642fb579F8B00f3a590007251"),
+export const CONSOLIDATION_REQUEST_PREDEPLOY_ADDRESS = Address.unsafe(
+  "0x0000BBdDc7CE488642fb579F8B00f3a590007251",
 );
 
 /**
  * Address of the history storage contract.
  * Address: 0x0000F90827F1C53a10cb7A02335B175320002935
  */
-export const HISTORY_STORAGE_ADDRESS = Result.getOrThrow(
-  Address.fromHex("0x0000F90827F1C53a10cb7A02335B175320002935"),
+export const HISTORY_STORAGE_ADDRESS = Address.unsafe(
+  "0x0000F90827F1C53a10cb7A02335B175320002935",
 );
 
 // ============================================================================
@@ -290,8 +277,8 @@ export const CONSOLIDATION_REQUEST_TYPE = new Bytes({
  * Address of the deposit contract.
  * Address: 0x00000000219ab540356cbb839cbe05303d7705fa
  */
-export const DEPOSIT_CONTRACT_ADDRESS = Result.getOrThrow(
-  Address.fromHex("0x00000000219ab540356cbb839cbe05303d7705fa"),
+export const DEPOSIT_CONTRACT_ADDRESS = Address.unsafe(
+  "0x00000000219ab540356cbb839cbe05303d7705fa",
 );
 
 /**
@@ -306,12 +293,4 @@ export const DEPOSIT_EVENT_SIGNATURE_HASH = new Bytes32({
   ]),
 });
 
-// ============================================================================
-// Computed Constants
-// ============================================================================
-
-/**
- * Hash of empty ommers list.
- * Computed as keccak256(rlp.encode([])).
- */
-export const EMPTY_OMMER_HASH = keccak256(encode([]));
+export const PRECOMPILE_P256VERIFY = Uint.wrap(6900n);

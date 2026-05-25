@@ -5,6 +5,7 @@ import { encodeTo } from "./encodeTo.js";
 
 export * from "./exceptions.js";
 export { decode, decodeTo, encode, encodeTo };
+
 export default {
   encode,
   decode,

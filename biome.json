@@ -32,11 +32,13 @@
       "complexity": {
         "useArrowFunction": "off",
         "noArguments": "off",
-        "noBannedTypes": "off"
+        "noBannedTypes": "off",
+        "noUselessLoneBlockStatements": "off"
       },
       "suspicious": {
         "useIterableCallbackReturn": "off",
-        "noUnknownAtRules": "off"
+        "noUnknownAtRules": "off",
+        "noExplicitAny": "off"
       }
     }
   },

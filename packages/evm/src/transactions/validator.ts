@@ -1,4 +1,3 @@
-import { recoverSender } from "@evm-effect/crypto/transactions";
 import {
   type Address,
   type Bytes,
@@ -8,13 +7,12 @@ import {
 } from "@evm-effect/ethereum-types";
 import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { Data, Effect } from "effect";
-import type { BlockOutput } from "../blockchain.js";
 import {
-  BLOB_COUNT_LIMIT,
-  MAX_BLOB_GAS_PER_BLOCK,
-  TX_MAX_GAS_LIMIT,
-  VERSIONED_HASH_VERSION_KZG,
-} from "../constants.js";
+  recoverSender,
+  type Transaction,
+} from "packages/evm/src/transactions.js";
+import type { BlockOutput } from "../blockchain.js";
+import { TX_MAX_GAS_LIMIT, VERSIONED_HASH_VERSION_KZG } from "../constants.js";
 import {
   BlobCountExceededError,
   BlobGasLimitExceededError,
@@ -42,8 +40,8 @@ import {
   Type4TxPreForkError,
 } from "../exceptions.js";
 import State from "../state.js";
-import type { Transaction } from "../types/Transaction.js";
 import { Fork } from "../vm/ForkService.js";
+import { GasCosts } from "../vm/gas.js";
 import { MAX_INIT_CODE_SIZE } from "../vm/interpreter.js";
 import type { BlockEnvironment } from "../vm/message.js";
 import {
@@ -101,7 +99,7 @@ export const validateTransaction = Effect.fn("validateTransaction")(function* (
     );
   }
 
-  const isContractCreation = tx.to === undefined;
+  const isContractCreation = tx.to._tag === "Bytes0";
 
   if (isContractCreation) {
     if (tx.data.value.length > MAX_INIT_CODE_SIZE) {
@@ -159,7 +157,7 @@ const checkGasAvailability = Effect.fn("checkGasAvailability")(function* (
 });
 const checkBlobGasAvailability = Effect.fn("checkBlobGasAvailability")(
   function* (blockOutput: BlockOutput, tx: Transaction) {
-    const maxBlobGasPerBlock = yield* MAX_BLOB_GAS_PER_BLOCK;
+    const maxBlobGasPerBlock = yield* GasCosts.MAX_BLOB_GAS_PER_BLOCK;
 
     const blobGasAvailable = new U64({
       value: maxBlobGasPerBlock.value - blockOutput.blobGasUsed.value,
@@ -295,11 +293,12 @@ export const checkTransaction = Effect.fn("checkTransaction")(function* (
         new NoBlobDataError({ message: "no blob data in transaction" }),
       );
     }
-    const blobCountLimit = yield* BLOB_COUNT_LIMIT;
-    if (blobCount > blobCountLimit) {
+
+    const fork = yield* Fork;
+    if (fork.eip(7892) && blobCount > GasCosts.BLOB_COUNT_LIMIT) {
       return yield* Effect.fail(
         new BlobCountExceededError({
-          message: `Tx has ${blobCount} blobs. Max allowed: ${blobCountLimit}`,
+          message: `Tx has ${blobCount} blobs. Max allowed: ${GasCosts.BLOB_COUNT_LIMIT}`,
         }),
       );
     }
@@ -366,10 +365,10 @@ export const checkTransaction = Effect.fn("checkTransaction")(function* (
     );
   }
 
-  if (tx._tag === "BlobTransaction" && !tx.to) {
+  if (tx._tag === "BlobTransaction" && tx.to._tag !== "Address") {
     return yield* Effect.fail(new TransactionTypeContractCreationError(tx));
   }
-  if (tx._tag === "SetCodeTransaction" && !tx.to) {
+  if (tx._tag === "SetCodeTransaction" && tx.to._tag !== "Address") {
     return yield* Effect.fail(
       new Type4TxContractCreationError({
         message: "SetCode transaction (type 4) not allowed to create contracts",

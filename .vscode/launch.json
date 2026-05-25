@@ -27,6 +27,17 @@
     },
     {
       "type": "node",
+      "request": "launch",
+      "name": "Run ",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+      "args": ["packages/evm/test/run.ts", "--filter=0xd64242f1c6a2a996"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "noDebug": true,
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
       "request": "attach",
       "name": "Attach to Node",
       "port": 9229,

@@ -48,7 +48,8 @@ All released Ethereum forks are supported:
 | Shanghai | ✅ |
 | Cancun | ✅ |
 | Prague | ✅ |
-| Osaka (Unreleased) | 🚧 In Progress |
+| Osaka | ✅ |
+| Amsterdam (unreleased) | 🚧 In Progress |
 
 ## Packages
 
@@ -92,7 +93,7 @@ const program = Effect.gen(function* () {
   yield* State.setAccount(blockchain.state, alice, Account.make({
     nonce: Uint.constant(0n),
     balance: U256.constant(10n * 10n ** 18n),
-    code: Bytes.empty(),
+    code: Bytes.empty,
   }));
 
   // Create transaction: Alice sends 1 ETH to Bob
@@ -102,7 +103,7 @@ const program = Effect.gen(function* () {
     gas: Uint.constant(21_000n),
     to: bob,
     value: U256.constant(1n * 10n ** 18n), // 1 ETH
-    data: Bytes.empty(),
+    data: Bytes.empty,
   });
 
   // Sign transaction
@@ -119,10 +120,10 @@ const program = Effect.gen(function* () {
     number: Uint.constant(1n),
     baseFeePerGas: Uint.constant(10n * 10n ** 9n),
     time: U256.constant(BigInt(Math.floor(Date.now() / 1000))),
-    prevRandao: Bytes32.zero(),
+    prevRandao: Bytes32.zero,
     difficulty: Uint.constant(0n),
     excessBlobGas: U64.constant(0n),
-    parentBeaconBlockRoot: Bytes32.zero(),
+    parentBeaconBlockRoot: Bytes32.zero,
   });
 
   // Execute block with transaction

@@ -31,9 +31,18 @@ const propertyMatch =
   <V>(value: V): value is V & { [K in Property]: Out } => {
     return Predicate.hasProperty(value, property) && predicate(value[property]);
   };
+
+const isAddress = (
+  value: unknown,
+): value is { _tag: "Address"; value: { value: Uint8Array } } => {
+  return Predicate.isTagged("Address")(value);
+};
 export const stringify = (value: unknown) => {
   const replacer = (_: string, value: unknown) => {
     return Match.value(value).pipe(
+      Match.when(isAddress, (value) => {
+        return `${value._tag}(${bufferToHex(value.value.value)})`;
+      }),
       Match.when(Predicate.isBigInt, (value) => value.toString()),
       Match.when(
         Predicate.and(
@@ -47,8 +56,9 @@ export const stringify = (value: unknown) => {
           propertyMatch("value", Predicate.isUint8Array),
           propertyMatch("_tag", pattern("^Bytes\\d{0,3}$")),
         ),
-        (value) => `${value._tag}(0x${bufferToHex(value.value) || "00"})`,
+        (value) => `${value._tag}(${bufferToHex(value.value) || "0x00"})`,
       ),
+
       Match.when(Predicate.hasProperty("_tag"), ({ _tag, ...value }) => ({
         _tag,
         ...value,

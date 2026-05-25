@@ -1,17 +1,39 @@
 import { keccak256 } from "@evm-effect/crypto";
 import { Bytes, U256, Uint } from "@evm-effect/ethereum-types";
 import { uint8ArrayEquals } from "@evm-effect/ethereum-types/utils";
-import rlp from "@evm-effect/rlp";
-import { Equal, Hash, Schema } from "effect";
+import rlp, { type Extended, type Simple } from "@evm-effect/rlp";
+import { Effect, Equal, Hash, Schema } from "effect";
+import { Rlp } from "../rlp.js";
+import type { Fork } from "./Fork.js";
 
 /**
  * State associated with an Ethereum address
  */
-export class Account extends Schema.TaggedClass<Account>("Account")("Account", {
-  nonce: Uint,
-  balance: U256,
-  code: Bytes,
-}) {
+export class Account
+  extends Schema.TaggedClass<Account>("Account")("Account", {
+    nonce: Uint,
+    balance: U256,
+    code: Bytes,
+  })
+  implements Rlp.ToExtendedTag
+{
+  [Rlp.ToExtendedTag] = Effect.fn("Account.ToExtended")(function* (
+    this: Account,
+  ): Effect.fn.Return<Readonly<Extended>, Rlp.RlpError, Fork> {
+    return [this.nonce, this.balance, this.code];
+  });
+  static [Rlp.FromSimpleTag] = Effect.fn("Account.FromSimple")(function* (
+    simple: Readonly<Simple>,
+  ): Effect.fn.Return<Account, Rlp.RlpError, Fork> {
+    if (!Array.isArray(simple)) {
+      return yield* Effect.fail(Rlp.RlpError.cantDecode("Account", simple));
+    }
+    return Account.make({
+      nonce: yield* Rlp.fromSimple(Uint, simple[0]),
+      balance: yield* Rlp.fromSimple(U256, simple[1]),
+      code: yield* Rlp.fromSimple(Bytes, simple[2]),
+    });
+  });
   /**
    * Create a new empty account
    */

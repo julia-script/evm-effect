@@ -13,8 +13,7 @@ import {
 import { type HashSet, HashSetFromSelf } from "@evm-effect/shared/hashset";
 import { Effect, Option, Schema } from "effect";
 import * as State from "../state.js";
-import { Authorization } from "../types/Account.js";
-import type { Transaction } from "../types/Transaction.js";
+import { Authorization, type Transaction } from "../transactions.js";
 import { computeContractAddress } from "../utils/address.js";
 import type { Evm } from "./evm.js";
 import { Fork } from "./ForkService.js";
@@ -42,7 +41,18 @@ export class BlockEnvironment extends Schema.TaggedClass<BlockEnvironment>(
   difficulty: Uint,
   excessBlobGas: U64,
   parentBeaconBlockRoot: Bytes32,
-}) {}
+}) {
+  eip = Effect.fn("BlockEnvironment.Eip")(function* (
+    this: BlockEnvironment,
+    eip: number,
+  ) {
+    const fork = yield* Fork;
+    if (!fork.blockEip[eip]) {
+      return false;
+    }
+    return fork.blockEip[eip](this);
+  });
+}
 
 /**
  * Items that are used by contract creation or message call (transaction-level).
@@ -118,18 +128,15 @@ export const prepareMessage: (
     let code: Bytes;
     let codeAddress: Address | undefined;
 
-    if (!tx.to) {
+    if (tx.to._tag === "Bytes0") {
       const originAccount = yield* State.getAccount(
         blockEnv.state,
         txEnv.origin,
       );
       const nonce = originAccount.nonce.value - 1n;
-      currentTarget = computeContractAddress(
-        txEnv.origin,
-        new Uint({ value: nonce }),
-      );
+      currentTarget = computeContractAddress(txEnv.origin, Uint.wrap(nonce));
 
-      msgData = new Bytes({ value: new Uint8Array(0) });
+      msgData = Bytes.empty;
       code = tx.data;
       codeAddress = undefined;
     } else {
@@ -147,13 +154,13 @@ export const prepareMessage: (
       blockEnv,
       txEnv,
       caller: txEnv.origin,
-      target: tx.to,
+      target: tx.to._tag === "Address" ? tx.to : undefined,
       currentTarget,
       gas: txEnv.gas,
       value: tx.value,
       data: msgData,
       code: Code.from(code.value),
-      depth: new Uint({ value: 0n }),
+      depth: Uint.zero,
       shouldTransferValue: true,
       isStatic: false,
       accessedAddresses: accessedAddresses.clone(),

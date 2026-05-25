@@ -1,4 +1,12 @@
 export {
+  BlockChain,
+  BlockOutput,
+  emptyBlockOutput,
+} from "./blockchain.js";
+export { applyBody } from "./blocks/executor.js";
+export { default as State } from "./state.js";
+export { processTransaction } from "./transactions/processor.js";
+export {
   Access,
   AccessListTransaction,
   Authorization,
@@ -7,15 +15,7 @@ export {
   LegacyTransaction,
   SetCodeTransaction,
   type Transaction,
-} from "@evm-effect/crypto";
-export {
-  BlockChain,
-  BlockOutput,
-  emptyBlockOutput,
-} from "./blockchain.js";
-export { applyBody } from "./blocks/executor.js";
-export { default as State } from "./state.js";
-export { processTransaction } from "./transactions/processor.js";
+} from "./transactions.js";
 export { Block, Header, Withdrawal } from "./types/Block.js";
 export { computeContractAddress } from "./utils/address.js";
 export { Evm } from "./vm/evm.js";

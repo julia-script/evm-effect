@@ -10,10 +10,10 @@
 import { type Bytes, U64, Uint } from "@evm-effect/ethereum-types";
 import { Data } from "effect";
 import { State } from "./state.js";
+import type { LegacyTransaction } from "./transactions.js";
 import { Trie } from "./trie/trie.js";
 import type { Block, Withdrawal } from "./types/Block.js";
 import type { Log, Receipt } from "./types/Receipt.js";
-import type { LegacyTransaction } from "./types/Transaction.js";
 
 /**
  * History and current state of the block chain.

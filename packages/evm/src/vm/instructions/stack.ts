@@ -61,7 +61,6 @@ function makePush(
 
     const slice = evm.code.value.slice(pc + 1, pc + 1 + numBytes);
     const dataToPush = U256.fromBeBytes(slice);
-
     yield* evm.stack.push(dataToPush);
 
     // PROGRAM COUNTER

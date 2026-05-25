@@ -29,13 +29,14 @@ import { erecover } from "./precompiles/01-erecover.js";
 import { sha256 } from "./precompiles/02-sha256.js";
 import { ripemd160 } from "./precompiles/03-ripemd160.js";
 import { identity } from "./precompiles/04-identity.js";
+import { modexp } from "./precompiles/05-modexp.js";
 import { bn254Add } from "./precompiles/06-bn254-add.js";
 import { bn254Mul } from "./precompiles/07-bn254-mul.js";
 import { bn254Pairing } from "./precompiles/08-bn254-pairing.js";
 import { blake2f } from "./precompiles/09-blake2f.js";
 import { bls12MapFpToG1 } from "./precompiles/10-bls12-map-fp-to-g1.js";
 import { bls12MapFp2ToG2 } from "./precompiles/11-bls12-map-fp2-to-g2.js";
-import { modexp } from "./precompiles/modexp.js";
+import { p256verify } from "./precompiles/100-p256verify.js";
 
 export { Fork } from "./ForkService.js";
 
@@ -95,6 +96,11 @@ const PRAGUE_PRECOMPILES: PrecompileEntry[] = [
   [new Address("0000000000000000000000000000000000000011"), bls12MapFp2ToG2],
 ];
 
+const OSAKA_PRECOMPILES: PrecompileEntry[] = [
+  ...PRAGUE_PRECOMPILES,
+  [new Address("0000000000000000000000000000000000000100"), p256verify],
+];
+
 const FRONTIER_EIPS: number[] = [];
 const HOMESTEAD_EIPS: number[] = [
   ...FRONTIER_EIPS,
@@ -119,6 +125,7 @@ const SPURIUS_DRAGON_EIPS = [
 
 const BYZANTIUM_EIPS = [
   ...SPURIUS_DRAGON_EIPS,
+  609, // EIP-609: Byzantium Forks
   100, // EIP-100: Change difficulty adjustment to target mean block time including uncles
   140, // EIP-140: REVERT instruction in the Ethereum Virtual Machine
   196, // EIP-196: Precompiled contracts for addition and scalar multiplication on the elliptic curve alt_bn128
@@ -146,6 +153,7 @@ const PETERSBURG_EIPS = [
   1052, // EIP-1052: EXTCODEHASH opcode
   1234, // EIP-1234: Constantinople Difficulty Bomb Delay and Block Reward Adjustment
   // Note: EIP-1283 is NOT included (disabled by EIP-1716)
+  1716,
 ];
 
 const ISTANBUL_EIPS = [
@@ -266,7 +274,7 @@ const OSAKA_EIPS = [
 export function osaka() {
   return Fork.from({
     name: "osaka",
-    precompiledContracts: HashMap.fromIterable(PRAGUE_PRECOMPILES),
+    precompiledContracts: HashMap.fromIterable(OSAKA_PRECOMPILES),
     ops: OSAKA_OPCODES,
     EIPs: OSAKA_EIPS,
   });

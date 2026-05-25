@@ -140,7 +140,6 @@ export const generateRpcSchemas = Effect.fn("generateRpcSchemas")(function* (
   // out += `  ]),\n`;
 
   if (method.errors) {
-    console.log(method.errors);
     out += `  errors: Schema.Union([\n`;
     for (const error of method.errors) {
       out += "Schema.Struct({\n";
