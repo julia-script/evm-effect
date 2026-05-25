@@ -1,4 +1,3 @@
-import type { Transaction } from "@evm-effect/crypto/transactions";
 import { Address, U256 } from "@evm-effect/ethereum-types";
 import type { Bytes } from "@evm-effect/ethereum-types/bytes";
 import { bufferFromHex, bufferToHex } from "@evm-effect/shared/bytes";
@@ -18,6 +17,7 @@ import { isString } from "effect/Predicate";
 import type { BlockOutput } from "./blockchain.js";
 import type { MessageCallOutput } from "./blocks/system.js";
 import type { EthereumException } from "./exceptions.js";
+import type { Transaction } from "./transactions.js";
 import type { LegacyReceipt, Receipt } from "./types/Receipt.js";
 import { Evm } from "./vm/evm.js";
 import type { BlockEnvironment, TransactionEnvironment } from "./vm/message.js";

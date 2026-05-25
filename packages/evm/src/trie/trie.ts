@@ -17,16 +17,16 @@ import rlp, { type Extended } from "@evm-effect/rlp";
 import { HashMap } from "@evm-effect/shared/hashmap";
 import { Data, Effect, Match, Option, Result } from "effect";
 import { isTagged } from "effect/Predicate";
-import { Withdrawal } from "../types/Block.js";
-import { Receipt } from "../types/Receipt.js";
 import {
   AccessListTransaction,
   BlobTransaction,
   FeeMarketTransaction,
-  LegacyTransaction,
+  type LegacyTransaction,
   SetCodeTransaction,
   type Transaction,
-} from "../types/Transaction.js";
+} from "../transactions.js";
+import { Withdrawal } from "../types/Block.js";
+import { Receipt } from "../types/Receipt.js";
 import { Account } from "../vm/types.js";
 import {
   bytesToNibbleList,
@@ -146,13 +146,26 @@ function encodeNode(
         return Result.succeed(account.encode(storageRoot.value));
       },
       LegacyTransaction: (legacyTransaction) => {
-        return rlp
-          .encodeTo(LegacyTransaction, legacyTransaction)
-          .pipe(
-            Result.mapError(
-              (error) => new TrieError({ message: error.message }),
-            ),
-          );
+        const extended: Extended = [
+          legacyTransaction.nonce,
+          legacyTransaction.gasPrice,
+          legacyTransaction.gas,
+          legacyTransaction.to,
+          legacyTransaction.value,
+          legacyTransaction.data,
+          legacyTransaction.v,
+          legacyTransaction.r,
+          legacyTransaction.s,
+        ];
+        return Result.succeed(rlp.encode(extended));
+        // return rlp
+        //   // .encodeTo(LegacyTransaction, legacyTransaction)
+        //   // .encode()
+        //   .pipe(
+        //     Result.mapError(
+        //       (error) => new TrieError({ message: error.message }),
+        //     ),
+        //   );
       },
       AccessListTransaction: (accessListTransaction) => {
         return rlp

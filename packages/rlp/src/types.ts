@@ -12,6 +12,6 @@ export type Extended =
   | Address
   | AnyBytes
   | AnyUint
-  | Extended[];
+  | readonly Extended[];
 
 export type Simple = Bytes | Simple[];

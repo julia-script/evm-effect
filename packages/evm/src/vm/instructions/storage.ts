@@ -5,14 +5,15 @@
  * Arrow Glacier fork specification.
  */
 
-import { U256, Uint } from "@evm-effect/ethereum-types";
-import { Effect, Ref } from "effect";
+import { Uint } from "@evm-effect/ethereum-types";
+import { Effect } from "effect";
 import type { EthereumException } from "../../exceptions.js";
 import { OutOfGasError, WriteInStaticContext } from "../../exceptions.js";
 import * as State from "../../state.js";
 import { Evm } from "../evm.js";
 import { Fork } from "../ForkService.js";
 import * as Gas from "../gas.js";
+import { GasCosts } from "../gas.js";
 import { StorageKey } from "../StorageKey.js";
 
 /**
@@ -42,13 +43,13 @@ export const sload: Effect.Effect<void, EthereumException, Evm | Fork> =
         slot: key,
       });
       if (evm.accessedStorageKeys.has(storageKey)) {
-        yield* Gas.chargeGas(Gas.GAS_WARM_ACCESS); // 100
+        yield* Gas.chargeGas(GasCosts.WARM_ACCESS); // 100
       } else {
         evm.accessedStorageKeys.add(storageKey);
-        yield* Gas.chargeGas(Gas.GAS_COLD_SLOAD); // 2100
+        yield* Gas.chargeGas(GasCosts.COLD_STORAGE_ACCESS); // 2100
       }
     } else {
-      yield* Gas.chargeGas(yield* Gas.GAS_SLOAD); // 800
+      yield* Gas.chargeGas(yield* GasCosts.SLOAD); // 800
     }
 
     // OPERATION
@@ -75,7 +76,7 @@ export const sload: Effect.Effect<void, EthereumException, Evm | Fork> =
 export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
   Effect.gen(function* () {
     const evm = yield* Evm;
-
+    const fork = yield* Fork;
     // STACK
     const key = yield* evm.stack.pop().pipe(Effect.map((k) => k.toBeBytes32()));
     const newValue = yield* evm.stack.pop();
@@ -83,28 +84,38 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
     // PRE-CHECKS
     // Check if we have enough gas (must have more than call stipend)
     const gasLeft = evm.gasLeft;
-    if (gasLeft <= Gas.GAS_CALL_STIPEND.value) {
-      return yield* Effect.fail(
-        new OutOfGasError({ message: "Insufficient gas for SSTORE" }),
-      );
+    if (fork.eip(2200)) {
+      if (gasLeft <= GasCosts.CALL_STIPEND.value) {
+        return yield* Effect.fail(
+          new OutOfGasError({ message: "Insufficient gas for SSTORE" }),
+        );
+      }
     }
 
+    // GAS
     const state = evm.message.blockEnv.state;
     const currentTarget = evm.message.currentTarget;
-
-    // Get original and current values
     const originalValue = yield* state.getStorageOriginal(currentTarget, key);
     const currentValue = yield* state.getStorage(currentTarget, key);
 
-    const fork = yield* Fork;
-    let gasCost = new Uint({ value: 0n });
-
     if (fork.eip(2929)) {
-      const storageKey = new StorageKey({ address: currentTarget, slot: key });
-      const wasAccessed = evm.accessedStorageKeys.has(storageKey);
-      if (!wasAccessed) {
-        evm.accessedStorageKeys.add(storageKey);
-        gasCost = new Uint({ value: gasCost.value + Gas.GAS_COLD_SLOAD.value });
+      let gasCost = 0n;
+
+      if (
+        !evm.accessedStorageKeys.has(
+          new StorageKey({
+            address: evm.message.currentTarget,
+            slot: key,
+          }),
+        )
+      ) {
+        evm.accessedStorageKeys.add(
+          new StorageKey({
+            address: evm.message.currentTarget,
+            slot: key,
+          }),
+        );
+        gasCost += GasCosts.COLD_STORAGE_ACCESS.value;
       }
 
       if (
@@ -112,220 +123,148 @@ export const sstore: Effect.Effect<void, EthereumException, Evm | Fork> =
         currentValue.value !== newValue.value
       ) {
         if (originalValue.value === 0n) {
-          gasCost = new Uint({
-            value: gasCost.value + Gas.GAS_STORAGE_SET.value,
-          });
+          gasCost += GasCosts.STORAGE_SET.value;
         } else {
-          gasCost = new Uint({
-            value:
-              gasCost.value +
-              Gas.GAS_STORAGE_UPDATE.value -
-              Gas.GAS_COLD_SLOAD.value,
-          });
+          gasCost +=
+            GasCosts.COLD_STORAGE_WRITE.value -
+            GasCosts.COLD_STORAGE_ACCESS.value;
         }
       } else {
-        gasCost = new Uint({
-          value: gasCost.value + Gas.GAS_WARM_ACCESS.value,
-        });
+        gasCost += GasCosts.WARM_ACCESS.value;
       }
-    } else if (fork.eip(2200)) {
-      if (
-        originalValue.value === currentValue.value &&
-        currentValue.value !== newValue.value
-      ) {
-        if (originalValue.value === 0n) {
-          gasCost = Gas.GAS_STORAGE_SET; // 20000
-        } else {
-          gasCost = Gas.GAS_STORAGE_UPDATE; // 5000
-        }
-      } else {
-        gasCost = yield* Gas.GAS_SLOAD;
-      }
-    } else if (fork.eip(1283)) {
-      if (currentValue.value === newValue.value) {
-        // No-op: current value equals new value
-        gasCost = Gas.GAS_SSTORE_NOOP; // 200
-      } else if (originalValue.value === currentValue.value) {
-        // Clean slot (first write in transaction)
-        if (originalValue.value === 0n) {
-          // Slot is empty (original == 0)
-          gasCost = Gas.GAS_SSTORE_INIT; // 20000
-        } else if (newValue.value === 0n) {
-          // Clearing a non-empty slot
-          gasCost = Gas.GAS_SSTORE_CLEAN; // 5000
-        } else {
-          // Changing a non-empty slot to another non-zero value
-          gasCost = Gas.GAS_SSTORE_CLEAN; // 5000
-        }
-      } else {
-        // Dirty slot (subsequent write in transaction)
-        gasCost = Gas.GAS_SSTORE_NOOP; // 200
-      }
-    } else {
-      if (newValue.value !== 0n && currentValue.value === 0n) {
-        gasCost = Gas.GAS_STORAGE_SET; // 20000
-      } else {
-        gasCost = Gas.GAS_STORAGE_UPDATE; // 5000
-      }
-    }
 
-    // REFUND COUNTER CALCULATION
-    if (currentValue.value !== newValue.value) {
-      if (fork.eip(2929)) {
-        // Case 3: Storage slot being restored to its original value
+      // refund calculation
+      if (currentValue.value !== newValue.value) {
+        if (
+          originalValue.value !== 0n &&
+          currentValue.value !== 0n &&
+          newValue.value === 0n
+        ) {
+          yield* Gas.refundGas(yield* GasCosts.REFUND_STORAGE_CLEAR, [
+            "Refund storage slot cleared",
+            "Net gas cost model",
+            "EIP-2929",
+          ]);
+        }
+        if (originalValue.value !== 0n && currentValue.value === 0n) {
+          yield* Gas.removeRefundGas(yield* GasCosts.REFUND_STORAGE_CLEAR, [
+            "Remove refund storage",
+            "Net gas cost model",
+            "EIP-2929",
+          ]);
+        }
+
         if (originalValue.value === newValue.value) {
           if (originalValue.value === 0n) {
-            const refund =
-              Gas.GAS_STORAGE_SET.value - Gas.GAS_WARM_ACCESS.value;
-            yield* Ref.update(
-              evm.refundCounter,
-              (current) => new U256({ value: current.value + refund }),
+            yield* Gas.refundGas(
+              Uint.wrap(
+                GasCosts.STORAGE_SET.value - GasCosts.WARM_ACCESS.value,
+              ),
+              ["Refund storage slot reset", "Net gas cost model", "EIP-2200"],
             );
           } else {
-            const refund =
-              Gas.GAS_STORAGE_UPDATE.value -
-              Gas.GAS_COLD_SLOAD.value -
-              Gas.GAS_WARM_ACCESS.value;
-            yield* Ref.update(
-              evm.refundCounter,
-              (current) => new U256({ value: current.value + refund }),
+            yield* Gas.refundGas(
+              Uint.wrap(
+                GasCosts.COLD_STORAGE_WRITE.value -
+                  GasCosts.COLD_STORAGE_ACCESS.value -
+                  GasCosts.WARM_ACCESS.value,
+              ),
+              ["Refund storage slot reset", "Net gas cost model", "EIP-2200"],
             );
           }
-        }
-        const clearRefund = fork.eipSelect(3529, 4800n, 15000n);
-
-        // Case 1: Storage is cleared for the first time in the transaction
-        if (
-          originalValue.value !== 0n &&
-          currentValue.value !== 0n &&
-          newValue.value === 0n
-        ) {
-          yield* Ref.update(
-            evm.refundCounter,
-            (current) =>
-              new U256({
-                value: current.value + clearRefund,
-              }),
-          );
-        }
-
-        // Case 2: Gas refund issued earlier to be reversed
-        if (originalValue.value !== 0n && currentValue.value === 0n) {
-          yield* Ref.update(
-            evm.refundCounter,
-            (current) =>
-              new U256({
-                value: current.value - clearRefund,
-              }),
-          );
-        }
-      } else if (fork.eip(1283)) {
-        // EIP-1283 (Constantinople) refund logic
-        // More complex refund handling based on the working VM implementation
-
-        if (originalValue.value !== currentValue.value) {
-          // Dirty slot (subsequent write)
-          if (originalValue.value !== 0n) {
-            // Original slot was non-empty
-            if (currentValue.value === 0n) {
-              // Reverse refund: slot was cleared but is now being set again
-              yield* Ref.update(
-                evm.refundCounter,
-                (current) =>
-                  new U256({
-                    value:
-                      current.value - Gas.GAS_SSTORE_CLEAR_REFUND_EIP1283.value,
-                  }),
-              );
-            } else if (newValue.value === 0n) {
-              // Issue refund: slot is being cleared
-              yield* Ref.update(
-                evm.refundCounter,
-                (current) =>
-                  new U256({
-                    value:
-                      current.value + Gas.GAS_SSTORE_CLEAR_REFUND_EIP1283.value,
-                  }),
-              );
-            }
-          }
-
-          // Restoring to original value
-          if (newValue.value === originalValue.value) {
-            if (originalValue.value === 0n) {
-              // Restoring to empty (was set, now clearing back to original)
-              const refund =
-                Gas.GAS_SSTORE_INIT.value - Gas.GAS_SSTORE_NOOP.value;
-              yield* Ref.update(
-                evm.refundCounter,
-                (current) => new U256({ value: current.value + refund }),
-              );
-            } else {
-              // Restoring to non-empty original value
-              const refund =
-                Gas.GAS_SSTORE_CLEAN.value - Gas.GAS_SSTORE_NOOP.value;
-              yield* Ref.update(
-                evm.refundCounter,
-                (current) => new U256({ value: current.value + refund }),
-              );
-            }
-          }
-        } else {
-          // Clean slot (first write in transaction)
-          if (originalValue.value !== 0n && newValue.value === 0n) {
-            // Clearing a non-empty slot
-            yield* Ref.update(
-              evm.refundCounter,
-              (current) =>
-                new U256({
-                  value:
-                    current.value + Gas.GAS_SSTORE_CLEAR_REFUND_EIP1283.value,
-                }),
-            );
-          }
-        }
-      } else {
-        // Pre-EIP-1283 refund logic (simple model)
-        const clearRefund = 15000n; // Always 15000 before London
-
-        // Case 1: Storage is cleared for the first time in the transaction
-        if (
-          originalValue.value !== 0n &&
-          currentValue.value !== 0n &&
-          newValue.value === 0n
-        ) {
-          yield* Ref.update(
-            evm.refundCounter,
-            (current) =>
-              new U256({
-                value: current.value + clearRefund,
-              }),
-          );
-        }
-
-        // Case 2: Gas refund issued earlier to be reversed
-        if (originalValue.value !== 0n && currentValue.value === 0n) {
-          yield* Ref.update(
-            evm.refundCounter,
-            (current) =>
-              new U256({
-                value: current.value - clearRefund,
-              }),
-          );
         }
       }
+
+      yield* Gas.chargeGas(Uint.wrap(gasCost), [
+        "Store to storage",
+        "Net gas cost model",
+        "EIP-2929",
+      ]);
+    } else if (fork.eip(2200)) {
+      let gasCost = 0n;
+      if (
+        originalValue.value === currentValue.value &&
+        currentValue.value !== newValue.value
+      ) {
+        if (originalValue.value === 0n) {
+          gasCost += GasCosts.STORAGE_SET.value;
+        } else {
+          gasCost += GasCosts.COLD_STORAGE_WRITE.value;
+        }
+      } else {
+        gasCost = yield* GasCosts.SLOAD.pipe(Effect.map((gas) => gas.value));
+      }
+
+      if (currentValue.value !== newValue.value) {
+        if (
+          originalValue.value !== 0n &&
+          currentValue.value !== 0n &&
+          newValue.value === 0n
+        ) {
+          yield* Gas.refundGas(yield* GasCosts.REFUND_STORAGE_CLEAR, [
+            "Refund storage slot cleared",
+            "Net gas cost model",
+            "EIP-2200",
+          ]);
+        }
+        if (originalValue.value !== 0n && currentValue.value === 0n) {
+          yield* Gas.removeRefundGas(yield* GasCosts.REFUND_STORAGE_CLEAR, [
+            "Remove refund storage",
+            "Net gas cost model",
+            "EIP-2200",
+          ]);
+        }
+
+        if (originalValue.value === newValue.value) {
+          const gasSload = yield* GasCosts.SLOAD.pipe(
+            Effect.map((gas) => gas.value),
+          );
+          if (originalValue.value === 0n) {
+            yield* Gas.refundGas(
+              Uint.wrap(GasCosts.STORAGE_SET.value - gasSload),
+              ["Refund storage slot reset", "Net gas cost model", "EIP-2200"],
+            );
+          } else {
+            yield* Gas.refundGas(
+              Uint.wrap(GasCosts.COLD_STORAGE_WRITE.value - gasSload),
+              ["Refund storage slot reset", "Net gas cost model", "EIP-2200"],
+            );
+          }
+        }
+      }
+      yield* Gas.chargeGas(Uint.wrap(gasCost), [
+        "Store to storage",
+        "Net gas cost model",
+        "EIP-2200",
+      ]);
+    } else if (!fork.eip(2200)) {
+      let gasCost = 0n;
+      if (newValue.value !== 0n && currentValue.value === 0n) {
+        gasCost = GasCosts.STORAGE_SET.value;
+      } else {
+        gasCost = GasCosts.COLD_STORAGE_WRITE.value;
+      }
+      if (newValue.value === 0n && currentValue.value !== 0n) {
+        yield* Gas.refundGas(yield* GasCosts.REFUND_STORAGE_CLEAR, [
+          "Refund storage slot cleared",
+          "Net gas cost model",
+        ]);
+      }
+
+      yield* Gas.chargeGas(Uint.wrap(gasCost), [
+        "Store to storage",
+        "Net gas cost model",
+      ]);
     }
 
-    // Charge gas
-    yield* Gas.chargeGas(gasCost);
-
-    // Check if we're in a static context
-    if (evm.message.isStatic) {
-      return yield* Effect.fail(
-        new WriteInStaticContext({
-          message: "Cannot modify storage in static context",
-        }),
-      );
+    if (fork.eip(609)) {
+      if (evm.message.isStatic) {
+        return yield* Effect.fail(
+          new WriteInStaticContext({
+            message: "Cannot modify storage in static context",
+          }),
+        );
+      }
     }
 
     // OPERATION

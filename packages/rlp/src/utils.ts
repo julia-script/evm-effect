@@ -65,6 +65,9 @@ export const getConcretes = (type: AST.Union): AST.AST[] => {
       (type.literal === null || type.literal === undefined)
     )
       return false;
+    if (AST.isDeclaration(type) && AST.resolveIdentifier(type) === "Bytes0") {
+      return false;
+    }
     return true;
   });
 };

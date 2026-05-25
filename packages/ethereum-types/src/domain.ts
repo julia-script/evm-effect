@@ -6,7 +6,7 @@
  */
 
 import { bufferFromHex, bufferToHex } from "@evm-effect/shared/bytes";
-import { Equal, Hash, Result, Schema } from "effect";
+import { Effect, Equal, Hash, Result, Schema } from "effect";
 import type { Bytes32 } from "./bytes.js";
 import { Bytes, Bytes20, type Bytes256 } from "./bytes.js";
 import { EvmTypeError } from "./exceptions.js";
@@ -72,24 +72,30 @@ export class Address extends Schema.TaggedClass<Address>("Address")("Address", {
       new Address({ value: new Bytes20({ value: bytes }) }),
     );
   }
+  static unsafe(hex: string): Address {
+    return new Address({ value: new Bytes20({ value: bufferFromHex(hex) }) });
+  }
+  get bytes(): Uint8Array {
+    return this.value.value;
+  }
 
   /**
    * Create an address from a hex string
    */
-  static fromHex(hex: string): Result.Result<Address, EvmTypeError> {
+  static fromHex(hex: string): Effect.Effect<Address, EvmTypeError> {
     const bytesResult = Bytes.fromHex(hex);
     if (Result.isFailure(bytesResult)) {
-      return Result.fail(bytesResult.failure);
+      return Effect.fail(bytesResult.failure);
     }
     const bytes = bytesResult.success;
     if (bytes.value.length !== 20) {
-      return Result.fail(
+      return Effect.fail(
         new EvmTypeError({
           message: `Address must be exactly 20 bytes, got ${bytes.value.length}`,
         }),
       );
     }
-    return Result.succeed(
+    return Effect.succeed(
       new Address({ value: new Bytes20({ value: bytes.value }) }),
     );
   }
@@ -97,9 +103,7 @@ export class Address extends Schema.TaggedClass<Address>("Address")("Address", {
   /**
    * Create a zero address (0x0000...0000)
    */
-  static zero(): Address {
-    return new Address({ value: new Bytes20({ value: new Uint8Array(20) }) });
-  }
+  static zero = new Address({ value: Bytes20.zero });
   toHex(): `0x${string}` {
     return bufferToHex(this.value.value);
   }

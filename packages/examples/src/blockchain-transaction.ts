@@ -16,10 +16,6 @@
 
 import { getRandomPrivateKey } from "@evm-effect/crypto/getRandomPrivateKey";
 import {
-  getAddressFromPrivateKey,
-  signTransaction,
-} from "@evm-effect/crypto/transactions";
-import {
   Address,
   Bytes,
   Bytes8,
@@ -40,6 +36,10 @@ import {
   LegacyTransaction,
   State,
 } from "@evm-effect/evm";
+import {
+  getAddressFromPrivateKey,
+  signTransaction,
+} from "@evm-effect/evm/transactions";
 import { Console, Effect, Layer, Logger } from "effect";
 
 // Helper to create ETH amounts
@@ -75,7 +75,7 @@ const program = Effect.gen(function* () {
     Account.make({
       nonce: Uint.constant(0n),
       balance: eth(10),
-      code: Bytes.empty(),
+      code: Bytes.empty,
     }),
   );
 
@@ -92,7 +92,7 @@ const program = Effect.gen(function* () {
     gas: Uint.constant(21_000n), // Standard transfer gas
     to: bob,
     value: eth(1), // 1 ETH
-    data: Bytes.empty(),
+    data: Bytes.empty,
   });
 
   // Sign the transaction with Alice's private key
@@ -121,21 +121,21 @@ const program = Effect.gen(function* () {
   const baseFeePerGas = gwei(10);
 
   const header = Header.make({
-    parentHash: Bytes32.zero(),
-    ommersHash: Bytes32.zero(),
+    parentHash: Bytes32.zero,
+    ommersHash: Bytes32.zero,
     coinbase,
-    stateRoot: Bytes32.zero(),
-    transactionsRoot: Bytes32.zero(),
-    receiptRoot: Bytes32.zero(),
-    bloom: Bytes256.zero(),
+    stateRoot: Bytes32.zero,
+    transactionsRoot: Bytes32.zero,
+    receiptRoot: Bytes32.zero,
+    bloom: Bytes256.zero,
     difficulty: Uint.constant(131072n),
     number: blockNumber,
     gasLimit: Uint.constant(30_000_000n),
     gasUsed: Uint.constant(0n),
     timestamp,
-    extraData: Bytes.empty(),
-    prevRandao: Bytes32.zero(),
-    nonce: Bytes8.zero(),
+    extraData: Bytes.empty,
+    prevRandao: Bytes32.zero,
+    nonce: Bytes8.zero,
     baseFeePerGas, // London+ (EIP-1559)
   });
 
@@ -157,7 +157,7 @@ const program = Effect.gen(function* () {
     prevRandao: header.prevRandao,
     difficulty: header.difficulty,
     excessBlobGas: U64.constant(0n),
-    parentBeaconBlockRoot: Bytes32.zero(),
+    parentBeaconBlockRoot: Bytes32.zero,
   });
 
   // 7. Execute the block

@@ -127,6 +127,7 @@ export class Evm extends Context.Service<Evm>()("Evm", {
         incrementPC(delta: number) {
           return Ref.update(this.pc, (current) => current + delta);
         },
+
         setGasLeft(gasLeft: bigint) {
           this.gasLeft = gasLeft;
         },

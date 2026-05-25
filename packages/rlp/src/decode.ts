@@ -103,6 +103,7 @@ const decodeToSequence = (
 
   if (buffer[0] <= 0xf7) {
     const lenJoinedEncodings = buffer[0] - 0xc0;
+
     if (lenJoinedEncodings >= buffer.length) {
       return Result.fail(new RlpDecodeError({ message: "truncated", path }));
     }

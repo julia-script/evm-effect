@@ -1,7 +1,7 @@
-import { recoverAuthority } from "@evm-effect/crypto/transactions";
 import { Address, Bytes, U64, U256 } from "@evm-effect/ethereum-types";
 import { annotateSafe } from "@evm-effect/shared/annotateSafe";
-import { Effect, Option } from "effect";
+import { Effect, Equal, Option } from "effect";
+import { recoverAuthority } from "packages/evm/src/transactions.js";
 import { InvalidBlock } from "../exceptions.js";
 import State from "../state.js";
 import type { Message } from "./message.js";
@@ -98,13 +98,13 @@ export const setDelegation = Effect.fn("setDelegation")(function* (
     } else {
     }
 
-    const isZeroAddress = auth.address.value.value.every((byte) => byte === 0);
+    const isZeroAddress = Equal.equals(auth.address.bytes, new Uint8Array(20));
     const codeToSet = isZeroAddress
-      ? new Bytes({ value: new Uint8Array(0) })
+      ? Bytes.empty
       : new Bytes({
           value: new Uint8Array([
             ...EOA_DELEGATION_MARKER.value,
-            ...auth.address.value.value,
+            ...auth.address.bytes,
           ]),
         });
     yield* State.setCode(state, authority, codeToSet);

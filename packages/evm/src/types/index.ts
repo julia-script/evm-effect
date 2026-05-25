@@ -10,7 +10,5 @@
  * @module
  */
 
-export * from "./Account.js";
 export * from "./Block.js";
 export * from "./Receipt.js";
-export * from "./Transaction.js";

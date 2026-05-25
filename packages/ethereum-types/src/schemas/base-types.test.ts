@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 import { describe, expect, test } from "vitest";
-import { Bytes, Bytes32, padBuffer } from "../bytes.js";
+import { Bytes, Bytes32, leftPadBuffer } from "../bytes.js";
 import * as BaseTypes from "./base-types.js";
 
 describe("EthSchema", () => {
@@ -38,7 +38,7 @@ describe("EthSchema", () => {
 
       expect(
         yield* encode(
-          new Bytes32({ value: padBuffer(new Uint8Array([1, 2, 3]), 32) }),
+          new Bytes32({ value: leftPadBuffer(new Uint8Array([1, 2, 3]), 32) }),
         ),
       ).toBe(
         "0x0000000000000000000000000000000000000000000000000000000000010203",
@@ -72,7 +72,7 @@ describe("EthSchema", () => {
         yield* decode(
           "0x0000000000000000000000000000000000000000000000000000000000000000",
         ),
-      ).toEqual(new Bytes({ value: padBuffer(new Uint8Array(0), 32) }));
+      ).toEqual(new Bytes({ value: leftPadBuffer(new Uint8Array(0), 32) }));
       expect(yield* decode("")).toEqual(
         new Bytes({ value: new Uint8Array(0) }),
       );

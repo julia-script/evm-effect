@@ -37,6 +37,7 @@ import {
 import { Evm } from "../evm.js";
 import { Fork } from "../ForkService.js";
 import * as Gas from "../gas.js";
+import { GasCosts } from "../gas.js";
 import * as Interpreter from "../interpreter.js";
 import {
   MAX_INIT_CODE_SIZE,
@@ -54,23 +55,38 @@ import { Code } from "../runtime.js";
 const accessDelegation = Effect.fn("accessDelegation")(function* (
   evm: Evm["Service"],
   address: Address,
-): Effect.fn.Return<[boolean, Address, Bytes, Uint], never, Evm | Fork> {
+) {
   const fork = yield* Fork;
 
   const account = yield* State.getAccount(evm.message.blockEnv.state, address);
   const code = account.code;
 
   if (!fork.eip(7702)) {
-    return [false, address, code, new Uint({ value: 0n })] as const;
+    return {
+      disablePrecompiles: false,
+      codeAddress: address,
+      code: code,
+      accessGasCost: new Uint({ value: 0n }),
+    } as const;
   }
 
   if (!isValidDelegation(code)) {
-    return [false, address, code, new Uint({ value: 0n })] as const;
+    return {
+      disablePrecompiles: false,
+      codeAddress: address,
+      code: code,
+      accessGasCost: new Uint({ value: 0n }),
+    } as const;
   }
 
   const delegatedAddressOption = getDelegatedCodeAddress(code);
   if (Option.isNone(delegatedAddressOption)) {
-    return [false, address, code, new Uint({ value: 0n })] as const;
+    return {
+      disablePrecompiles: false,
+      codeAddress: address,
+      code: code,
+      accessGasCost: new Uint({ value: 0n }),
+    } as const;
   }
 
   const delegatedAddress = delegatedAddressOption.value;
@@ -90,7 +106,13 @@ const accessDelegation = Effect.fn("accessDelegation")(function* (
     accessGasCost = Gas.GAS_COLD_ACCOUNT_ACCESS;
   }
 
-  return [true, delegatedAddress, delegatedCode, accessGasCost] as const;
+  // return [true, delegatedAddress, delegatedCode, accessGasCost] as const;
+  return {
+    disablePrecompiles: true,
+    codeAddress: delegatedAddress,
+    code: delegatedCode,
+    accessGasCost: accessGasCost,
+  } as const;
 });
 
 /**
@@ -113,14 +135,12 @@ const genericCall = (
 ) =>
   Effect.gen(function* () {
     const evm = yield* Evm;
-
-    yield* Ref.set(evm.returnData, new Bytes({ value: new Uint8Array(0) }));
-
     if (evm.message.depth.value + 1n > STACK_DEPTH_LIMIT.value) {
       evm.setGasLeft(evm.gasLeft + gas.value);
       yield* evm.stack.push(new U256({ value: 0n }));
       return;
     }
+    yield* Ref.set(evm.returnData, Bytes.empty);
 
     const memory = yield* Ref.get(evm.memory);
     const callData = memoryReadBytes(
@@ -129,55 +149,69 @@ const genericCall = (
       memoryInputSize,
     );
 
+    const fork = yield* Fork;
+    code = fork.eip(7702)
+      ? code
+      : yield* State.getAccount(evm.message.blockEnv.state, codeAddress).pipe(
+          Effect.map((account) => account.code),
+        );
     const childMessage = Message({
       blockEnv: evm.message.blockEnv,
       txEnv: evm.message.txEnv,
-      caller,
+      caller: caller,
       target: to,
-      currentTarget: to,
-      gas,
-      value,
+      gas: gas,
+      value: value,
       data: callData,
       code: Code.from(code.value),
+      currentTarget: to,
       depth: new Uint({ value: evm.message.depth.value + 1n }),
-      codeAddress,
-      shouldTransferValue,
-      isStatic: isStaticCall || evm.message.isStatic,
+      codeAddress: codeAddress,
+      parentEvm: Option.some(evm),
       accessedAddresses: evm.accessedAddresses.clone(),
       accessedStorageKeys: evm.accessedStorageKeys.clone(),
-      disablePrecompiles,
-      parentEvm: Option.some(evm),
+      disablePrecompiles: disablePrecompiles,
+      isStatic: isStaticCall || evm.message.isStatic,
+      shouldTransferValue: shouldTransferValue,
     });
-
     const childEvm = yield* processMessage(childMessage);
     const childError = yield* Ref.get(childEvm.error);
+    // child_message = Message(
+    //     block_env=evm.message.block_env,
+    //     tx_env=evm.message.tx_env,
+    //     caller=caller,
+    //     target=to,
+    //     gas=gas,
+    //     value=value,
+    //     data=call_data,
+    //     code=code,
+    //     current_target=to,
+    //     depth=evm.message.depth + Uint(1),
+    //     code_address=code_address,
+    //     parent_evm=evm,
+    // )
+    // child_evm = process_message(child_message)
     const childOutput = yield* Ref.get(childEvm.output);
-
     if (Option.isSome(childError)) {
       yield* Interpreter.incorporateChildOnError(evm, childEvm);
-
       yield* Ref.set(evm.returnData, childOutput);
       yield* evm.stack.push(new U256({ value: 0n }));
     } else {
-      // Child execution succeeded
       yield* Interpreter.incorporateChildOnSuccess(evm, childEvm);
       yield* Ref.set(evm.returnData, childOutput);
       yield* evm.stack.push(new U256({ value: 1n }));
     }
 
-    if (memoryOutputSize.value > 0n) {
-      const actualOutputSize =
-        memoryOutputSize.value < BigInt(childOutput.value.length)
-          ? memoryOutputSize
-          : new U256({ value: BigInt(childOutput.value.length) });
-
-      const outputToWrite = new Bytes({
-        value: childOutput.value.slice(0, Number(actualOutputSize.value)),
-      });
-
-      const currentMemory = yield* Ref.get(evm.memory);
-      memoryWrite(currentMemory, memoryOutputStartPosition, outputToWrite);
-    }
+    const actualOutputSize = Math.min(
+      Number(memoryOutputSize.value),
+      childOutput.value.length,
+    );
+    const actualOutput = childOutput.value.slice(0, actualOutputSize);
+    memoryWrite(
+      memory,
+      memoryOutputStartPosition,
+      new Bytes({ value: actualOutput }),
+    );
   });
 
 /**
@@ -240,7 +274,9 @@ const genericCreate = (
       return;
     }
 
-    evm.accessedAddresses.add(contractAddress);
+    if (fork.eip(2929)) {
+      evm.accessedAddresses.add(contractAddress);
+    }
 
     if (
       (yield* State.accountHasCodeOrNonce(
@@ -519,6 +555,15 @@ export const selfdestruct: Effect.Effect<void, EthereumException, Evm | Fork> =
     // PROGRAM COUNTER - no-op (execution halted)
   });
 
+const expandMemory = Effect.fn("expandMemory")(function* (
+  evm: Evm["Service"],
+  expandBy: Uint,
+) {
+  const memory = yield* Ref.get(evm.memory);
+  const newMemory = new Uint8Array(memory.length + Number(expandBy.value));
+  newMemory.set(memory);
+  yield* Ref.set(evm.memory, newMemory);
+});
 /**
  * CALL: Message-call into an account
  *
@@ -544,104 +589,144 @@ export const call = Effect.gen(function* () {
     [memoryOutputStartPosition, memoryOutputSize],
   ]);
 
+  let codeAddress = to;
+  let disablePrecompiles = false;
+  let messageCallGas: { cost: Uint; subcall: Uint };
+  let code = Bytes.empty;
+  // frontier
+
   const fork = yield* Fork;
-  let accessGasCost: Uint;
-
   if (fork.eip(2929)) {
-    const accessedAddresses = evm.accessedAddresses;
-    const isToWarm = accessedAddresses.has(to);
-    if (isToWarm) {
-      accessGasCost = Gas.GAS_WARM_ACCESS; // 100
-    } else {
+    let accessGasCost = GasCosts.WARM_ACCESS;
+    if (!evm.accessedAddresses.has(to)) {
       evm.accessedAddresses.add(to);
-      accessGasCost = Gas.GAS_COLD_ACCOUNT_ACCESS; // 2600
+      accessGasCost = GasCosts.COLD_ACCOUNT_ACCESS;
     }
-  } else {
-    accessGasCost = yield* Gas.GAS_CALL;
-  }
-
-  const codeAddress = to;
-  const [disablePrecompiles, finalCodeAddress, code, delegatedAccessGasCost] =
-    yield* accessDelegation(evm, codeAddress);
-
-  accessGasCost = new Uint({
-    value: accessGasCost.value + delegatedAccessGasCost.value,
-  });
-
-  let createGasCost = new Uint({ value: 0n });
-
-  if (fork.eip(161)) {
-    const isAlive = yield* State.isAccountAlive(evm.message.blockEnv.state, to);
-
-    if (value.value !== 0n && !isAlive) {
-      createGasCost = Gas.GAS_NEW_ACCOUNT;
+    if (fork.eip(7702)) {
+      const accessDelegationResult = yield* accessDelegation(evm, codeAddress);
+      accessGasCost = new Uint({
+        value: accessGasCost.value + accessDelegationResult.accessGasCost.value,
+      });
+      codeAddress = accessDelegationResult.codeAddress;
+      disablePrecompiles = accessDelegationResult.disablePrecompiles;
+      code = accessDelegationResult.code;
     }
-  } else {
-    const accountExistsInState = yield* State.accountExists(
+
+    let createGasCost = GasCosts.NEW_ACCOUNT;
+    if (
+      value.value === 0n ||
+      (yield* State.isAccountAlive(evm.message.blockEnv.state, to))
+    ) {
+      createGasCost = new Uint({ value: 0n });
+    }
+    const transferGasCost =
+      value.value === 0n ? new Uint({ value: 0n }) : Gas.GasCosts.CALL_VALUE;
+
+    messageCallGas = yield* Gas.calculateMessageCallGas(
+      Uint.wrap(value.value),
+      gas,
+      new Uint({ value: evm.gasLeft }),
+      extendMemory.cost,
+      Uint.wrap(
+        accessGasCost.value + createGasCost.value + transferGasCost.value,
+      ),
+    );
+    yield* Gas.chargeGas(
+      new Uint({ value: messageCallGas.cost.value + extendMemory.cost.value }),
+    );
+  } else if (fork.eip(161)) {
+    let createGasCost = GasCosts.NEW_ACCOUNT;
+    if (
+      value.value === 0n ||
+      (yield* State.isAccountAlive(evm.message.blockEnv.state, to))
+    ) {
+      createGasCost = new Uint({ value: 0n });
+    }
+    const transferGasCost =
+      value.value === 0n ? new Uint({ value: 0n }) : Gas.GasCosts.CALL_VALUE;
+
+    messageCallGas = yield* Gas.calculateMessageCallGas(
+      Uint.wrap(value.value),
+      gas,
+      new Uint({ value: evm.gasLeft }),
+      extendMemory.cost,
+      Uint.wrap(
+        (yield* Gas.GasCosts.OPCODE_CALL_BASE).value +
+          createGasCost.value +
+          transferGasCost.value,
+      ),
+    );
+    yield* Gas.chargeGas(
+      new Uint({ value: messageCallGas.cost.value + extendMemory.cost.value }),
+    );
+  } else if (fork.eip(150)) {
+    const accountExists = yield* State.accountExists(
       evm.message.blockEnv.state,
       to,
     );
+    const createGasCost = accountExists
+      ? new Uint({ value: 0n })
+      : Gas.GasCosts.NEW_ACCOUNT;
+    const transferGasCost =
+      value.value === 0n ? new Uint({ value: 0n }) : Gas.GasCosts.CALL_VALUE;
 
-    if (!accountExistsInState) {
-      createGasCost = Gas.GAS_NEW_ACCOUNT;
-    }
-  }
-
-  const transferGasCost =
-    value.value === 0n ? new Uint({ value: 0n }) : Gas.GAS_CALL_VALUE;
-
-  const extraGas = new Uint({
-    value: accessGasCost.value + createGasCost.value + transferGasCost.value,
-  });
-
-  const messageCallGas = Gas.calculateMessageCallGas(
-    new Uint({ value: value.value }),
-    gas,
-    new Uint({ value: evm.gasLeft }),
-    extendMemory.cost,
-    extraGas,
-    Gas.GAS_CALL_STIPEND,
-    fork.eip(150),
-  );
-
-  yield* Gas.chargeGas(
-    new Uint({
-      value: messageCallGas.cost.value + extendMemory.cost.value,
-    }),
-  );
-
-  if (evm.message.isStatic && value.value !== 0n) {
-    return yield* Effect.fail(
-      new WriteInStaticContext({
-        message: "Cannot transfer value in static context",
+    messageCallGas = yield* Gas.calculateMessageCallGas(
+      Uint.wrap(value.value),
+      gas,
+      new Uint({ value: evm.gasLeft }),
+      extendMemory.cost,
+      Uint.wrap(
+        (yield* Gas.GasCosts.OPCODE_CALL_BASE).value +
+          createGasCost.value +
+          transferGasCost.value,
+      ),
+    );
+    yield* Gas.chargeGas(
+      new Uint({ value: messageCallGas.cost.value + extendMemory.cost.value }),
+    );
+  } else {
+    messageCallGas = yield* Gas.calculateMessageCallGasFrontier(
+      evm.message.blockEnv.state,
+      gas,
+      to,
+      value,
+    );
+    yield* Gas.chargeGas(
+      new Uint({
+        value: messageCallGas.cost.value + extendMemory.cost.value,
       }),
     );
   }
+  // Operation
 
-  const currentMemory = yield* Ref.get(evm.memory);
-  const newMemory = new Uint8Array(
-    currentMemory.length + Number(extendMemory.expandBy.value),
-  );
-  newMemory.set(currentMemory);
-  yield* Ref.set(evm.memory, newMemory);
+  if (fork.eip(214)) {
+    // Note: I couldn't find the exect EIP that triggers this check,
+    // EIP-140 doesn't mention any of these checks, but it  introduced static calls
+    // so I'm assuming it's the same EIP.
+    if (evm.message.isStatic && value.value !== 0n) {
+      return yield* Effect.fail(
+        new WriteInStaticContext({ message: "Cannot call in static context" }),
+      );
+    }
+  }
 
-  const sender = yield* State.getAccount(
+  yield* expandMemory(evm, extendMemory.expandBy);
+  const senderBalance = yield* State.getAccount(
     evm.message.blockEnv.state,
     evm.message.currentTarget,
-  );
-  const senderBalance = sender.balance;
+  ).pipe(Effect.map((account) => account.balance));
 
   if (senderBalance.value < value.value) {
     yield* evm.stack.push(new U256({ value: 0n }));
-    yield* Ref.set(evm.returnData, new Bytes({ value: new Uint8Array(0) }));
-    evm.setGasLeft(evm.gasLeft + messageCallGas.subCall.value);
+    yield* Ref.set(evm.returnData, Bytes.empty);
+    evm.setGasLeft(evm.gasLeft + messageCallGas.subcall.value);
   } else {
     yield* genericCall(
-      messageCallGas.subCall,
+      messageCallGas.subcall,
       value,
       evm.message.currentTarget,
       to,
-      finalCodeAddress,
+      codeAddress,
       true,
       false,
       memoryInputStartPosition,
@@ -654,7 +739,7 @@ export const call = Effect.gen(function* () {
   }
 
   // PROGRAM COUNTER
-  yield* Ref.update(evm.pc, (current) => current + 1);
+  yield* evm.incrementPC(1);
 });
 
 /**
@@ -668,93 +753,98 @@ export const callcode = Effect.gen(function* () {
   const evm = yield* Evm;
 
   const gas = new Uint({ value: (yield* evm.stack.pop()).value });
-  const codeAddress = toAddressMasked(yield* evm.stack.pop());
+  let codeAddress = toAddressMasked(yield* evm.stack.pop());
   const value = yield* evm.stack.pop();
   const memoryInputStartPosition = yield* evm.stack.pop();
   const memoryInputSize = yield* evm.stack.pop();
   const memoryOutputStartPosition = yield* evm.stack.pop();
   const memoryOutputSize = yield* evm.stack.pop();
 
-  // GAS  callcode function
-  // Target is current_target
-  const to = evm.message.currentTarget;
-
+  // GAS
   const memory = yield* Ref.get(evm.memory);
+  const to = evm.message.currentTarget;
   const extendMemory = Gas.calculateGasExtendMemory(memory, [
     [memoryInputStartPosition, memoryInputSize],
     [memoryOutputStartPosition, memoryOutputSize],
   ]);
-
   const fork = yield* Fork;
-  let accessGasCost: Uint;
+
+  let messageCallGas: { cost: Uint; subcall: Uint };
+  let disablePrecompiles = false;
+  let code = Bytes.empty;
 
   if (fork.eip(2929)) {
-    const accessedAddresses = evm.accessedAddresses;
-    if (accessedAddresses.has(codeAddress)) {
-      accessGasCost = Gas.GAS_WARM_ACCESS; // 100
-    } else {
+    let accessGasCost = GasCosts.WARM_ACCESS;
+    if (!evm.accessedAddresses.has(codeAddress)) {
       evm.accessedAddresses.add(codeAddress);
-      accessGasCost = Gas.GAS_COLD_ACCOUNT_ACCESS; // 2600
+      accessGasCost = GasCosts.COLD_ACCOUNT_ACCESS;
     }
+    if (fork.eip(7702)) {
+      const accessDelegationResult = yield* accessDelegation(evm, codeAddress);
+      accessGasCost = new Uint({
+        value: accessGasCost.value + accessDelegationResult.accessGasCost.value,
+      });
+      disablePrecompiles = accessDelegationResult.disablePrecompiles;
+      codeAddress = accessDelegationResult.codeAddress;
+      code = accessDelegationResult.code;
+    }
+    const transferGasCost = Uint.wrap(
+      value.value === 0n ? 0n : Gas.GasCosts.CALL_VALUE.value,
+    );
+    messageCallGas = yield* Gas.calculateMessageCallGas(
+      Uint.wrap(value.value),
+      gas,
+      new Uint({ value: evm.gasLeft }),
+      extendMemory.cost,
+      Uint.wrap(accessGasCost.value + transferGasCost.value),
+    );
+    yield* Gas.chargeGas(
+      new Uint({ value: messageCallGas.cost.value + extendMemory.cost.value }),
+    );
+  } else if (fork.eip(150)) {
+    const transferGasCost = Uint.wrap(
+      value.value === 0n ? 0n : Gas.GasCosts.CALL_VALUE.value,
+    );
+    messageCallGas = yield* Gas.calculateMessageCallGas(
+      Uint.wrap(value.value),
+      gas,
+      new Uint({ value: evm.gasLeft }),
+      extendMemory.cost,
+      Uint.wrap(
+        (yield* Gas.GasCosts.OPCODE_CALL_BASE).value + transferGasCost.value,
+      ),
+    );
+    yield* Gas.chargeGas(
+      new Uint({ value: messageCallGas.cost.value + extendMemory.cost.value }),
+    );
   } else {
-    accessGasCost = yield* Gas.GAS_CALL;
+    messageCallGas = yield* Gas.calculateMessageCallGasFrontier(
+      evm.message.blockEnv.state,
+      gas,
+      to,
+      value,
+    );
+    yield* Ref.set(evm.returnData, Bytes.empty);
+    yield* Gas.chargeGas(
+      new Uint({ value: messageCallGas.cost.value + extendMemory.cost.value }),
+    );
   }
-
-  const [disablePrecompiles, finalCodeAddress, code, delegatedAccessGasCost] =
-    yield* accessDelegation(evm, codeAddress);
-  accessGasCost = new Uint({
-    value: accessGasCost.value + delegatedAccessGasCost.value,
-  });
-
-  const transferGasCost =
-    value.value === 0n ? new Uint({ value: 0n }) : Gas.GAS_CALL_VALUE;
-
-  const messageCallGas = Gas.calculateMessageCallGas(
-    new Uint({ value: value.value }),
-    gas,
-    new Uint({ value: evm.gasLeft }),
-    extendMemory.cost,
-    new Uint({
-      value: accessGasCost.value + transferGasCost.value,
-    }),
-    Gas.GAS_CALL_STIPEND,
-    fork.eip(150),
-  );
-
-  // Charge gas
-  yield* Gas.chargeGas(
-    new Uint({
-      value: messageCallGas.cost.value + extendMemory.cost.value,
-    }),
-  );
-
-  // OPERATION
-  const currentMemory = yield* Ref.get(evm.memory);
-  const newMemory = new Uint8Array(
-    currentMemory.length + Number(extendMemory.expandBy.value),
-  );
-  newMemory.set(currentMemory);
-  yield* Ref.set(evm.memory, newMemory);
-
-  // Sender balance check
-  const sender = yield* State.getAccount(
+  // Operation
+  yield* expandMemory(evm, extendMemory.expandBy);
+  const senderBalance = yield* State.getAccount(
     evm.message.blockEnv.state,
     evm.message.currentTarget,
-  );
-  const senderBalance = sender.balance;
-
+  ).pipe(Effect.map((account) => account.balance));
   if (senderBalance.value < value.value) {
-    // Insufficient balance
     yield* evm.stack.push(new U256({ value: 0n }));
-    yield* Ref.set(evm.returnData, new Bytes({ value: new Uint8Array(0) }));
-    evm.gasLeft += messageCallGas.subCall.value;
+    evm.setGasLeft(evm.gasLeft + messageCallGas.subcall.value);
   } else {
     yield* genericCall(
-      messageCallGas.subCall,
+      messageCallGas.subcall,
       value,
       evm.message.currentTarget,
       to,
-      finalCodeAddress,
+      codeAddress,
       true,
       false,
       memoryInputStartPosition,
@@ -780,70 +870,78 @@ export const delegatecall = Effect.gen(function* () {
 
   // STACK
   const gas = new Uint({ value: (yield* evm.stack.pop()).value });
-  const codeAddress = toAddressMasked(yield* evm.stack.pop());
+  let codeAddress = toAddressMasked(yield* evm.stack.pop());
   const memoryInputStartPosition = yield* evm.stack.pop();
   const memoryInputSize = yield* evm.stack.pop();
   const memoryOutputStartPosition = yield* evm.stack.pop();
   const memoryOutputSize = yield* evm.stack.pop();
 
+  let code = Bytes.empty;
+  let disablePrecompiles = false;
   // GAS
   const memory = yield* Ref.get(evm.memory);
   const extendMemory = Gas.calculateGasExtendMemory(memory, [
     [memoryInputStartPosition, memoryInputSize],
     [memoryOutputStartPosition, memoryOutputSize],
   ]);
-
   const fork = yield* Fork;
-  let accessGasCost: Uint;
-
+  let messageCallGas: { cost: Uint; subcall: Uint } | null = null;
+  // homestead
   if (fork.eip(2929)) {
-    const accessedAddresses = evm.accessedAddresses;
-    if (accessedAddresses.has(codeAddress)) {
-      accessGasCost = Gas.GAS_WARM_ACCESS; // 100
-    } else {
+    let accessGasCost = GasCosts.WARM_ACCESS;
+    if (!evm.accessedAddresses.has(codeAddress)) {
       evm.accessedAddresses.add(codeAddress);
-      accessGasCost = Gas.GAS_COLD_ACCOUNT_ACCESS; // 2600
+      accessGasCost = GasCosts.COLD_ACCOUNT_ACCESS;
     }
+    if (fork.eip(7702)) {
+      const accessDelegationResult = yield* accessDelegation(evm, codeAddress);
+      accessGasCost = new Uint({
+        value: accessGasCost.value + accessDelegationResult.accessGasCost.value,
+      });
+      codeAddress = accessDelegationResult.codeAddress;
+      disablePrecompiles = accessDelegationResult.disablePrecompiles;
+      code = accessDelegationResult.code;
+    }
+    messageCallGas = yield* Gas.calculateMessageCallGas(
+      new Uint({ value: 0n }),
+      gas,
+      new Uint({ value: evm.gasLeft }),
+      extendMemory.cost,
+
+      accessGasCost,
+    );
+    yield* Gas.chargeGas(
+      new Uint({ value: messageCallGas.cost.value + extendMemory.cost.value }),
+    );
+  } else if (fork.eip(150)) {
+    messageCallGas = yield* Gas.calculateMessageCallGas(
+      new Uint({ value: 0n }),
+      gas,
+      new Uint({ value: evm.gasLeft }),
+      extendMemory.cost,
+      Uint.wrap((yield* Gas.GasCosts.OPCODE_CALL_BASE).value),
+    );
+    yield* Gas.chargeGas(
+      new Uint({ value: messageCallGas.cost.value + extendMemory.cost.value }),
+    );
   } else {
-    accessGasCost = yield* Gas.GAS_CALL;
+    yield* Gas.chargeGas(
+      new Uint({
+        value:
+          (yield* GasCosts.OPCODE_CALL_BASE).value +
+          gas.value +
+          extendMemory.cost.value,
+      }),
+    );
   }
 
-  const [disablePrecompiles, finalCodeAddress, code, delegatedAccessGasCost] =
-    yield* accessDelegation(evm, codeAddress);
-  accessGasCost = new Uint({
-    value: accessGasCost.value + delegatedAccessGasCost.value,
-  });
-
-  const messageCallGas = Gas.calculateMessageCallGas(
-    new Uint({ value: 0n }),
-    gas,
-    new Uint({ value: evm.gasLeft }),
-    extendMemory.cost,
-    accessGasCost,
-    Gas.GAS_CALL_STIPEND,
-    fork.eip(150),
-  );
-
-  yield* Gas.chargeGas(
-    new Uint({
-      value: messageCallGas.cost.value + extendMemory.cost.value,
-    }),
-  );
-
-  // OPERATION
-  const currentMemory = yield* Ref.get(evm.memory);
-  const newMemory = new Uint8Array(
-    currentMemory.length + Number(extendMemory.expandBy.value),
-  );
-  newMemory.set(currentMemory);
-  yield* Ref.set(evm.memory, newMemory);
-
+  yield* expandMemory(evm, extendMemory.expandBy);
   yield* genericCall(
-    messageCallGas.subCall,
+    fork.eip(150) && messageCallGas ? messageCallGas.subcall : gas,
     evm.message.value,
     evm.message.caller,
     evm.message.currentTarget,
-    finalCodeAddress,
+    codeAddress,
     false,
     false,
     memoryInputStartPosition,
@@ -855,7 +953,7 @@ export const delegatecall = Effect.gen(function* () {
   );
 
   // PROGRAM COUNTER
-  yield* Ref.update(evm.pc, (current) => current + 1);
+  yield* evm.incrementPC(1);
 });
 
 /**
@@ -884,58 +982,55 @@ export const staticcall = Effect.gen(function* () {
   ]);
 
   const fork = yield* Fork;
-  let accessGasCost: Uint;
+  let messageCallGas: { cost: Uint; subcall: Uint };
+
+  let codeAddress = to;
+  let disablePrecompiles = false;
+  let code = Bytes.empty;
 
   if (fork.eip(2929)) {
-    const accessedAddresses = evm.accessedAddresses;
-    if (accessedAddresses.has(to)) {
-      accessGasCost = Gas.GAS_WARM_ACCESS; // 100
-    } else {
+    let accessGasCost = GasCosts.WARM_ACCESS;
+    if (!evm.accessedAddresses.has(to)) {
       evm.accessedAddresses.add(to);
-      accessGasCost = Gas.GAS_COLD_ACCOUNT_ACCESS; // 2600
+      accessGasCost = GasCosts.COLD_ACCOUNT_ACCESS;
     }
+    if (fork.eip(7702)) {
+      const accessDelegationResult = yield* accessDelegation(evm, codeAddress);
+      accessGasCost = new Uint({
+        value: accessGasCost.value + accessDelegationResult.accessGasCost.value,
+      });
+      codeAddress = accessDelegationResult.codeAddress;
+      disablePrecompiles = accessDelegationResult.disablePrecompiles;
+      code = accessDelegationResult.code;
+    }
+    messageCallGas = yield* Gas.calculateMessageCallGas(
+      new Uint({ value: 0n }),
+      gas,
+      new Uint({ value: evm.gasLeft }),
+      extendMemory.cost,
+      accessGasCost,
+    );
   } else {
-    accessGasCost = yield* Gas.GAS_CALL;
+    messageCallGas = yield* Gas.calculateMessageCallGas(
+      new Uint({ value: 0n }),
+      gas,
+      new Uint({ value: evm.gasLeft }),
+      extendMemory.cost,
+      Uint.wrap((yield* Gas.GasCosts.OPCODE_CALL_BASE).value),
+    );
   }
-
-  const codeAddress = to;
-  const [disablePrecompiles, finalCodeAddress, code, delegatedAccessGasCost] =
-    yield* accessDelegation(evm, codeAddress);
-  accessGasCost = new Uint({
-    value: accessGasCost.value + delegatedAccessGasCost.value,
-  });
-
-  const messageCallGas = Gas.calculateMessageCallGas(
-    new Uint({ value: 0n }),
-    gas,
-    new Uint({ value: evm.gasLeft }),
-    extendMemory.cost,
-    accessGasCost,
-    Gas.GAS_CALL_STIPEND,
-    fork.eip(150),
-  );
-
-  // Charge gas
   yield* Gas.chargeGas(
-    new Uint({
-      value: messageCallGas.cost.value + extendMemory.cost.value,
-    }),
+    new Uint({ value: messageCallGas.cost.value + extendMemory.cost.value }),
   );
 
   // OPERATION
-  const currentMemory = yield* Ref.get(evm.memory);
-  const newMemory = new Uint8Array(
-    currentMemory.length + Number(extendMemory.expandBy.value),
-  );
-  newMemory.set(currentMemory);
-  yield* Ref.set(evm.memory, newMemory);
-
+  yield* expandMemory(evm, extendMemory.expandBy);
   yield* genericCall(
-    messageCallGas.subCall,
+    messageCallGas.subcall,
     new U256({ value: 0n }),
     evm.message.currentTarget,
     to,
-    finalCodeAddress,
+    codeAddress,
     true,
     true,
     memoryInputStartPosition,
@@ -947,7 +1042,7 @@ export const staticcall = Effect.gen(function* () {
   );
 
   // PROGRAM COUNTER
-  yield* Ref.update(evm.pc, (current) => current + 1);
+  yield* evm.incrementPC(1);
 });
 
 /**

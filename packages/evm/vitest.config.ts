@@ -8,7 +8,7 @@ export default defineConfig({
   root,
   test: {
     environment: "node",
-    include: ["test/**/*.test.ts"],
+    include: ["src/**/*.test.ts"],
     pool: "forks",
   },
 });

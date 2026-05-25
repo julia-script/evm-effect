@@ -61,7 +61,6 @@ export const incorporateChildOnSuccess = Effect.fn("incorporateChildOnSuccess")(
     const childGasLeft = childEvm.gasLeft;
     const childLogs = yield* Ref.get(childEvm.logs);
     const childRefundCounter = yield* Ref.get(childEvm.refundCounter);
-
     evm.setGasLeft(evm.gasLeft + childGasLeft);
 
     yield* Ref.update(evm.logs, (current) => [...current, ...childLogs]);

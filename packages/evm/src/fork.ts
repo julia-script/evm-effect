@@ -1,9 +1,9 @@
 import { Bytes32, U64, Uint } from "@evm-effect/ethereum-types";
 import { Effect, Result } from "effect";
-
+import { dedent } from "ts-dedent";
 import type { BlockChain } from "./blockchain.js";
 import { applyBody, computeRequestsHash } from "./blocks/executor.js";
-import { getLast256BlockHashes, validateHeader } from "./blocks/validator.js";
+import { validateHeader } from "./blocks/validator.js";
 import { MAX_RLP_BLOCK_SIZE } from "./constants.js";
 import {
   IncorrectBlobGasUsedError,
@@ -13,8 +13,9 @@ import {
 } from "./exceptions.js";
 import { logsBloom } from "./receipts/bloom.js";
 import { stateRoot, TransientStorage } from "./state.js";
+import { getLast256BlockHashes } from "./transactions/process.js";
 import { root } from "./trie/trie.js";
-import { type Block, encodeBlock, type Header } from "./types/Block.js";
+import type { Block, Header } from "./types/Block.js";
 import { Fork } from "./vm/ForkService.js";
 import { BlockEnvironment } from "./vm/message.js";
 
@@ -52,7 +53,7 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
   const fork = yield* Fork;
 
   if (fork.eip(7934)) {
-    const encodedBlockResult = encodeBlock(block);
+    const encodedBlockResult = yield* block.encode().pipe(Effect.result);
     if (Result.isFailure(encodedBlockResult)) {
       return yield* Effect.fail(
         new InvalidBlock({
@@ -61,6 +62,7 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
       );
     }
     const encodedBlock = encodedBlockResult.success;
+
     if (encodedBlock.value.length > MAX_RLP_BLOCK_SIZE) {
       return yield* Effect.fail(
         new InvalidBlock({
@@ -78,7 +80,7 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
     );
   }
 
-  const blockEnv = createBlockEnvironment(chain, block.header);
+  const blockEnv = yield* createBlockEnvironment(chain, block.header);
 
   const blockTransientStorage = TransientStorage.empty();
   yield* blockEnv.state.beginTransaction(blockTransientStorage);
@@ -145,9 +147,16 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
   const requestsHash = yield* computeRequestsHash(blockOutput.requests);
 
   if (blockOutput.blockGasUsed.value !== block.header.gasUsed.value) {
+    const offset = blockOutput.blockGasUsed.value - block.header.gasUsed.value;
     return yield* failWithRollback(
       new InvalidBlock({
-        message: `${blockOutput.blockGasUsed.value} != ${block.header.gasUsed.value}`,
+        message: dedent`
+          Invalid blockGasUsed: 
+          header: ${block.header.gasUsed.value}
+          actual: ${blockOutput.blockGasUsed.value} 
+                 ${offset > 0 ? "+" : ""}${offset}
+
+        `,
       }),
     );
   }
@@ -214,13 +223,11 @@ export const stateTransition = Effect.fn("stateTransition")(function* (
  * @param header - The block header
  * @returns A new BlockEnvironment for block execution
  */
-const createBlockEnvironment = (
+const createBlockEnvironment = Effect.fn("createBlockEnvironment")(function* (
   chain: BlockChain,
   header: Header,
-): BlockEnvironment => {
-  const blockHashes = getLast256BlockHashes(chain);
-
-  const EMPTY_BYTES32 = new Bytes32({ value: new Uint8Array(32) });
+) {
+  const blockHashes = yield* getLast256BlockHashes(chain);
 
   return new BlockEnvironment({
     chainId: chain.chainId,
@@ -234,9 +241,9 @@ const createBlockEnvironment = (
     prevRandao: header.prevRandao,
     difficulty: header.difficulty,
     excessBlobGas: header.excessBlobGas ?? new U64({ value: 0n }),
-    parentBeaconBlockRoot: header.parentBeaconBlockRoot ?? EMPTY_BYTES32,
+    parentBeaconBlockRoot: header.parentBeaconBlockRoot ?? Bytes32.empty,
   });
-};
+});
 
 const arraysEqual = (a: Uint8Array, b: Uint8Array): boolean => {
   if (a.length !== b.length) return false;

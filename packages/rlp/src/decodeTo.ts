@@ -2,6 +2,7 @@ import {
   Address,
   type AnyBytes,
   Bytes,
+  Bytes0,
   Bytes20,
   fromBeBytes,
 } from "@evm-effect/ethereum-types";
@@ -19,14 +20,18 @@ import {
 } from "./utils.js";
 
 const textDecoder = new TextDecoder();
-const hydrateDeclaration = (ast: AST.Objects, input: Simple): unknown => {
+const hydrateDeclaration = (
+  ast: AST.Objects,
+  input: Simple,
+  path: string[],
+): unknown => {
   const identifier = getIdentifierAnnotation(ast);
   if (identifier?.startsWith("Uint8Array")) {
-    assertBytes(input);
+    assertBytes(input, path);
     return input.value;
   }
 
-  assertArray(input);
+  assertArray(input, path);
   const signatures = ast.propertySignatures;
   const entries: [string | number | symbol, unknown][] = [];
   let i = 0;
@@ -42,7 +47,12 @@ const hydrateDeclaration = (ast: AST.Objects, input: Simple): unknown => {
       i++;
       continue;
     }
-    const either = hydrateAst(signature.type, input[i]);
+
+    const either = hydrateAst(signature.type, input[i], [
+      ...path,
+      signature.name.toString(),
+    ]);
+
     entries.push([signature.name, either]);
     i++;
   }
@@ -78,12 +88,16 @@ const hydrateDeclaration = (ast: AST.Objects, input: Simple): unknown => {
   // return result.success;
 };
 
-const hydrateExtended = (ast: AST.AST, input: Simple): unknown => {
-  assertBytes(input);
+const hydrateExtended = (
+  ast: AST.AST,
+  input: Simple,
+  path: string[],
+): unknown => {
+  assertBytes(input, path);
   // console.log(ast);
   const identifier = AST.resolveIdentifier(ast);
   if (!identifier) {
-    throw new RlpDecodeError({ message: "Unreachable", path: [] });
+    throw new RlpDecodeError({ message: "Unreachable", path: path });
   }
   const uintClass = UINT_CLASSES_BY_TAG[
     identifier as keyof typeof UINT_CLASSES_BY_TAG
@@ -91,7 +105,7 @@ const hydrateExtended = (ast: AST.AST, input: Simple): unknown => {
   if (uintClass) {
     const result = fromBeBytes(input, uintClass);
     if (Result.isFailure(result)) {
-      throw new RlpDecodeError({ message: "Invalid uint", path: [] });
+      throw new RlpDecodeError({ message: "Invalid uint", path: path });
     }
     return result.success;
   }
@@ -103,23 +117,27 @@ const hydrateExtended = (ast: AST.AST, input: Simple): unknown => {
   if (identifier === "Address") {
     return new Address({ value: new Bytes20({ value: input.value }) });
   }
-  throw new RlpDecodeError({ message: "Unreachable", path: [] });
+  throw new RlpDecodeError({ message: "Unreachable", path: path });
 };
 
-function assertBytes(input: Simple): asserts input is Bytes {
+function assertBytes(input: Simple, path: string[]): asserts input is Bytes {
   if (Array.isArray(input)) {
-    throw new RlpDecodeError({ message: "Input is not a bytes", path: [] });
+    throw new RlpDecodeError({ message: "Input is not a bytes", path: path });
   }
   // return !Array.isArray(input);
 }
 
-function assertArray(input: Simple): asserts input is Simple[] {
+function assertArray(input: Simple, path: string[]): asserts input is Simple[] {
   if (!Array.isArray(input)) {
-    throw new RlpDecodeError({ message: "Input is not an array", path: [] });
+    throw new RlpDecodeError({ message: "Input is not an array", path: path });
   }
 }
-const hydrateLiterals = (ast: AST.Literal, input: Simple): unknown => {
-  assertBytes(input);
+const hydrateLiterals = (
+  ast: AST.Literal,
+  input: Simple,
+  path: string[],
+): unknown => {
+  assertBytes(input, path);
   switch (ast.literal) {
     case null:
     case undefined:
@@ -133,7 +151,11 @@ const hydrateLiterals = (ast: AST.Literal, input: Simple): unknown => {
   }
 };
 
-const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
+const hydrateUnion = (
+  ast: AST.Union,
+  input: Simple,
+  path: string[],
+): unknown => {
   const concretes = getConcretes(ast);
 
   // Handle unions with multiple concrete types by discriminating based on input type
@@ -147,11 +169,8 @@ const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
 
       // If input is bytes (not array), prefer Bytes types
       if (!isInputArray) {
-        if (
-          identifier &&
-          (identifier === "Bytes" || identifier.startsWith("Bytes"))
-        ) {
-          return hydrateAst(concreteType, input);
+        if (identifier?.startsWith("Bytes")) {
+          return hydrateAst(concreteType, input, path);
         }
       }
 
@@ -159,7 +178,7 @@ const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
       if (isInputArray) {
         // check for structs
         if (AST.isObjects(normalized)) {
-          return hydrateDeclaration(normalized, input);
+          return hydrateDeclaration(normalized, input, path);
         }
 
         if (AST.isDeclaration(normalized)) {
@@ -168,17 +187,18 @@ const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
             !identifier ||
             (!identifier.startsWith("Bytes") && identifier !== "Address")
           ) {
-            return hydrateAst(concreteType, input);
+            return hydrateAst(concreteType, input, path);
           }
           // Check if it's a struct (has property signatures indicating it expects a list)
           if (!isExtended(normalized)) {
-            return hydrateAst(concreteType, input);
+            return hydrateAst(concreteType, input, path);
           }
         }
       }
     }
+    // console.log(''concretes[0]);
 
-    return hydrateAst(concretes[0], input);
+    return hydrateAst(concretes[0], input, path);
   }
 
   if (ast.types.length !== 2 && concretes.length !== 1) {
@@ -190,7 +210,7 @@ const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
   }
   // if only one is concrete, we treat it as an optional value
   if (input) {
-    assertBytes(input);
+    assertBytes(input, path);
 
     if (input.value.length === 0) {
       const concreteNormalized = concretes[0];
@@ -204,7 +224,7 @@ const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
           UINT_CLASSES_BY_TAG[identifier as keyof typeof UINT_CLASSES_BY_TAG]
         ) {
           // This is a numeric type - hydrate as 0
-          return hydrateAst(concretes[0], input);
+          return hydrateAst(concretes[0], input, path);
         }
       }
 
@@ -215,15 +235,25 @@ const hydrateUnion = (ast: AST.Union, input: Simple): unknown => {
         return undefined;
       }
       if (AST.isLiteral(notConcrete)) return notConcrete.literal;
+      if (
+        AST.isDeclaration(notConcrete) &&
+        AST.resolveIdentifier(notConcrete) === "Bytes0"
+      ) {
+        return Bytes0.empty;
+      }
       return undefined;
     }
   }
 
-  return hydrateAst(concretes[0], input);
+  return hydrateAst(concretes[0], input, path);
 };
 
-const hydrateTuple = (ast: AST.Arrays, input: Simple): unknown => {
-  assertArray(input);
+const hydrateTuple = (
+  ast: AST.Arrays,
+  input: Simple,
+  path: string[],
+): unknown => {
+  assertArray(input, path);
   const elementsTypes = ast.elements;
   const [restType, ...additionalTypes] = ast.rest;
   const elements = input.slice(0, elementsTypes.length);
@@ -233,33 +263,39 @@ const hydrateTuple = (ast: AST.Arrays, input: Simple): unknown => {
     input.length - additionalTypes.length,
   );
   const additional = input.slice(input.length - additionalTypes.length);
+  let j = 0;
   for (let i = 0; i < elementsTypes.length; i++) {
-    fields.push(hydrateAst(elementsTypes[i], elements[i]));
+    fields.push(hydrateAst(elementsTypes[i], elements[i], [...path, `[${j}]`]));
+    j++;
   }
   for (const restItem of rest) {
-    fields.push(hydrateAst(restType, restItem));
+    fields.push(hydrateAst(restType, restItem, [...path, `[${j}]`]));
+    j++;
   }
   for (let i = 0; i < additionalTypes.length; i++) {
-    fields.push(hydrateAst(additionalTypes[i], additional[i]));
+    fields.push(
+      hydrateAst(additionalTypes[i], additional[i], [...path, `[${j}]`]),
+    );
+    j++;
   }
   return fields;
 };
-const hydrateAst = (ast: AST.AST, input: Simple): unknown => {
+const hydrateAst = (ast: AST.AST, input: Simple, path: string[]): unknown => {
   switch (ast._tag) {
     case "String":
-      assertBytes(input);
+      assertBytes(input, path);
       return textDecoder.decode(input.value);
     case "Boolean":
-      assertBytes(input);
+      assertBytes(input, path);
       return input.value[0] === 1;
     case "Literal":
-      return hydrateLiterals(ast, input);
+      return hydrateLiterals(ast, input, path);
     // case "BigInt":
 
     case "Declaration": {
       // case "TypeLiteral": {
       if (isExtended(ast)) {
-        return hydrateExtended(ast, input);
+        return hydrateExtended(ast, input, path);
       }
 
       if (ast.typeParameters.length > 1) {
@@ -271,7 +307,7 @@ const hydrateAst = (ast: AST.AST, input: Simple): unknown => {
       const obj = ast.typeParameters[0];
 
       if (AST.isObjects(obj)) {
-        return hydrateDeclaration(obj, input);
+        return hydrateDeclaration(obj, input, path);
       }
 
       throw new RlpDecodeError({
@@ -281,11 +317,11 @@ const hydrateAst = (ast: AST.AST, input: Simple): unknown => {
       // return hydrateDeclaration(ast, input);
     }
     case "Objects":
-      return hydrateDeclaration(ast, input);
+      return hydrateDeclaration(ast, input, path);
     case "Union":
-      return hydrateUnion(ast, input);
+      return hydrateUnion(ast, input, path);
     case "Arrays":
-      return hydrateTuple(ast, input);
+      return hydrateTuple(ast, input, path);
     default:
       throw new RlpDecodeError({
         message: `Not implemented: ${ast._tag}`,
@@ -299,11 +335,12 @@ export const decodeTo = <A>(
   input: AnyBytes,
 ): Result.Result<A, RlpDecodeError> => {
   const decodedResult = decode(input);
+
   if (Result.isFailure(decodedResult)) {
     return Result.fail(decodedResult.failure);
   }
   try {
-    const result = hydrateAst(schema.ast, decodedResult.success);
+    const result = hydrateAst(schema.ast, decodedResult.success, []);
     const encoded = schema.make(result);
     return Result.succeed(encoded);
   } catch (error) {
