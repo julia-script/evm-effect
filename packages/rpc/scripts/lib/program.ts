@@ -105,7 +105,7 @@ export const generateRpcSchemas = Effect.fn("generateRpcSchemas")(function* (
     method.summary,
   );
   out += `export const ${method.name} = {\n`;
-  out += `  method: "${method.name}",\n`;
+  out += `  method: "${method.name}" as const,\n`;
 
   out += `  params: Schema.Tuple([\n`;
   const config = ConfigProvider.fromEnv({

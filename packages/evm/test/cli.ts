@@ -175,11 +175,9 @@ const main = Command.make("main", {
         const header = `[${i}/${filtered.length}] ${testCase.fixture_hash.slice(0, 10)} [${testCase.fork}] ${testCase.id}`;
 
         yield* Console.log(header);
-        const result = yield* runTest(
-          testCase,
-          testCaseDir,
-          config.trace,
-        ).pipe(Effect.provide(maybeTrace));
+        const result = yield* runTest(testCase, testCaseDir, config.trace).pipe(
+          Effect.provide(maybeTrace),
+        );
         const duration = performance.now() - now;
 
         yield* Console.log(`Time taken: ${Math.round(duration)}ms`);

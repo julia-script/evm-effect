@@ -8,7 +8,7 @@ import * as Components from "./generated-schemas.js";
  * Returns an array of recent bad blocks that the client has seen on the network.
  */
 export const debug_getBadBlocks = {
-  method: "debug_getBadBlocks",
+  method: "debug_getBadBlocks" as const,
   params: Schema.Tuple([]),
   /**
    * Blocks
@@ -22,7 +22,7 @@ export const debug_getBadBlocks = {
  * Returns an RLP-encoded block.
  */
 export const debug_getRawBlock = {
-  method: "debug_getRawBlock",
+  method: "debug_getRawBlock" as const,
   params: Schema.Tuple([
     /**
      * Block
@@ -47,7 +47,7 @@ export const debug_getRawBlock = {
  * Returns the RLP-encoded EIP-7928 block access list for a given block.
  */
 export const debug_getRawBlockAccessList = {
-  method: "debug_getRawBlockAccessList",
+  method: "debug_getRawBlockAccessList" as const,
   params: Schema.Tuple([
     /**
      * Block
@@ -76,7 +76,7 @@ export const debug_getRawBlockAccessList = {
  * Returns an RLP-encoded header.
  */
 export const debug_getRawHeader = {
-  method: "debug_getRawHeader",
+  method: "debug_getRawHeader" as const,
   params: Schema.Tuple([
     /**
      * Block
@@ -101,7 +101,7 @@ export const debug_getRawHeader = {
  * Returns an array of EIP-2718 binary-encoded receipts.
  */
 export const debug_getRawReceipts = {
-  method: "debug_getRawReceipts",
+  method: "debug_getRawReceipts" as const,
   params: Schema.Tuple([
     /**
      * Block
@@ -126,7 +126,7 @@ export const debug_getRawReceipts = {
  * Returns an array of EIP-2718 binary-encoded transactions.
  */
 export const debug_getRawTransaction = {
-  method: "debug_getRawTransaction",
+  method: "debug_getRawTransaction" as const,
   params: Schema.Tuple([
     /**
      * Transaction hash
@@ -151,7 +151,7 @@ export const debug_getRawTransaction = {
  * Exchanges list of supported Engine API methods
  */
 export const engine_exchangeCapabilities = {
-  method: "engine_exchangeCapabilities",
+  method: "engine_exchangeCapabilities" as const,
   params: Schema.Tuple([
     /**
      * Consensus client methods
@@ -170,7 +170,7 @@ export const engine_exchangeCapabilities = {
  * Exchanges transition configuration
  */
 export const engine_exchangeTransitionConfigurationV1 = {
-  method: "engine_exchangeTransitionConfigurationV1",
+  method: "engine_exchangeTransitionConfigurationV1" as const,
   params: Schema.Tuple([
     /**
      * Consensus client configuration
@@ -189,7 +189,7 @@ export const engine_exchangeTransitionConfigurationV1 = {
  * Updates the forkchoice state
  */
 export const engine_forkchoiceUpdatedV1 = {
-  method: "engine_forkchoiceUpdatedV1",
+  method: "engine_forkchoiceUpdatedV1" as const,
   params: Schema.Tuple([
     /**
      * Forkchoice state
@@ -226,7 +226,7 @@ export const engine_forkchoiceUpdatedV1 = {
  * Updates the forkchoice state
  */
 export const engine_forkchoiceUpdatedV2 = {
-  method: "engine_forkchoiceUpdatedV2",
+  method: "engine_forkchoiceUpdatedV2" as const,
   params: Schema.Tuple([
     /**
      * Forkchoice state
@@ -267,7 +267,7 @@ export const engine_forkchoiceUpdatedV2 = {
  * Updates the forkchoice state
  */
 export const engine_forkchoiceUpdatedV3 = {
-  method: "engine_forkchoiceUpdatedV3",
+  method: "engine_forkchoiceUpdatedV3" as const,
   params: Schema.Tuple([
     /**
      * Forkchoice state
@@ -312,7 +312,7 @@ export const engine_forkchoiceUpdatedV3 = {
  * Updates the forkchoice state
  */
 export const engine_forkchoiceUpdatedV4 = {
-  method: "engine_forkchoiceUpdatedV4",
+  method: "engine_forkchoiceUpdatedV4" as const,
   params: Schema.Tuple([
     /**
      * Forkchoice state
@@ -361,7 +361,7 @@ export const engine_forkchoiceUpdatedV4 = {
  * Fetches blobs from the blob pool
  */
 export const engine_getBlobsV1 = {
-  method: "engine_getBlobsV1",
+  method: "engine_getBlobsV1" as const,
   params: Schema.Tuple([
     /**
      * Blob versioned hashes
@@ -390,7 +390,7 @@ export const engine_getBlobsV1 = {
  * Fetch blobs from the blob mempool
  */
 export const engine_getBlobsV2 = {
-  method: "engine_getBlobsV2",
+  method: "engine_getBlobsV2" as const,
   params: Schema.Tuple([
     /**
      * Blob versioned hashes
@@ -415,7 +415,7 @@ export const engine_getBlobsV2 = {
  * Fetch blobs from the blob mempool, returning partial hits
  */
 export const engine_getBlobsV3 = {
-  method: "engine_getBlobsV3",
+  method: "engine_getBlobsV3" as const,
   params: Schema.Tuple([
     /**
      * Blob versioned hashes
@@ -443,7 +443,7 @@ export const engine_getBlobsV3 = {
  * Retrieve blob cells from the Execution layer blobpool
  */
 export const engine_getBlobsV4 = {
-  method: "engine_getBlobsV4",
+  method: "engine_getBlobsV4" as const,
   params: Schema.Tuple([
     /**
      * Blob versioned hashes
@@ -475,7 +475,7 @@ export const engine_getBlobsV4 = {
  * Given block hashes returns bodies of the corresponding execution payloads
  */
 export const engine_getPayloadBodiesByHashV1 = {
-  method: "engine_getPayloadBodiesByHashV1",
+  method: "engine_getPayloadBodiesByHashV1" as const,
   params: Schema.Tuple([
     /**
      * Array of block hashes
@@ -500,7 +500,7 @@ export const engine_getPayloadBodiesByHashV1 = {
  * Given block hashes returns bodies of the corresponding execution payloads including block access lists
  */
 export const engine_getPayloadBodiesByHashV2 = {
-  method: "engine_getPayloadBodiesByHashV2",
+  method: "engine_getPayloadBodiesByHashV2" as const,
   params: Schema.Tuple([
     /**
      * Array of block hashes
@@ -525,7 +525,7 @@ export const engine_getPayloadBodiesByHashV2 = {
  * Given a range of block numbers returns bodies of the corresponding execution payloads
  */
 export const engine_getPayloadBodiesByRangeV1 = {
-  method: "engine_getPayloadBodiesByRangeV1",
+  method: "engine_getPayloadBodiesByRangeV1" as const,
   params: Schema.Tuple([
     /**
      * Starting block number
@@ -554,7 +554,7 @@ export const engine_getPayloadBodiesByRangeV1 = {
  * Given a range of block numbers returns bodies of the corresponding execution payloads including block access lists
  */
 export const engine_getPayloadBodiesByRangeV2 = {
-  method: "engine_getPayloadBodiesByRangeV2",
+  method: "engine_getPayloadBodiesByRangeV2" as const,
   params: Schema.Tuple([
     /**
      * Starting block number
@@ -583,7 +583,7 @@ export const engine_getPayloadBodiesByRangeV2 = {
  * Obtains execution payload from payload build process
  */
 export const engine_getPayloadV1 = {
-  method: "engine_getPayloadV1",
+  method: "engine_getPayloadV1" as const,
   params: Schema.Tuple([
     /**
      * Payload id
@@ -608,7 +608,7 @@ export const engine_getPayloadV1 = {
  * Obtains execution payload from payload build process
  */
 export const engine_getPayloadV2 = {
-  method: "engine_getPayloadV2",
+  method: "engine_getPayloadV2" as const,
   params: Schema.Tuple([
     /**
      * Payload id
@@ -653,7 +653,7 @@ export const engine_getPayloadV2 = {
  * Obtains execution payload from payload build process
  */
 export const engine_getPayloadV3 = {
-  method: "engine_getPayloadV3",
+  method: "engine_getPayloadV3" as const,
   params: Schema.Tuple([
     /**
      * Payload id
@@ -707,7 +707,7 @@ export const engine_getPayloadV3 = {
  * Obtains execution payload from payload build process
  */
 export const engine_getPayloadV4 = {
-  method: "engine_getPayloadV4",
+  method: "engine_getPayloadV4" as const,
   params: Schema.Tuple([
     /**
      * Payload id
@@ -767,7 +767,7 @@ export const engine_getPayloadV4 = {
  * Obtains execution payload from payload build process
  */
 export const engine_getPayloadV5 = {
-  method: "engine_getPayloadV5",
+  method: "engine_getPayloadV5" as const,
   params: Schema.Tuple([
     /**
      * Payload id
@@ -827,7 +827,7 @@ export const engine_getPayloadV5 = {
  * Obtains execution payload from payload build process
  */
 export const engine_getPayloadV6 = {
-  method: "engine_getPayloadV6",
+  method: "engine_getPayloadV6" as const,
   params: Schema.Tuple([
     /**
      * Payload id
@@ -877,7 +877,7 @@ export const engine_getPayloadV6 = {
  * Runs execution payload validation
  */
 export const engine_newPayloadV1 = {
-  method: "engine_newPayloadV1",
+  method: "engine_newPayloadV1" as const,
   params: Schema.Tuple([
     /**
      * Execution payload
@@ -896,7 +896,7 @@ export const engine_newPayloadV1 = {
  * Runs execution payload validation
  */
 export const engine_newPayloadV2 = {
-  method: "engine_newPayloadV2",
+  method: "engine_newPayloadV2" as const,
   params: Schema.Tuple([
     /**
      * Execution payload
@@ -928,7 +928,7 @@ export const engine_newPayloadV2 = {
  * Runs execution payload validation
  */
 export const engine_newPayloadV3 = {
-  method: "engine_newPayloadV3",
+  method: "engine_newPayloadV3" as const,
   params: Schema.Tuple([
     /**
      * Execution payload
@@ -965,7 +965,7 @@ export const engine_newPayloadV3 = {
  * Runs execution payload validation
  */
 export const engine_newPayloadV4 = {
-  method: "engine_newPayloadV4",
+  method: "engine_newPayloadV4" as const,
   params: Schema.Tuple([
     /**
      * Execution payload
@@ -1006,7 +1006,7 @@ export const engine_newPayloadV4 = {
  * Runs execution payload validation
  */
 export const engine_newPayloadV5 = {
-  method: "engine_newPayloadV5",
+  method: "engine_newPayloadV5" as const,
   params: Schema.Tuple([
     /**
      * Execution payload
@@ -1047,7 +1047,7 @@ export const engine_newPayloadV5 = {
  * Returns a list of addresses owned by client.
  */
 export const eth_accounts = {
-  method: "eth_accounts",
+  method: "eth_accounts" as const,
   params: Schema.Tuple([]),
   /**
    * Accounts
@@ -1061,7 +1061,7 @@ export const eth_accounts = {
  * Returns the base fee per blob gas in wei.
  */
 export const eth_blobBaseFee = {
-  method: "eth_blobBaseFee",
+  method: "eth_blobBaseFee" as const,
   params: Schema.Tuple([]),
   /**
    * Blob gas base fee
@@ -1075,7 +1075,7 @@ export const eth_blobBaseFee = {
  * Returns the number of most recent block.
  */
 export const eth_blockNumber = {
-  method: "eth_blockNumber",
+  method: "eth_blockNumber" as const,
   params: Schema.Tuple([]),
   /**
    * Block number
@@ -1089,7 +1089,7 @@ export const eth_blockNumber = {
  * Executes a new message call immediately without creating a transaction on the block chain.
  */
 export const eth_call = {
-  method: "eth_call",
+  method: "eth_call" as const,
   params: Schema.Tuple([
     /**
      * Transaction
@@ -1118,7 +1118,7 @@ export const eth_call = {
  * Returns the chain ID of the current network.
  */
 export const eth_chainId = {
-  method: "eth_chainId",
+  method: "eth_chainId" as const,
   params: Schema.Tuple([]),
   /**
    * Chain ID
@@ -1132,7 +1132,7 @@ export const eth_chainId = {
  * Returns the client coinbase address.
  */
 export const eth_coinbase = {
-  method: "eth_coinbase",
+  method: "eth_coinbase" as const,
   params: Schema.Tuple([]),
   /**
    * Coinbase address
@@ -1146,7 +1146,7 @@ export const eth_coinbase = {
  * Generates an access list for a transaction.
  */
 export const eth_createAccessList = {
-  method: "eth_createAccessList",
+  method: "eth_createAccessList" as const,
   params: Schema.Tuple([
     /**
      * Transaction
@@ -1188,7 +1188,7 @@ export const eth_createAccessList = {
  * Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.
  */
 export const eth_estimateGas = {
-  method: "eth_estimateGas",
+  method: "eth_estimateGas" as const,
   params: Schema.Tuple([
     /**
      * Transaction
@@ -1219,7 +1219,7 @@ export const eth_estimateGas = {
  * Returns transaction base fee per gas and effective priority fee per gas for the requested/supported block range.
  */
 export const eth_feeHistory = {
-  method: "eth_feeHistory",
+  method: "eth_feeHistory" as const,
   params: Schema.Tuple([
     /**
      * blockCount
@@ -1301,7 +1301,7 @@ export const eth_feeHistory = {
  * Returns the current price per gas in wei.
  */
 export const eth_gasPrice = {
-  method: "eth_gasPrice",
+  method: "eth_gasPrice" as const,
   params: Schema.Tuple([]),
   /**
    * Gas price
@@ -1315,7 +1315,7 @@ export const eth_gasPrice = {
  * Returns the balance of the account of given address.
  */
 export const eth_getBalance = {
-  method: "eth_getBalance",
+  method: "eth_getBalance" as const,
   params: Schema.Tuple([
     /**
      * Address
@@ -1338,7 +1338,7 @@ export const eth_getBalance = {
  * Returns the block access list for a given block.
  */
 export const eth_getBlockAccessList = {
-  method: "eth_getBlockAccessList",
+  method: "eth_getBlockAccessList" as const,
   params: Schema.Tuple([
     /**
      * Block
@@ -1367,7 +1367,7 @@ export const eth_getBlockAccessList = {
  * Returns information about a block by hash.
  */
 export const eth_getBlockByHash = {
-  method: "eth_getBlockByHash",
+  method: "eth_getBlockByHash" as const,
   params: Schema.Tuple([
     /**
      * Block hash
@@ -1396,7 +1396,7 @@ export const eth_getBlockByHash = {
  * Returns information about a block by number.
  */
 export const eth_getBlockByNumber = {
-  method: "eth_getBlockByNumber",
+  method: "eth_getBlockByNumber" as const,
   params: Schema.Tuple([
     /**
      * Block
@@ -1425,7 +1425,7 @@ export const eth_getBlockByNumber = {
  * Returns the receipts of a block by number or hash.
  */
 export const eth_getBlockReceipts = {
-  method: "eth_getBlockReceipts",
+  method: "eth_getBlockReceipts" as const,
   params: Schema.Tuple([
     /**
      * Block
@@ -1453,7 +1453,7 @@ export const eth_getBlockReceipts = {
  * Returns the number of transactions in a block from a block matching the given block hash.
  */
 export const eth_getBlockTransactionCountByHash = {
-  method: "eth_getBlockTransactionCountByHash",
+  method: "eth_getBlockTransactionCountByHash" as const,
   params: Schema.Tuple([
     /**
      * Block hash
@@ -1478,7 +1478,7 @@ export const eth_getBlockTransactionCountByHash = {
  * Returns the number of transactions in a block matching the given block number.
  */
 export const eth_getBlockTransactionCountByNumber = {
-  method: "eth_getBlockTransactionCountByNumber",
+  method: "eth_getBlockTransactionCountByNumber" as const,
   params: Schema.Tuple([
     /**
      * Block
@@ -1503,7 +1503,7 @@ export const eth_getBlockTransactionCountByNumber = {
  * Returns code at a given address.
  */
 export const eth_getCode = {
-  method: "eth_getCode",
+  method: "eth_getCode" as const,
   params: Schema.Tuple([
     /**
      * Address
@@ -1526,7 +1526,7 @@ export const eth_getCode = {
  * Polling method for the filter with the given ID (created using `eth_newFilter`). Returns an array of logs, block hashes, or transaction hashes since last poll, depending on the installed filter.
  */
 export const eth_getFilterChanges = {
-  method: "eth_getFilterChanges",
+  method: "eth_getFilterChanges" as const,
   params: Schema.Tuple([
     /**
      * Filter identifier
@@ -1545,7 +1545,7 @@ export const eth_getFilterChanges = {
  * Returns an array of all logs matching the filter with the given ID (created using `eth_newFilter`).
  */
 export const eth_getFilterLogs = {
-  method: "eth_getFilterLogs",
+  method: "eth_getFilterLogs" as const,
   params: Schema.Tuple([
     /**
      * Filter identifier
@@ -1564,7 +1564,7 @@ export const eth_getFilterLogs = {
  * Returns an array of all logs matching the specified filter.
  */
 export const eth_getLogs = {
-  method: "eth_getLogs",
+  method: "eth_getLogs" as const,
   params: Schema.Tuple([
     /**
      * Filter
@@ -1589,7 +1589,7 @@ export const eth_getLogs = {
  * Returns the merkle proof for a given account and optionally some storage keys.
  */
 export const eth_getProof = {
-  method: "eth_getProof",
+  method: "eth_getProof" as const,
   params: Schema.Tuple([
     /**
      * Address
@@ -1616,7 +1616,7 @@ export const eth_getProof = {
  * Returns the value from a storage position at a given address.
  */
 export const eth_getStorageAt = {
-  method: "eth_getStorageAt",
+  method: "eth_getStorageAt" as const,
   params: Schema.Tuple([
     /**
      * Address
@@ -1643,7 +1643,7 @@ export const eth_getStorageAt = {
  * Returns the values of multiple storage slots for multiple accounts in a single request.
  */
 export const eth_getStorageValues = {
-  method: "eth_getStorageValues",
+  method: "eth_getStorageValues" as const,
   params: Schema.Tuple([
     /**
      * Requests
@@ -1666,7 +1666,7 @@ export const eth_getStorageValues = {
  * Returns information about a transaction by block hash and transaction index position.
  */
 export const eth_getTransactionByBlockHashAndIndex = {
-  method: "eth_getTransactionByBlockHashAndIndex",
+  method: "eth_getTransactionByBlockHashAndIndex" as const,
   params: Schema.Tuple([
     /**
      * Block hash
@@ -1695,7 +1695,7 @@ export const eth_getTransactionByBlockHashAndIndex = {
  * Returns information about a transaction by block number and transaction index position.
  */
 export const eth_getTransactionByBlockNumberAndIndex = {
-  method: "eth_getTransactionByBlockNumberAndIndex",
+  method: "eth_getTransactionByBlockNumberAndIndex" as const,
   params: Schema.Tuple([
     /**
      * Block
@@ -1724,7 +1724,7 @@ export const eth_getTransactionByBlockNumberAndIndex = {
  * Returns the information about a transaction requested by transaction hash.
  */
 export const eth_getTransactionByHash = {
-  method: "eth_getTransactionByHash",
+  method: "eth_getTransactionByHash" as const,
   params: Schema.Tuple([
     /**
      * Transaction hash
@@ -1743,7 +1743,7 @@ export const eth_getTransactionByHash = {
  * Returns the nonce of an account in the state. NOTE: The name eth_getTransactionCount reflects the historical fact that an account's nonce and sent transaction count were the same. After the Pectra fork, with the inclusion of EIP-7702, this is no longer true.
  */
 export const eth_getTransactionCount = {
-  method: "eth_getTransactionCount",
+  method: "eth_getTransactionCount" as const,
   params: Schema.Tuple([
     /**
      * Address
@@ -1766,7 +1766,7 @@ export const eth_getTransactionCount = {
  * Returns the receipt of a transaction by transaction hash.
  */
 export const eth_getTransactionReceipt = {
-  method: "eth_getTransactionReceipt",
+  method: "eth_getTransactionReceipt" as const,
   params: Schema.Tuple([
     /**
      * Transaction hash
@@ -1791,7 +1791,7 @@ export const eth_getTransactionReceipt = {
  * Returns the number of uncles in a block from a block matching the given block hash.
  */
 export const eth_getUncleCountByBlockHash = {
-  method: "eth_getUncleCountByBlockHash",
+  method: "eth_getUncleCountByBlockHash" as const,
   params: Schema.Tuple([
     /**
      * Block hash
@@ -1816,7 +1816,7 @@ export const eth_getUncleCountByBlockHash = {
  * Returns the number of transactions in a block matching the given block number.
  */
 export const eth_getUncleCountByBlockNumber = {
-  method: "eth_getUncleCountByBlockNumber",
+  method: "eth_getUncleCountByBlockNumber" as const,
   params: Schema.Tuple([
     /**
      * Block
@@ -1841,7 +1841,7 @@ export const eth_getUncleCountByBlockNumber = {
  * Returns the current maxPriorityFeePerGas per gas in wei.
  */
 export const eth_maxPriorityFeePerGas = {
-  method: "eth_maxPriorityFeePerGas",
+  method: "eth_maxPriorityFeePerGas" as const,
   params: Schema.Tuple([]),
   /**
    * Max priority fee per gas
@@ -1855,7 +1855,7 @@ export const eth_maxPriorityFeePerGas = {
  * Creates a filter in the node, allowing for later polling. Registers client interest in new blocks, and returns an identifier.
  */
 export const eth_newBlockFilter = {
-  method: "eth_newBlockFilter",
+  method: "eth_newBlockFilter" as const,
   params: Schema.Tuple([]),
   /**
    * Filter identifier
@@ -1869,7 +1869,7 @@ export const eth_newBlockFilter = {
  * Install a log filter in the server, allowing for later polling. Registers client interest in logs matching the filter, and returns an identifier.
  */
 export const eth_newFilter = {
-  method: "eth_newFilter",
+  method: "eth_newFilter" as const,
   params: Schema.Tuple([
     /**
      * Filter
@@ -1888,7 +1888,7 @@ export const eth_newFilter = {
  * Creates a filter in the node, allowing for later polling. Registers client interest in new transactions, and returns an identifier.
  */
 export const eth_newPendingTransactionFilter = {
-  method: "eth_newPendingTransactionFilter",
+  method: "eth_newPendingTransactionFilter" as const,
   params: Schema.Tuple([]),
   /**
    * Filter identifier
@@ -1902,7 +1902,7 @@ export const eth_newPendingTransactionFilter = {
  * Submits a raw transaction. You can create and sign a transaction externally using a library such as [web3.js](https://web3js.readthedocs.io/) or [ethers.js](https://docs.ethers.org/). For [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) transactions, the raw form must be the network form. This means it includes the blobs, KZG commitments, and KZG proofs. For [EIP-7594](https://eips.ethereum.org/EIPS/eip-7594) transactions, the raw format must be the network form. This means it includes the blobs, KZG commitments, and cell proofs. The logic for handling the new transaction during fork boundaries are 1. When receiving an encoded transaction with cell proofs before the PeerDAS fork activates, we reject it. Only blob proofs are accepted into the pool. 2. At the time of fork activation, the implementer could (not mandatory) - Drop all old-format transactions - Convert old proofs to new format (computationally expensive) - Convert only when including in a locally produced block 3. After the fork has activated, only txs with cell proofs are accepted via p2p relay. 4. On RPC (eth_sendRawTransaction), txs with blob proofs may still be accepted and will be auto-converted by the node. At implementer discretion, this facility can be deprecated later when users have switched to new client libraries that can create cell proofs.
  */
 export const eth_sendRawTransaction = {
-  method: "eth_sendRawTransaction",
+  method: "eth_sendRawTransaction" as const,
   params: Schema.Tuple([
     /**
      * Transaction
@@ -2041,7 +2041,7 @@ export const eth_sendRawTransaction = {
  * Signs and submits a transaction.
  */
 export const eth_sendTransaction = {
-  method: "eth_sendTransaction",
+  method: "eth_sendTransaction" as const,
   params: Schema.Tuple([
     /**
      * Transaction
@@ -2180,7 +2180,7 @@ export const eth_sendTransaction = {
  * Returns an EIP-191 signature over the provided data.
  */
 export const eth_sign = {
-  method: "eth_sign",
+  method: "eth_sign" as const,
   params: Schema.Tuple([
     /**
      * Address
@@ -2203,7 +2203,7 @@ export const eth_sign = {
  * Returns an RLP encoded transaction signed by the specified account.
  */
 export const eth_signTransaction = {
-  method: "eth_signTransaction",
+  method: "eth_signTransaction" as const,
   params: Schema.Tuple([
     /**
      * Transaction
@@ -2222,7 +2222,7 @@ export const eth_signTransaction = {
  * Executes a sequence of message calls building on each other's state without creating transactions on the block chain, optionally overriding block and state data
  */
 export const eth_simulateV1 = {
-  method: "eth_simulateV1",
+  method: "eth_simulateV1" as const,
   params: Schema.Tuple([
     /**
      * Payload
@@ -2339,7 +2339,7 @@ export const eth_simulateV1 = {
  * Returns an object with data about the sync status or false.
  */
 export const eth_syncing = {
-  method: "eth_syncing",
+  method: "eth_syncing" as const,
   params: Schema.Tuple([]),
   /**
    * Syncing status
@@ -2353,7 +2353,7 @@ export const eth_syncing = {
  * Uninstalls a filter with given id.
  */
 export const eth_uninstallFilter = {
-  method: "eth_uninstallFilter",
+  method: "eth_uninstallFilter" as const,
   params: Schema.Tuple([
     /**
      * Filter identifier
@@ -2372,7 +2372,7 @@ export const eth_uninstallFilter = {
  * Returns the current network ID. This is usually equivalent to the chainID, but may differ from it for some legacy networks or special testnets.
  */
 export const net_version = {
-  method: "net_version",
+  method: "net_version" as const,
   params: Schema.Tuple([]),
   /**
    * Network ID
@@ -2401,7 +2401,7 @@ export const net_version = {
 - It is strongly recommended that this method be disabled by default.
  */
 export const testing_buildBlockV1 = {
-  method: "testing_buildBlockV1",
+  method: "testing_buildBlockV1" as const,
   params: Schema.Tuple([
     /**
      * Parent block hash
@@ -2508,7 +2508,7 @@ for inclusion in the next block(s). Queued transactions have nonce gaps and
 are scheduled for future execution.
  */
 export const txpool_content = {
-  method: "txpool_content",
+  method: "txpool_content" as const,
   params: Schema.Tuple([]),
   /**
    * Transaction pool content
@@ -2525,7 +2525,7 @@ export const txpool_content = {
 address, grouped by nonce. This is a filtered version of txpool_content.
  */
 export const txpool_contentFrom = {
-  method: "txpool_contentFrom",
+  method: "txpool_contentFrom" as const,
   params: Schema.Tuple([
     /**
      * address
@@ -2548,7 +2548,7 @@ inclusion in the next block(s), as well as ones that are scheduled for future
 execution (transactions with nonce gaps).
  */
 export const txpool_status = {
-  method: "txpool_status",
+  method: "txpool_status" as const,
   params: Schema.Tuple([]),
   /**
    * Transaction pool status
