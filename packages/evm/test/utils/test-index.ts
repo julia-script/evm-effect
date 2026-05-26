@@ -240,7 +240,7 @@ export const readStateTest = Effect.fn("readStateTest")(function* (
     onExcessProperty: "preserve",
     errors: "first",
   }).pipe(Effect.tapError((error) => Console.error(error.message)));
-  return decoded;
+  return { ...decoded, _raw: JSON.stringify(test, null, 2) };
 });
 
 export const BlockChainTestTransaction = Schema.Struct({
@@ -340,5 +340,5 @@ export const readBlockchainTest = Effect.fn("readBlockchainTest")(function* (
     onExcessProperty: "preserve",
     errors: "first",
   }).pipe(Effect.tapError((error) => Console.error(error.message)));
-  return decoded;
+  return { ...decoded, _raw: JSON.stringify(test, null, 2) };
 });

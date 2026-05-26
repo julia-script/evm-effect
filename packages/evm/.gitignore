@@ -1,2 +1,4 @@
 test-fixtures
 .tmp-cached-test-status
+
+test/traces/

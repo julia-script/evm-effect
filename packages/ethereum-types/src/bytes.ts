@@ -248,6 +248,7 @@ export class Bytes20 extends Schema.TaggedClass<Bytes20>("Bytes20")("Bytes20", {
   get length(): number {
     return 20;
   }
+
   [Equal.symbol](that: Equal.Equal): boolean {
     if ("value" in that && that.value instanceof Uint8Array) {
       return uint8ArrayEquals(this.value, that.value);

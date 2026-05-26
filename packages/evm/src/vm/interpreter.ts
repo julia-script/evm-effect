@@ -238,6 +238,9 @@ const executeLoop: () => Effect.Effect<void, EthereumException, Evm | Fork> =
       yield* evmTrace(OpStart({ op: opcode, invalidOpcode: !op }));
       yield* op.pipe(Effect.withSpan(`[${pc}]${getOpcodeName(opcode)}`));
       yield* evmTrace(OpEnd());
+      // const depth = Number(evm.message.depth.value);
+
+      // console.log(`${'. '.repeat(depth)}[${pc}]${getOpcodeName(opcode)}`);
 
       i++;
       if (i % 100000 === 0) {
