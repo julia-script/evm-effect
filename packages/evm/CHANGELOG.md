@@ -1,5 +1,32 @@
 # @evm-effect/evm
 
+## 0.2.0
+
+### Minor Changes
+
+- [`4c6ba10`](https://github.com/julia-script/evm-effect/commit/4c6ba100738dee263f0abca84e22f653c79c2dd2) Thanks [@julia-script](https://github.com/julia-script)! - - Add EIP-3155 structured trace emission (`Eip3155Tracer`, opcode/summary schemas, `jsonlFileEmit`).
+
+  - Refactor `EvmTracer` events (`OpStart`/`OpEnd`, `GasAndRefund`, precompile handling) for opcode-level tracing.
+  - Wire execution-spec test CLI `--trace` to write JSONL traces and fixture `input.json` under `test/traces/`.
+
+- [#27](https://github.com/julia-script/evm-effect/pull/27) [`e74c16c`](https://github.com/julia-script/evm-effect/commit/e74c16c64c1419d14b39de14ed77d35c4c6c6435) Thanks [@julia-script](https://github.com/julia-script)! - - Add Osaka fork support (EIP-7934 block size limit, EIP-7825 blob gas, EIP-7951 `p256verify` precompile, updated `modexp` implementation).
+  - Move transaction types, RLP encode/decode, and signing helpers from `@evm-effect/crypto` into `@evm-effect/evm`; export `BlockChain`, `Block`, `Header`, `State`, and transaction APIs from the evm entrypoint.
+  - Rework block/header/account RLP models with Effect-based encoding and expanded block validation.
+  - Replace the old Vitest fixture runner with an execution-specs test CLI for state and blockchain tests (BAL fixtures v7.1.1).
+  - Add ethash and `keccak512` to `@evm-effect/crypto` (transaction exports removed).
+  - Refine `@evm-effect/ethereum-types` byte helpers (`leftPadBuffer`, singleton `empty` values, `bufferRead`) and numeric/domain types.
+  - Improve `@evm-effect/rlp` `decodeTo` typing and decoding; adjust `@evm-effect/shared` JSON stringify for tagged values.
+
+### Patch Changes
+
+- Updated dependencies [[`8743399`](https://github.com/julia-script/evm-effect/commit/8743399b3708fad1f68c8e1f422242d66a8c1e2a), [`e74c16c`](https://github.com/julia-script/evm-effect/commit/e74c16c64c1419d14b39de14ed77d35c4c6c6435)]:
+  - @evm-effect/ethereum-types@0.1.0
+  - @evm-effect/rpc@0.1.0
+  - @evm-effect/crypto@0.3.0
+  - @evm-effect/rlp@0.1.13
+  - @evm-effect/shared@0.0.9
+  - @evm-effect/solc@0.2.8
+
 ## 0.1.3
 
 ### Patch Changes

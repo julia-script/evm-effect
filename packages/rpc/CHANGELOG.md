@@ -1,0 +1,17 @@
+# @evm-effect/rpc
+
+## 0.1.0
+
+### Minor Changes
+
+- [`8743399`](https://github.com/julia-script/evm-effect/commit/8743399b3708fad1f68c8e1f422242d66a8c1e2a) Thanks [@julia-script](https://github.com/julia-script)! - - Restructure schema modules: hand-written codecs live in `@evm-effect/ethereum-types/schemas/base-types.ts`; OpenRPC-generated RPC structs live in `@evm-effect/rpc` (`src/schemas/generated-schemas.ts`).
+  - Add `EthTypes` namespace on the ethereum-types entrypoint (primitives and base codecs). RPC schemas export from `@evm-effect/rpc`.
+  - Add hex/string codecs for Ethereum primitives (`Bytes*`, `Address`, `Uint`, `U8`, `U32`, `U64`, `U256`, `Int`) plus `EntriesFromRecord` / `HashMapFromRecord` helpers.
+  - Add `U32` numeric type and include it in `AnyUint` / `FixedUnsigned` unions.
+  - Expand `gen-schemas` to generate Effect schemas from [ethereum/execution-apis](https://github.com/ethereum/execution-apis) OpenRPC specs (Biome formatting).
+  - Bump Effect catalog to `4.0.0-beta.66`.
+
+### Patch Changes
+
+- Updated dependencies [[`8743399`](https://github.com/julia-script/evm-effect/commit/8743399b3708fad1f68c8e1f422242d66a8c1e2a), [`e74c16c`](https://github.com/julia-script/evm-effect/commit/e74c16c64c1419d14b39de14ed77d35c4c6c6435)]:
+  - @evm-effect/ethereum-types@0.1.0
