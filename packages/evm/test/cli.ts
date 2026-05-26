@@ -1,14 +1,16 @@
 #! /usr/bin/env pnpx tsx
 
 import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { NodeServices } from "@effect/platform-node";
-import { Console, Effect, Layer, Logger, Result } from "effect";
+import { Console, Effect, FileSystem, Layer, Logger, Result } from "effect";
 import type { LiteralValue } from "effect/SchemaAST";
 import { CliError, Command, Flag } from "effect/unstable/cli";
 import { DevTools } from "effect/unstable/devtools";
+import { Eip3155Tracer, jsonlFileEmit } from "../src/Eip3155Tracer.js";
 import { EvmTracer } from "../src/trace.js";
 import { runBlockchainTest } from "./blockchain-test/index.js";
-import { Eip3155Tracer } from "./Eip3155Tracer.js";
+import { testDir } from "./constants.js";
 import { runStateTest } from "./state-tests/index.js";
 import { ExecutionSpecTestError } from "./utils/ExecutionSpecTestError.js";
 import {
@@ -80,8 +82,6 @@ const traceFlag = Flag.boolean("trace").pipe(Flag.withDefault(false));
 const emitReportFlag = Flag.boolean("emit-report").pipe(
   Flag.withDefault(false),
 );
-
-const traceLayer = Layer.effect(EvmTracer, Eip3155Tracer());
 
 const supportedTestFormats = [
   "state_test",
@@ -163,12 +163,20 @@ const main = Command.make("main", {
       for (let i = config.skip; i < filtered.length; i++) {
         const now = performance.now();
         const testCase = filtered[i];
-        const maybeTrace = config.trace ? traceLayer : Layer.empty;
+        const testCaseDir = path.join(testDir, "traces", testCase.id);
+        const maybeTrace = config.trace
+          ? Layer.effect(
+              EvmTracer,
+              Eip3155Tracer((entry) =>
+                jsonlFileEmit(testCaseDir, NodeServices.layer)(entry),
+              ),
+            )
+          : Layer.empty;
 
         const header = `[${i}/${filtered.length}] ${testCase.fixture_hash.slice(0, 10)} [${testCase.fork}] ${testCase.id}`;
 
         yield* Console.log(header);
-        const result = yield* runTest(testCase).pipe(
+        const result = yield* runTest(testCase, testCaseDir).pipe(
           Effect.provide(maybeTrace),
         );
         const duration = performance.now() - now;
@@ -239,17 +247,24 @@ const main = Command.make("main", {
   ),
 );
 
-// const {}
 const runTest = Effect.fn("runTest")(function* (
   testCase: typeof IndexEntry.Type,
+  testCaseDir: string,
 ) {
+  const fs = yield* FileSystem.FileSystem;
   if (testCase.format === "state_test") {
-    const stateTest = yield* readStateTest(testCase);
+    const { _raw, ...stateTest } = yield* readStateTest(testCase);
+    yield* fs.makeDirectory(testCaseDir, { recursive: true });
+    yield* fs.writeFileString(path.join(testCaseDir, "input.json"), _raw);
+
     return yield* runStateTest(stateTest).pipe(Effect.result);
   }
 
   if (testCase.format === "blockchain_test") {
-    const blockchainTest = yield* readBlockchainTest(testCase);
+    const { _raw, ...blockchainTest } = yield* readBlockchainTest(testCase);
+    yield* fs.makeDirectory(testCaseDir, { recursive: true });
+    yield* fs.writeFileString(path.join(testCaseDir, "input.json"), _raw);
+
     return yield* runBlockchainTest(blockchainTest).pipe(Effect.result);
   }
   return Result.fail(
