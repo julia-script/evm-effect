@@ -664,6 +664,13 @@ export const ForkchoiceStateV1 = Schema.Struct({
  */
 export const GenericCallTransaction = Schema.Struct({
   /**
+   * type
+   *
+   * type
+   * Default: 0x2
+   */
+  type: EthTypes.HexString.pipe(Schema.optional),
+  /**
  * accessList
  *
  * accessList
@@ -747,13 +754,6 @@ Default: 0
    */
   to: EthTypes.HexString.pipe(Schema.optional),
   /**
-   * type
-   *
-   * type
-   * Default: 0x2
-   */
-  type: EthTypes.HexString.pipe(Schema.optional),
-  /**
    * value
    *
    * value
@@ -768,6 +768,12 @@ Default: 0
  * Transaction object generic to all types
  */
 export const GenericTransaction = Schema.Struct({
+  /**
+   * type
+   *
+   * type
+   */
+  type: EthTypes.HexString.pipe(Schema.optional),
   /**
    * accessList
    *
@@ -861,12 +867,6 @@ export const GenericTransaction = Schema.Struct({
    * to address
    */
   to: Schema.Union([Schema.Null, EthTypes.HexString]).pipe(Schema.optional),
-  /**
-   * type
-   *
-   * type
-   */
-  type: EthTypes.HexString.pipe(Schema.optional),
   /**
    * value
    *
@@ -1109,6 +1109,12 @@ export const PayloadStatusV1 = Schema.Struct({
  */
 export const ReceiptInfo = Schema.Struct({
   /**
+   * type
+   *
+   * type
+   */
+  type: EthTypes.HexString.pipe(Schema.optional),
+  /**
    * blobGasPrice
    *
    * blob gas price
@@ -1215,12 +1221,6 @@ export const ReceiptInfo = Schema.Struct({
    * transaction index
    */
   transactionIndex: EthTypes.BigIntFromString,
-  /**
-   * type
-   *
-   * type
-   */
-  type: EthTypes.HexString.pipe(Schema.optional),
 });
 
 /**
@@ -1462,6 +1462,12 @@ export const SyncingStatus = Schema.Union([
  */
 export const Transaction1559Unsigned = Schema.Struct({
   /**
+   * type
+   *
+   * type
+   */
+  type: Schema.tag("0x2"),
+  /**
    * accessList
    *
    * accessList
@@ -1521,14 +1527,6 @@ export const Transaction1559Unsigned = Schema.Struct({
    */
   to: Schema.Union([Schema.Null, EthTypes.HexString]).pipe(Schema.optional),
   /**
-   * type
-   *
-   * type
-   */
-  type: EthTypes.BigIntFromString.pipe(
-    Schema.refine((value): value is 2n => value === 2n),
-  ),
-  /**
    * value
    *
    * value
@@ -1557,6 +1555,12 @@ export const Transaction1559Signed = Transaction1559Unsigned.mapFields(
  * EIP-2930 transaction.
  */
 export const Transaction2930Unsigned = Schema.Struct({
+  /**
+   * type
+   *
+   * type
+   */
+  type: Schema.tag("0x1"),
   /**
    * accessList
    *
@@ -1603,14 +1607,6 @@ export const Transaction2930Unsigned = Schema.Struct({
    */
   to: Schema.Union([Schema.Null, EthTypes.HexString]).pipe(Schema.optional),
   /**
-   * type
-   *
-   * type
-   */
-  type: EthTypes.BigIntFromString.pipe(
-    Schema.refine((value): value is 1n => value === 1n),
-  ),
-  /**
    * value
    *
    * value
@@ -1639,6 +1635,12 @@ export const Transaction2930Signed = Transaction2930Unsigned.mapFields(
  * EIP-4844 transaction.
  */
 export const Transaction4844Unsigned = Schema.Struct({
+  /**
+   * type
+   *
+   * type
+   */
+  type: Schema.tag("0x3"),
   /**
    * accessList
    *
@@ -1713,14 +1715,6 @@ export const Transaction4844Unsigned = Schema.Struct({
    */
   to: EthTypes.HexString,
   /**
-   * type
-   *
-   * type
-   */
-  type: EthTypes.BigIntFromString.pipe(
-    Schema.refine((value): value is 3n => value === 3n),
-  ),
-  /**
    * value
    *
    * value
@@ -1749,6 +1743,12 @@ export const Transaction4844Signed = Transaction4844Unsigned.mapFields(
  * EIP-7702 transaction
  */
 export const Transaction7702Unsigned = Schema.Struct({
+  /**
+   * type
+   *
+   * type
+   */
+  type: Schema.tag("0x4"),
   /**
    * accessList
    *
@@ -1815,14 +1815,6 @@ export const Transaction7702Unsigned = Schema.Struct({
    */
   to: EthTypes.HexString,
   /**
-   * type
-   *
-   * type
-   */
-  type: EthTypes.BigIntFromString.pipe(
-    Schema.refine((value): value is 4n => value === 4n),
-  ),
-  /**
    * value
    *
    * value
@@ -1851,6 +1843,12 @@ export const Transaction7702Signed = Transaction7702Unsigned.mapFields(
  * Legacy transaction.
  */
 export const TransactionLegacyUnsigned = Schema.Struct({
+  /**
+   * type
+   *
+   * type
+   */
+  type: Schema.tag("0x0"),
   /**
    * chainId
    *
@@ -1889,14 +1887,6 @@ export const TransactionLegacyUnsigned = Schema.Struct({
    * to address
    */
   to: Schema.Union([Schema.Null, EthTypes.HexString]).pipe(Schema.optional),
-  /**
-   * type
-   *
-   * type
-   */
-  type: EthTypes.BigIntFromString.pipe(
-    Schema.refine((value): value is 0n => value === 0n),
-  ),
   /**
    * value
    *
