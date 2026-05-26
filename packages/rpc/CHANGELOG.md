@@ -1,5 +1,16 @@
 # @evm-effect/rpc
 
+## 0.1.1
+
+### Patch Changes
+
+- [`4fe7633`](https://github.com/julia-script/evm-effect/commit/4fe76338f3796d65f0b264731f1ad32230130cb6) Thanks [@julia-script](https://github.com/julia-script)! - - Add `as const` to generated RPC method names for literal type inference.
+
+  - Fix codegen import path for `JsonSchemaEncoded` (`openrpc-schema.ts`).
+
+- [`71dcab0`](https://github.com/julia-script/evm-effect/commit/71dcab0ea7743a230eb22570031092dd9c220456) Thanks [@julia-script](https://github.com/julia-script)! - - Generate required transaction `type` fields with `Schema.tag` from OpenRPC patterns instead of bigint refinements.
+  - Emit struct `type` properties first in generated schemas for consistent field ordering.
+
 ## 0.1.0
 
 ### Minor Changes
