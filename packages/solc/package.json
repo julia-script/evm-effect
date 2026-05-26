@@ -1,6 +1,6 @@
 {
   "name": "@evm-effect/solc",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "type": "module",
   "description": "Effect-TS bindings for compiling Solidity with solc (Node or Next.js worker)",
   "license": "MIT",

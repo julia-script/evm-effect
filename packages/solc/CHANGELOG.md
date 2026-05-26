@@ -1,5 +1,13 @@
 # @evm-effect/solc
 
+## 0.2.8
+
+### Patch Changes
+
+- Updated dependencies [[`8743399`](https://github.com/julia-script/evm-effect/commit/8743399b3708fad1f68c8e1f422242d66a8c1e2a), [`e74c16c`](https://github.com/julia-script/evm-effect/commit/e74c16c64c1419d14b39de14ed77d35c4c6c6435)]:
+  - @evm-effect/ethereum-types@0.1.0
+  - @evm-effect/crypto@0.3.0
+
 ## 0.2.7
 
 ### Patch Changes

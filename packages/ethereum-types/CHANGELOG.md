@@ -1,5 +1,30 @@
 # @evm-effect/ethereum-types
 
+## 0.1.0
+
+### Minor Changes
+
+- [`8743399`](https://github.com/julia-script/evm-effect/commit/8743399b3708fad1f68c8e1f422242d66a8c1e2a) Thanks [@julia-script](https://github.com/julia-script)! - - Restructure schema modules: hand-written codecs live in `@evm-effect/ethereum-types/schemas/base-types.ts`; OpenRPC-generated RPC structs live in `@evm-effect/rpc` (`src/schemas/generated-schemas.ts`).
+
+  - Add `EthTypes` namespace on the ethereum-types entrypoint (primitives and base codecs). RPC schemas export from `@evm-effect/rpc`.
+  - Add hex/string codecs for Ethereum primitives (`Bytes*`, `Address`, `Uint`, `U8`, `U32`, `U64`, `U256`, `Int`) plus `EntriesFromRecord` / `HashMapFromRecord` helpers.
+  - Add `U32` numeric type and include it in `AnyUint` / `FixedUnsigned` unions.
+  - Expand `gen-schemas` to generate Effect schemas from [ethereum/execution-apis](https://github.com/ethereum/execution-apis) OpenRPC specs (Biome formatting).
+  - Bump Effect catalog to `4.0.0-beta.66`.
+
+- [#27](https://github.com/julia-script/evm-effect/pull/27) [`e74c16c`](https://github.com/julia-script/evm-effect/commit/e74c16c64c1419d14b39de14ed77d35c4c6c6435) Thanks [@julia-script](https://github.com/julia-script)! - - Add Osaka fork support (EIP-7934 block size limit, EIP-7825 blob gas, EIP-7951 `p256verify` precompile, updated `modexp` implementation).
+  - Move transaction types, RLP encode/decode, and signing helpers from `@evm-effect/crypto` into `@evm-effect/evm`; export `BlockChain`, `Block`, `Header`, `State`, and transaction APIs from the evm entrypoint.
+  - Rework block/header/account RLP models with Effect-based encoding and expanded block validation.
+  - Replace the old Vitest fixture runner with an execution-specs test CLI for state and blockchain tests (BAL fixtures v7.1.1).
+  - Add ethash and `keccak512` to `@evm-effect/crypto` (transaction exports removed).
+  - Refine `@evm-effect/ethereum-types` byte helpers (`leftPadBuffer`, singleton `empty` values, `bufferRead`) and numeric/domain types.
+  - Improve `@evm-effect/rlp` `decodeTo` typing and decoding; adjust `@evm-effect/shared` JSON stringify for tagged values.
+
+### Patch Changes
+
+- Updated dependencies [[`e74c16c`](https://github.com/julia-script/evm-effect/commit/e74c16c64c1419d14b39de14ed77d35c4c6c6435)]:
+  - @evm-effect/shared@0.0.9
+
 ## 0.0.9
 
 ### Patch Changes
