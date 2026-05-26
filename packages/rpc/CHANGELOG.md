@@ -1,5 +1,12 @@
 # @evm-effect/rpc
 
+## 0.1.1
+
+### Patch Changes
+
+- [`79a9c75`](https://github.com/julia-script/evm-effect/commit/79a9c7557f24f74c2e78d79d9c78e43560dec073) Thanks [@julia-script](https://github.com/julia-script)! - - Add `as const` to generated RPC method names for literal type inference.
+  - Fix codegen import path for `JsonSchemaEncoded` (`openrpc-schema.ts`).
+
 ## 0.1.0
 
 ### Minor Changes

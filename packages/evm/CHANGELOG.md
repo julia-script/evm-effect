@@ -1,5 +1,12 @@
 # @evm-effect/evm
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`79a9c75`](https://github.com/julia-script/evm-effect/commit/79a9c7557f24f74c2e78d79d9c78e43560dec073)]:
+  - @evm-effect/rpc@0.1.1
+
 ## 0.2.0
 
 ### Minor Changes
