@@ -1,4 +1,4 @@
-import type { JsonSchemaEncoded } from "./types.ts";
+import type { JsonSchemaEncoded } from "./openrpc-schema.ts";
 
 /** Populated before schema generation so $ref can resolve nested JSON pointers. */
 export const codegenContext: {
