@@ -1,6 +1,6 @@
 {
   "name": "@evm-effect/rpc",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Effect schemas for Ethereum JSON-RPC (OpenRPC / execution-apis)",
   "license": "MIT",
   "repository": {
