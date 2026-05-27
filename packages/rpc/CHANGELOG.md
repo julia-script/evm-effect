@@ -1,5 +1,12 @@
 # @evm-effect/rpc
 
+## 0.1.2
+
+### Patch Changes
+
+- [`1fad287`](https://github.com/julia-script/evm-effect/commit/1fad28797e3fa4f79927d3c1a80df4d45087af4d) Thanks [@julia-script](https://github.com/julia-script)! - - Align RPC codegen scripts with ESM `.js` runtime imports and updated OpenRPC schema typing.
+  - Switch generated schema imports to `@evm-effect/ethereum-types` package entrypoint and refresh generated RPC/schema outputs.
+
 ## 0.1.1
 
 ### Patch Changes
