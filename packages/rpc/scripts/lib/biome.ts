@@ -1,12 +1,12 @@
 import * as fs from "node:fs/promises";
 import { Biome, Distribution } from "@biomejs/js-api";
 import { Data, Effect } from "effect";
-import { biomeConfigPath } from "./paths";
+import { biomeConfigPath } from "./paths.js";
 
 const biome = await Biome.create({ distribution: Distribution.NODE });
 const { projectKey } = biome.openProject("");
 
-const biomeConfig = await fs.readFile(biomeConfigPath);
+const biomeConfig = await fs.readFile(biomeConfigPath, "utf-8");
 
 export class BiomeError extends Data.TaggedError("BiomeError")<{
   readonly message: string;

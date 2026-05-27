@@ -1,26 +1,27 @@
 import { Effect, Schema } from "effect";
-import { TypeSchema } from "./types.ts";
+import { TypeSchema } from "./types.js";
 export interface JsonSchemaEncoded {
-  $ref?: string;
-  items?: JsonSchemaEncoded;
-  title?: string;
+  $ref?: string | undefined;
+  items?: JsonSchemaEncoded | undefined;
+  title?: string | undefined;
   type?:
     | (typeof TypeSchema)["Encoded"]
-    | readonly (typeof TypeSchema)["Encoded"][];
-  oneOf?: readonly JsonSchemaEncoded[];
-  anyOf?: readonly JsonSchemaEncoded[];
-  allOf?: readonly JsonSchemaEncoded[];
-  properties?: Record<string, JsonSchemaEncoded>;
-  required?: readonly string[];
-  additionalProperties?: boolean | JsonSchemaEncoded;
-  description?: string;
-  patternProperties?: Record<string, JsonSchemaEncoded>;
-  enum?: readonly string[];
-  const?: string | number | boolean | null;
-  pattern?: string;
-  not?: JsonSchemaEncoded;
-  maximum?: number;
-  minimum?: number;
+    | readonly (typeof TypeSchema)["Encoded"][]
+    | undefined;
+  oneOf?: readonly JsonSchemaEncoded[] | undefined;
+  anyOf?: readonly JsonSchemaEncoded[] | undefined;
+  allOf?: readonly JsonSchemaEncoded[] | undefined;
+  properties?: Record<string, JsonSchemaEncoded> | undefined;
+  required?: readonly string[] | undefined;
+  additionalProperties?: boolean | JsonSchemaEncoded | undefined;
+  description?: string | undefined;
+  patternProperties?: Record<string, JsonSchemaEncoded> | undefined;
+  enum?: readonly string[] | undefined;
+  const?: string | number | boolean | null | undefined;
+  pattern?: string | undefined;
+  not?: JsonSchemaEncoded | undefined;
+  maximum?: number | undefined;
+  minimum?: number | undefined;
 }
 
 const jsonSchema = Schema.suspend(

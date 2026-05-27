@@ -1,21 +1,20 @@
 import { ConfigProvider, Effect } from "effect";
 import { FileSystem } from "effect/FileSystem";
 import { dedent } from "ts-dedent";
-import { genEffectSchema } from "../codegen/generate.ts";
-import { genHeaderComment } from "../codegen/header.ts";
-import { formatGeneratedSchemas } from "./biome.ts";
-import { codegenContext } from "./codegen-context.ts";
-import { ignoredSchemas } from "./constants.ts";
-import { fetchOpenRpcSpec } from "./fetch-openrpc.ts";
-import type { OpenRpcDoc } from "./openrpc-schema.ts";
-import { generatedRpcSchemasPath, generatedSchemasPath } from "./paths.ts";
-import { topologicalSort } from "./topological-sort.ts";
+import { genEffectSchema } from "../codegen/generate.js";
+import { genHeaderComment } from "../codegen/header.js";
+import { formatGeneratedSchemas } from "./biome.js";
+import { codegenContext } from "./codegen-context.js";
+import { ignoredSchemas } from "./constants.js";
+import { fetchOpenRpcSpec } from "./fetch-openrpc.js";
+import type { JsonSchemaEncoded, OpenRpcDoc } from "./openrpc-schema.ts";
+import { generatedRpcSchemasPath, generatedSchemasPath } from "./paths.js";
+import { topologicalSort } from "./topological-sort.js";
 import type { SchemaEntry } from "./types.ts";
 
 const generatedFileHeader = dedent`
   import { Schema, Tuple } from 'effect';
-  import * as EthTypes from '@evm-effect/ethereum-types/schemas/base-types';
-
+  import EthTypes from '@evm-effect/ethereum-types';
 
   `;
 
@@ -24,7 +23,10 @@ export const generateSchemasProgram = Effect.gen(function* () {
   const openrpc = yield* fetchOpenRpcSpec();
 
   const schemas = openrpc.components.schemas;
-  codegenContext.componentsSchemas = schemas;
+  codegenContext.componentsSchemas = schemas as Record<
+    string,
+    JsonSchemaEncoded
+  >;
 
   const generatedSchemas: SchemaEntry[] = [];
   for (const [name, schema] of Object.entries(schemas)) {
@@ -56,13 +58,11 @@ export const generateRpcSchemasProgram = Effect.gen(function* () {
 
   const header = `
 
-  import { Schema, Tuple } from 'effect';
-  import * as EthTypes from '@evm-effect/ethereum-types/schemas/base-types';
+  import { Schema  } from 'effect';
+  import EthTypes from '@evm-effect/ethereum-types';
   import * as Components from './generated-schemas.js';
 
   `;
-  // codegenContext.componentsSchemas = schemas;
-  // console.log(openrpc.methods);
   const results: string[] = [];
   for (const method of openrpc.methods) {
     const result = yield* generateRpcSchemas(method);
@@ -74,7 +74,6 @@ export const generateRpcSchemasProgram = Effect.gen(function* () {
     generatedRpcSchemasPath,
     `${header}${formatted.content}`,
   );
-  // console.log(results);
 }).pipe(Effect.scoped);
 
 const generateHeader = Effect.fn("generateHeader")(function* (
@@ -123,7 +122,6 @@ export const generateRpcSchemas = Effect.fn("generateRpcSchemas")(function* (
     out += `    ${result.schema},\n`;
   }
   out += `  ]),\n`;
-  // console.log(method)
   const result = yield* genEffectSchema(
     method.result.name,
     method.result.schema,
@@ -136,20 +134,14 @@ export const generateRpcSchemas = Effect.fn("generateRpcSchemas")(function* (
   out += resultHeader;
   out += `  result: ${result.schema},\n`;
 
-  // out += `  result: Schema.Tuple([\n`
-  // out += `  ]),\n`;
-
   if (method.errors) {
     out += `  errors: Schema.Union([\n`;
     for (const error of method.errors) {
       out += "Schema.Struct({\n";
       out += `    code: Schema.Literal(${error.code}),\n`;
       out += `    message: Schema.Literal("${error.message}"),\n`;
-      // out += `    data: Schema.Unknown.pipe(Schema.optional),\n`;
       out += `}),\n`;
-      //   const header = yield* generateHeader(error.name, error.description);
-      //   out += header;
-      //   out += `    ${error.schema},\n`;
+
       // }
     }
     out += `  ]),\n`;

@@ -2,15 +2,15 @@ import { Config, Effect } from "effect";
 import {
   codegenContext,
   derefComponentsSchemaRef,
-} from "../lib/codegen-context.ts";
+} from "../lib/codegen-context.js";
 import {
   COMPONENTS_SCHEMA_PREFIX,
   ignoredSchemas,
   refToEthType,
-} from "../lib/constants.ts";
+} from "../lib/constants.js";
 import type { JsonSchemaEncoded } from "../lib/openrpc-schema.ts";
 import type { SchemaEntry } from "../lib/types.ts";
-import { genEffectSchema } from "./generate.ts";
+import { genEffectSchema } from "./generate.js";
 
 const refPrefix = Config.string("refPrefix").pipe(Config.withDefault(""));
 

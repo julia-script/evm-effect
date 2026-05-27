@@ -1,12 +1,13 @@
 import { Effect } from "effect";
-import type { JsonSchemaEncoded, SchemaEntry } from "../lib/types.ts";
-import { genEffectAllOfSchema } from "./all-of.ts";
-import { genEffectArraySchema } from "./array.ts";
-import { genEffectEnumSchema } from "./enum.ts";
-import { genEffectObjectSchema } from "./object.ts";
-import { genEffectPatternPropertiesSchema } from "./pattern-properties.ts";
-import { genEffectRefSchema } from "./ref.ts";
-import { genEffectAnyOfSchema, genEffectOneOfSchema } from "./union.ts";
+import type { JsonSchemaEncoded } from "../lib/openrpc-schema.js";
+import type { SchemaEntry } from "../lib/types.js";
+import { genEffectAllOfSchema } from "./all-of.js";
+import { genEffectArraySchema } from "./array.js";
+import { genEffectEnumSchema } from "./enum.js";
+import { genEffectObjectSchema } from "./object.js";
+import { genEffectPatternPropertiesSchema } from "./pattern-properties.js";
+import { genEffectRefSchema } from "./ref.js";
+import { genEffectAnyOfSchema, genEffectOneOfSchema } from "./union.js";
 
 const hexLiteralPattern = /^\^(0x[0-9a-fA-F]+)\$$/;
 

@@ -1,8 +1,10 @@
-import * as EthTypes from "@evm-effect/ethereum-types/schemas/base-types";
-import { Schema } from "effect";
-import * as Components from "./generated-schemas.js";
 
-/**
+
+  import { Schema  } from 'effect';
+  import EthTypes from '@evm-effect/ethereum-types';
+  import * as Components from './generated-schemas.js';
+
+  /**
  * debug_getBadBlocks RPC method
  *
  * Returns an array of recent bad blocks that the client has seen on the network.

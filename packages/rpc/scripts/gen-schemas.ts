@@ -5,7 +5,7 @@ import { Effect } from "effect";
 import {
   generateRpcSchemasProgram,
   generateSchemasProgram,
-} from "./lib/program.ts";
+} from "./lib/program.js";
 
 await Effect.runPromise(
   generateSchemasProgram.pipe(Effect.provide(NodeServices.layer)),

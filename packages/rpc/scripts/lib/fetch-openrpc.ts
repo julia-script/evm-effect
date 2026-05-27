@@ -1,10 +1,10 @@
-import path from "node:path";
+import * as path from "node:path";
 import { Console, Effect, Schema, Stream } from "effect";
 import { FileSystem } from "effect/FileSystem";
 import { ChildProcess } from "effect/unstable/process";
 import type { ChildProcessHandle } from "effect/unstable/process/ChildProcessSpawner";
-import { OpenRpcDoc } from "./openrpc-schema.ts";
-import { cloneDir, openRpcCachePath, root } from "./paths.ts";
+import { OpenRpcDoc } from "./openrpc-schema.js";
+import { cloneDir, openRpcCachePath, root } from "./paths.js";
 
 const cloneCommand = ChildProcess.make(
   "git",

@@ -1,6 +1,7 @@
 import { Effect } from "effect";
-import type { JsonSchemaEncoded, SchemaEntry } from "../lib/types.ts";
-import { genEffectSchema } from "./generate.ts";
+import type { JsonSchemaEncoded } from "../lib/openrpc-schema.js";
+import type { SchemaEntry } from "../lib/types.js";
+import { genEffectSchema } from "./generate.js";
 
 export const genEffectAllOfSchema = Effect.fn("genEffectAllOfSchema")(
   function* (

@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import type { JsonSchemaEncoded } from "../lib/types.ts";
+import type { JsonSchemaEncoded } from "../lib/openrpc-schema.js";
 
 export const genHeaderComment = Effect.fn("genHeaderComment")(function* (
   name: string,
