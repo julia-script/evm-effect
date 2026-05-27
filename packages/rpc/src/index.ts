@@ -4,4 +4,5 @@
  * @module
  */
 
-export * from "./schemas/generated-schemas.js";
+import * as Schemas from "./schemas/generated-schemas.js";
+export default Schemas;

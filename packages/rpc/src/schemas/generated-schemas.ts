@@ -1,5 +1,5 @@
-import { Schema, Tuple } from 'effect';
-import EthTypes from '@evm-effect/ethereum-types';
+import EthTypes from "@evm-effect/ethereum-types";
+import { Schema, Tuple } from "effect";
 /**
  * AccessListEntry
  *
@@ -2812,4 +2812,3 @@ export const notFound = Schema.Null;
  * normalized ratio
  */
 export const ratio = Schema.Number;
-
