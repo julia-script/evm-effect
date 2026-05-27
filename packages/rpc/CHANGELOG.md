@@ -1,5 +1,13 @@
 # @evm-effect/rpc
 
+## 0.2.0
+
+### Minor Changes
+
+- [`96c5c1f`](https://github.com/julia-script/evm-effect/commit/96c5c1f3a88a7b8459b6ee39c256c8832b9e1582) Thanks [@julia-script](https://github.com/julia-script)! - - Restructure package exports: the main entry default-exports component schemas; the `/schemas` entry exports `{ Components, Rpc }` namespaces instead of flat re-exports.
+  - Clean up generated RPC/schema import formatting.
+  - Switch monorepo TypeScript config to `module: esnext` and `moduleResolution: bundler` for improved bundler compatibility.
+
 ## 0.1.2
 
 ### Patch Changes
