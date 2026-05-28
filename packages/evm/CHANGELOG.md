@@ -1,5 +1,18 @@
 # @evm-effect/evm
 
+## 0.2.4
+
+### Patch Changes
+
+- [`5b7a4dc`](https://github.com/julia-script/evm-effect/commit/5b7a4dcb0e6fb29e6b89752b8007d2af274a6df9) Thanks [@julia-script](https://github.com/julia-script)! - - Add `EvmTypeError.invalidValue` and `EvmTypeError.invalidSize` static factory helpers.
+  - Fix incorrect `packages/evm/src/` import paths to relative imports across evm internals and state tests.
+- Updated dependencies [[`5b7a4dc`](https://github.com/julia-script/evm-effect/commit/5b7a4dcb0e6fb29e6b89752b8007d2af274a6df9)]:
+  - @evm-effect/ethereum-types@0.1.1
+  - @evm-effect/crypto@0.3.1
+  - @evm-effect/rlp@0.1.14
+  - @evm-effect/rpc@0.2.1
+  - @evm-effect/solc@0.2.9
+
 ## 0.2.3
 
 ### Patch Changes
