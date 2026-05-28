@@ -1,5 +1,12 @@
 # @evm-effect/ethereum-types
 
+## 0.1.1
+
+### Patch Changes
+
+- [`5b7a4dc`](https://github.com/julia-script/evm-effect/commit/5b7a4dcb0e6fb29e6b89752b8007d2af274a6df9) Thanks [@julia-script](https://github.com/julia-script)! - - Add `EvmTypeError.invalidValue` and `EvmTypeError.invalidSize` static factory helpers.
+  - Fix incorrect `packages/evm/src/` import paths to relative imports across evm internals and state tests.
+
 ## 0.1.0
 
 ### Minor Changes
