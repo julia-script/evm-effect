@@ -11,12 +11,6 @@ import {
 } from "@evm-effect/ethereum-types";
 import rlp from "@evm-effect/rlp";
 import { Effect, Predicate, Result, Schema } from "effect";
-import {
-  Access,
-  decodeTransaction,
-  encodeTransaction,
-  signTransaction,
-} from "packages/evm/src/transactions.js";
 import { dedent } from "ts-dedent";
 import {
   AccessListTransaction,
@@ -33,6 +27,12 @@ import {
   type Transaction,
 } from "../../src/index.js";
 import { Rlp } from "../../src/rlp.js";
+import {
+  Access,
+  decodeTransaction,
+  encodeTransaction,
+  signTransaction,
+} from "../../src/transactions.js";
 import { Log } from "../../src/types/Receipt.js";
 import { ExecutionSpecTestError } from "../utils/ExecutionSpecTestError.js";
 import { getFork } from "../utils/getFork.js";

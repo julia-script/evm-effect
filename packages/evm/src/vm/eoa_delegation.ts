@@ -1,9 +1,9 @@
 import { Address, Bytes, U64, U256 } from "@evm-effect/ethereum-types";
 import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { Effect, Equal, Option } from "effect";
-import { recoverAuthority } from "packages/evm/src/transactions.js";
 import { InvalidBlock } from "../exceptions.js";
 import State from "../state.js";
+import { recoverAuthority } from "../transactions.js";
 import type { Message } from "./message.js";
 import { Code } from "./runtime.js";
 

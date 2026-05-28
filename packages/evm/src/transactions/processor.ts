@@ -10,7 +10,6 @@ import rlp from "@evm-effect/rlp";
 import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { HashSet } from "@evm-effect/shared/hashset";
 import { Effect, Option, Result, type Schema } from "effect";
-import { encodeTransaction } from "packages/evm/src/transactions.js";
 import type { BlockOutput } from "../blockchain.js";
 import { logsBloom } from "../receipts/bloom.js";
 import * as State from "../state.js";
@@ -25,7 +24,11 @@ import {
   TransactionProcessingEnd,
   TransactionProcessingStart,
 } from "../trace.js";
-import { LegacyTransaction, type Transaction } from "../transactions.js";
+import {
+  encodeTransaction,
+  LegacyTransaction,
+  type Transaction,
+} from "../transactions.js";
 import { LegacyReceipt, Receipt } from "../types/Receipt.js";
 import { Fork } from "../vm/ForkService.js";
 import { processMessageCall } from "../vm/interpreter.js";

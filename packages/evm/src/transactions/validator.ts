@@ -7,10 +7,6 @@ import {
 } from "@evm-effect/ethereum-types";
 import { annotateSafe } from "@evm-effect/shared/annotateSafe";
 import { Data, Effect } from "effect";
-import {
-  recoverSender,
-  type Transaction,
-} from "packages/evm/src/transactions.js";
 import type { BlockOutput } from "../blockchain.js";
 import { TX_MAX_GAS_LIMIT, VERSIONED_HASH_VERSION_KZG } from "../constants.js";
 import {
@@ -40,6 +36,7 @@ import {
   Type4TxPreForkError,
 } from "../exceptions.js";
 import State from "../state.js";
+import { recoverSender, type Transaction } from "../transactions.js";
 import { Fork } from "../vm/ForkService.js";
 import { GasCosts } from "../vm/gas.js";
 import { MAX_INIT_CODE_SIZE } from "../vm/interpreter.js";

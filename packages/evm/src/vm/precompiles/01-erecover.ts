@@ -1,9 +1,6 @@
 import { Bytes, Bytes32, U256 } from "@evm-effect/ethereum-types";
 import { Effect, Ref, Result } from "effect";
-import {
-  publicKeyToAddress,
-  secp256k1Recover,
-} from "packages/evm/src/transactions.js";
+import { publicKeyToAddress, secp256k1Recover } from "../../transactions.js";
 import { Evm } from "../evm.js";
 import * as Gas from "../gas.js";
 
