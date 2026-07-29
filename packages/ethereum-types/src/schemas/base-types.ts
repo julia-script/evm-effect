@@ -533,7 +533,7 @@ export const EntriesFromRecord = <
               if (Result.isSuccess(decodedKey)) {
                 result.push([decodedKey.success, value]);
               } else {
-                return yield* Effect.fail(decodedKey.failure);
+                return yield* Effect.fail(decodedKey.failure.issue);
               }
             }
             return result;
@@ -548,7 +548,7 @@ export const EntriesFromRecord = <
               if (Result.isSuccess(encodedKey)) {
                 Object.assign(result, { [encodedKey.success]: value });
               } else {
-                return yield* Effect.fail(encodedKey.failure);
+                return yield* Effect.fail(encodedKey.failure.issue);
               }
             }
             return result;
