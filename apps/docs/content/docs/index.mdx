@@ -1,0 +1,53 @@
+---
+title: Introduction
+description: An Ethereum Virtual Machine implementation in TypeScript, built on Effect, with a focus on debuggability.
+---
+
+`evm-effect` is an Ethereum Virtual Machine implementation written in TypeScript
+using [Effect](https://effect.website/). It is designed for developer tooling
+that needs deep introspection into execution — debuggers, tracers, profilers and
+testing frameworks — where structured concurrency, typed errors and built-in
+tracing make every step of a transaction observable.
+
+## Highlights
+
+<Cards>
+  <Card title="Every released fork" href="/docs/getting-started">
+    Frontier through Osaka, validated against the official Ethereum execution
+    spec state and blockchain tests.
+  </Card>
+  <Card title="Typed errors everywhere" href="/docs/api/evm">
+    Exceptions are Effect data types, so failure modes show up in the type
+    signature instead of at runtime.
+  </Card>
+  <Card title="Composable services" href="/docs/packages/evm">
+    Forks, state and blockchain access are Effect layers you can swap for forks,
+    mocks or instrumented implementations.
+  </Card>
+  <Card title="Generated API reference" href="/docs/api">
+    Every published package's TSDoc is rendered into this site on each build.
+  </Card>
+</Cards>
+
+## Packages
+
+| Package | Description |
+| ------- | ----------- |
+| [`@evm-effect/evm`](/docs/packages/evm) | Interpreter, block and transaction processing, state, precompiles, tracing |
+| [`@evm-effect/solc`](/docs/packages/solc) | Compile Solidity through Effect, on Node or in a browser worker |
+| [`@evm-effect/ethereum-types`](/docs/packages/ethereum-types) | Ethereum primitives: `Address`, `Bytes`, `Uint`, `U256`, … |
+| [`@evm-effect/crypto`](/docs/packages/crypto) | keccak256, sha256, secp256k1 signing, ethash |
+| [`@evm-effect/rlp`](/docs/packages/rlp) | RLP encoding and decoding |
+| [`@evm-effect/rpc`](/docs/packages/rpc) | Effect schemas for the Ethereum JSON-RPC surface |
+| [`@evm-effect/shared`](/docs/packages/shared) | Shared utilities used across the packages |
+
+## Where to go next
+
+<Cards>
+  <Card title="Getting started" href="/docs/getting-started">
+    Install the packages and run your first transaction.
+  </Card>
+  <Card title="API reference" href="/docs/api">
+    Generated from the source of every published package.
+  </Card>
+</Cards>

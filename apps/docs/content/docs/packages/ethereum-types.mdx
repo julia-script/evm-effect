@@ -1,0 +1,34 @@
+---
+title: "@evm-effect/ethereum-types"
+description: Ethereum primitives — addresses, fixed and variable byte strings, and sized unsigned integers.
+---
+
+The primitive types every other package is built on: `Address`, `Bytes` and its
+fixed-width variants (`Bytes8`, `Bytes32`, `Bytes256`, …), and the sized
+unsigned integers (`Uint`, `U8`, `U64`, `U256`).
+
+```bash
+npm add @evm-effect/ethereum-types effect
+```
+
+Each type carries its own constructors, constants and conversions, and wraps a
+plain runtime representation (`bigint` or `Uint8Array`), so the types stay cheap
+while overflow and width rules are enforced where they matter:
+
+```ts
+import { Address, Bytes32, U256, Uint } from "@evm-effect/ethereum-types";
+
+const value = U256.constant(10n ** 18n);
+const gas = Uint.constant(21_000n);
+const to = new Address("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+const empty = Bytes32.zero;
+```
+
+The package also exports Effect `Schema` definitions for the same types, which
+is what `@evm-effect/rpc` builds its JSON-RPC schemas from.
+
+<Cards>
+  <Card title="API reference" href="/docs/api/ethereum-types">
+    Generated from the package's TSDoc comments.
+  </Card>
+</Cards>

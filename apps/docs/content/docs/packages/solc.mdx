@@ -1,0 +1,63 @@
+---
+title: "@evm-effect/solc"
+description: Compile Solidity through Effect, on Node or in a browser worker.
+---
+
+An Effect service around the standard
+[Solidity compiler JSON interface](https://docs.soliditylang.org/en/latest/using-the-compiler.html#compiler-input-and-output-json-description).
+The same `Solc` tag is provided in two ways, so the calling code does not change
+between environments.
+
+```bash
+npm add @evm-effect/solc effect @effect/platform
+```
+
+| Use case | Import | What it does |
+| -------- | ------ | ------------ |
+| Node, scripts, servers | `@evm-effect/solc/node` | Uses the official `solc` package directly |
+| Browser / Next.js | `@evm-effect/solc/next` | Runs a prebundled worker, served through an App Router route |
+
+## Compiling
+
+`Solc` is a `Context.Tag` whose `compile` method takes the standard JSON
+compiler input and an optional compiler build:
+
+```ts
+import { FetchHttpClient } from "@effect/platform";
+import { Effect } from "effect";
+import { Solc } from "@evm-effect/solc";
+
+const program = Effect.gen(function* () {
+  const solc = yield* Solc;
+
+  return yield* solc.compile(
+    {
+      language: "Solidity",
+      sources: {
+        "Hello.sol": { content: "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.3;\ncontract Hello {}" },
+      },
+      settings: { outputSelection: { "*": { "*": ["*"] } } },
+    },
+    { solidityVersion: "0.8.26" },
+  );
+});
+```
+
+## Next.js
+
+Add a catch-all route so the package can serve the bundled worker and proxy
+compiler builds:
+
+```ts title="src/app/api/solc/[...params]/route.ts"
+export { nextWorkerApi as GET } from "@evm-effect/solc/next";
+```
+
+Then provide `SolcNextLayer` from `@evm-effect/solc/next` on the client. If the
+route lives elsewhere, build the layer with
+`setupSolcNextLayer({ workerApiUrl: "custom/path" })`.
+
+<Cards>
+  <Card title="API reference" href="/docs/api/solc">
+    Generated from the package's TSDoc comments.
+  </Card>
+</Cards>

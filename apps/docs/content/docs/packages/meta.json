@@ -1,0 +1,5 @@
+{
+  "title": "Packages",
+  "icon": "Package",
+  "pages": ["evm", "solc", "ethereum-types", "crypto", "rlp", "rpc", "shared"]
+}

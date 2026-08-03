@@ -1,0 +1,29 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPointStrategy": "packages",
+  "entryPoints": [
+    "../../packages/evm",
+    "../../packages/solc",
+    "../../packages/ethereum-types",
+    "../../packages/crypto",
+    "../../packages/rlp",
+    "../../packages/rpc",
+    "../../packages/shared"
+  ],
+  "plugin": ["typedoc-plugin-markdown"],
+  "out": ".typedoc",
+  "readme": "none",
+  "githubPages": false,
+  "hidePageHeader": true,
+  "hideBreadcrumbs": true,
+  "entryFileName": "index",
+  "fileExtension": ".md",
+  "useCodeBlocks": true,
+  "expandObjects": true,
+  "expandParameters": true,
+  "parametersFormat": "table",
+  "propertiesFormat": "list",
+  "enumMembersFormat": "table",
+  "typeDeclarationFormat": "list",
+  "indexFormat": "table"
+}

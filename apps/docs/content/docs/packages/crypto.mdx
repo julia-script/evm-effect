@@ -1,0 +1,30 @@
+---
+title: "@evm-effect/crypto"
+description: Hashes, key handling and ethash, wrapped for Effect.
+---
+
+Cryptographic primitives used across the EVM: keccak256 and keccak512, sha256,
+secp256k1 key generation, and the ethash cache/dataset functions used by
+pre-Merge proof-of-work verification.
+
+```bash
+npm add @evm-effect/crypto effect
+```
+
+```ts
+import { keccak256 } from "@evm-effect/crypto";
+import { getRandomPrivateKey } from "@evm-effect/crypto/getRandomPrivateKey";
+
+const hash = keccak256(new Uint8Array([1, 2, 3]));
+const privateKey = getRandomPrivateKey();
+```
+
+Transaction signing and address recovery live in
+[`@evm-effect/evm/transactions`](/docs/api/evm), because they depend on the
+transaction types.
+
+<Cards>
+  <Card title="API reference" href="/docs/api/crypto">
+    Generated from the package's TSDoc comments.
+  </Card>
+</Cards>
