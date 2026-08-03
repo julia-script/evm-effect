@@ -15,17 +15,32 @@ Other packages in this repo (`@evm-effect/ethereum-types`, `@evm-effect/crypto`,
 
 ## Test Coverage
 
-This implementation is extensively tested against the official [Ethereum Execution Specs](https://github.com/ethereum/execution-specs) state tests and blockchain tests:
+This implementation is extensively tested against the official [Ethereum Execution Specs](https://github.com/ethereum/execution-specs) state tests and blockchain tests. The full fixture set (`tests-bal@v7.1.1`) runs on every push and pull request via [`.github/workflows/evm-tests.yml`](.github/workflows/evm-tests.yml):
+
+| Suite | Tests | Result |
+|-------|------:|--------|
+| State tests | 49,931 | ✅ all passing |
+| Blockchain tests | 59,722 | ✅ all passing |
+| **Total** | **109,653** | ✅ all passing |
+
+Numbers from the latest run on `main` (commit `381b062`): state tests in 2h 44m, blockchain tests in 4h 36m, zero failures.
+
+### Running the fixtures locally
 
 ```shell
-➜  evm-effect git:(main) ✗ bun test packages/evm/test/fixtures.test.ts
-...
-
- 91392 pass
- 0 fail
- 2851964 expect() calls
-Ran 91392 tests across 1 file. [11202.85s]
+cd packages/evm
+pnpm run fixtures                                  # download the execution-spec fixtures (requires uv)
+pnpm tsx ./test/cli.ts --format=state_test
+pnpm tsx ./test/cli.ts --format=blockchain_test
 ```
+
+The full suite takes several hours, so narrow it down with `--filter` (comma-separated substrings matched against the test id, fixture hash, fork, and format) and `--limit`:
+
+```shell
+pnpm tsx ./test/cli.ts --format=state_test --filter=eip7702 --limit=100
+```
+
+Add `--trace` to emit EIP-3155 traces per test case, or `--emit-report` to write a pass/fail report file.
 
 ## Supported Forks
 
@@ -44,6 +59,8 @@ All released Ethereum forks are supported:
 | Muir Glacier | ✅ |
 | Berlin | ✅ |
 | London | ✅ |
+| Arrow Glacier | ✅ |
+| Gray Glacier | ✅ |
 | Paris (The Merge) | ✅ |
 | Shanghai | ✅ |
 | Cancun | ✅ |
