@@ -15,17 +15,47 @@ Other packages in this repo (`@evm-effect/ethereum-types`, `@evm-effect/crypto`,
 
 ## Test Coverage
 
-This implementation is extensively tested against the official [Ethereum Execution Specs](https://github.com/ethereum/execution-specs) state tests and blockchain tests:
+This implementation is extensively tested against the official [Ethereum Execution Specs](https://github.com/ethereum/execution-specs) state tests and blockchain tests, from the `tests-bal@v7.1.1` fixture release. Both suites run on every push and pull request via [`.github/workflows/evm-tests.yml`](.github/workflows/evm-tests.yml):
+
+| Suite | Tests | Result | Runtime |
+|-------|------:|--------|---------|
+| State tests | 49,931 | ✅ all passing | 2h 44m |
+| Blockchain tests | 59,722 | ✅ all passing | 4h 36m |
+| **Total** | **109,653** | ✅ **0 failures** | |
+
+Numbers from the latest run on `main` (commit `381b062`).
+
+<details>
+<summary>What isn't covered by those runs</summary>
+
+The fixture release contains 220,583 test cases in total; 148,067 of them are in the two formats this runner consumes (`state_test` and `blockchain_test`). Of those, 109,653 execute — the rest are skipped by the fork allowlist in [`test/cli.ts`](packages/evm/test/cli.ts):
+
+| Skipped | Tests | Why |
+|---------|------:|-----|
+| Amsterdam | 35,480 | Fork still in progress |
+| Petersburg (`ConstantinopleFix`) | 2,561 | Not yet in the enabled fork set |
+| Transition forks (`ShanghaiToCancunAtTime15k`, …) | 373 | Not yet in the enabled fork set |
+
+The remaining 72,516 fixtures are in formats the runner does not consume: `blockchain_test_engine` (72,333), `transaction_test` (165), and `blockchain_test_sync` (18).
+
+</details>
+
+### Running the fixtures locally
 
 ```shell
-➜  evm-effect git:(main) ✗ bun test packages/evm/test/fixtures.test.ts
-...
-
- 91392 pass
- 0 fail
- 2851964 expect() calls
-Ran 91392 tests across 1 file. [11202.85s]
+cd packages/evm
+pnpm run fixtures                                  # download the execution-spec fixtures (requires uv)
+pnpm tsx ./test/cli.ts --format=state_test
+pnpm tsx ./test/cli.ts --format=blockchain_test
 ```
+
+The full suite takes several hours, so narrow it down with `--filter` (comma-separated substrings matched against the test id, fixture hash, fork, and format) and `--limit`:
+
+```shell
+pnpm tsx ./test/cli.ts --format=state_test --filter=eip7702 --limit=100
+```
+
+Add `--trace` to emit EIP-3155 traces per test case, or `--emit-report` to write a pass/fail report file.
 
 ## Supported Forks
 
@@ -44,6 +74,8 @@ All released Ethereum forks are supported:
 | Muir Glacier | ✅ |
 | Berlin | ✅ |
 | London | ✅ |
+| Arrow Glacier | ✅ |
+| Gray Glacier | ✅ |
 | Paris (The Merge) | ✅ |
 | Shanghai | ✅ |
 | Cancun | ✅ |
