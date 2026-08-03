@@ -1,0 +1,26 @@
+---
+title: "@evm-effect/rpc"
+description: Effect schemas for the Ethereum JSON-RPC surface.
+---
+
+Effect `Schema` definitions for the Ethereum JSON-RPC API, generated from the
+[execution-apis](https://github.com/ethereum/execution-apis) OpenRPC document.
+Use them to decode responses from a node into the same types the EVM packages
+use, with decoding errors as typed failures.
+
+```bash
+npm add @evm-effect/rpc effect
+```
+
+```ts
+import Schemas from "@evm-effect/rpc";
+```
+
+Because the schemas are generated, they track the upstream specification rather
+than being hand-maintained.
+
+<Cards>
+  <Card title="API reference" href="/docs/api/rpc">
+    Generated from the package's TSDoc comments.
+  </Card>
+</Cards>

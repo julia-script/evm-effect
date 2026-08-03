@@ -1,5 +1,6 @@
 packages:
   - packages/*
+  - apps/*
 
 catalog:
   effect: 4.0.0-beta.102
@@ -9,3 +10,5 @@ catalog:
   fast-check: ^4.3.0
   '@noble/hashes': ^2.0.1
   ts-dedent: 2.2.0
+  typedoc: ^0.28.20
+  typedoc-plugin-markdown: ^4.12.0

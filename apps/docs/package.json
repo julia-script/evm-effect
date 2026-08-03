@@ -1,0 +1,44 @@
+{
+  "name": "@evm-effect/docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "api": "tsx scripts/generate-api-docs.ts",
+    "dev": "pnpm run api && next dev",
+    "build": "pnpm run api && next build",
+    "start": "next start",
+    "check": "next typegen && tsc --noEmit",
+    "clean": "rm -rf .next .source content/docs/api"
+  },
+  "dependencies": {
+    "cnfast": "^0.1.0",
+    "fumadocs-core": "^16.14.0",
+    "fumadocs-mdx": "^15.2.2",
+    "fumadocs-ui": "npm:@fumadocs/base-ui@^16.14.0",
+    "lucide-react": "^1.27.0",
+    "next": "^16.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@evm-effect/crypto": "workspace:*",
+    "@evm-effect/ethereum-types": "workspace:*",
+    "@evm-effect/evm": "workspace:*",
+    "@evm-effect/rlp": "workspace:*",
+    "@evm-effect/rpc": "workspace:*",
+    "@evm-effect/shared": "workspace:*",
+    "@evm-effect/solc": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/mdx": "^2.0.14",
+    "@types/node": "^24.8.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "postcss": "^8.5.24",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.22.0",
+    "typedoc": "catalog:",
+    "typedoc-plugin-markdown": "catalog:",
+    "typescript": "catalog:"
+  }
+}

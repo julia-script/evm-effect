@@ -1,0 +1,46 @@
+---
+title: "@evm-effect/evm"
+description: The EVM itself — interpreter, block and transaction processing, state, precompiles and tracing.
+---
+
+The core package: an EVM interpreter plus everything around it needed to execute
+a block — transaction validation, gas accounting, state, receipts, precompiles
+and EIP-3155 tracing.
+
+```bash
+npm add @evm-effect/evm effect @effect/platform @effect/platform-node
+```
+
+## Entry points
+
+| Import | Use |
+| ------ | --- |
+| `@evm-effect/evm` | Public API: interpreter, block processing, state, forks |
+| `@evm-effect/evm/transactions` | Transaction types, signing and recovery |
+| `@evm-effect/evm/vm/interpreter` | Interpreter-level APIs |
+| `@evm-effect/evm/vm/runtime` | Runtime helpers |
+| `@evm-effect/evm/vm/StorageKey` | Storage key types |
+
+## Forks as layers
+
+Fork rules are provided as Effect layers, so the fork a program runs under is a
+dependency like any other:
+
+```ts
+Effect.runPromise(program.pipe(Effect.provide(Fork.london())));
+```
+
+Every released fork from Frontier through Osaka is implemented and validated
+against the official [Ethereum execution spec](https://github.com/ethereum/execution-specs)
+state and blockchain tests.
+
+## Reference
+
+<Cards>
+  <Card title="API reference" href="/docs/api/evm">
+    Generated from the package's TSDoc comments.
+  </Card>
+  <Card title="Getting started" href="/docs/getting-started">
+    Execute a signed transaction end to end.
+  </Card>
+</Cards>

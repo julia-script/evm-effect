@@ -13,6 +13,25 @@ This implementation is designed for building developer tooling that requires dee
 
 Other packages in this repo (`@evm-effect/ethereum-types`, `@evm-effect/crypto`, `@evm-effect/rlp`, and internal packages) are published as needed for those two; you typically install `evm` and/or `solc` and let the package manager resolve the rest.
 
+## Documentation
+
+The documentation site lives in [`apps/docs`](apps/docs) — a Next.js app using
+[Fumadocs](https://fumadocs.dev) and Tailwind CSS. Its API reference is generated
+from the TSDoc comments of every published package with
+[TypeDoc](https://typedoc.org), so it always matches the source.
+
+```bash
+pnpm docs:dev     # build the packages, generate the API reference, serve on :3000
+pnpm docs:build   # production build
+pnpm docs:api     # regenerate content/docs/api only
+```
+
+Guides are written in `apps/docs/content/docs`. The `api/` section underneath it
+is generated and git-ignored; regenerate it with `pnpm docs:api` after changing
+a package's doc comments. TypeDoc settings shared by every package live in
+[`typedoc.base.json`](typedoc.base.json), with per-package entry points in each
+`packages/*/typedoc.json`.
+
 ## Test Coverage
 
 This implementation is extensively tested against the official [Ethereum Execution Specs](https://github.com/ethereum/execution-specs) state tests and blockchain tests, from the `tests-bal@v7.1.1` fixture release. Both suites run on every push and pull request via [`.github/workflows/evm-tests.yml`](.github/workflows/evm-tests.yml):

@@ -1,0 +1,30 @@
+---
+title: "@evm-effect/rlp"
+description: RLP encoding and decoding with typed errors.
+---
+
+Recursive Length Prefix encoding, the serialisation format used for Ethereum
+transactions, headers and trie nodes.
+
+```bash
+npm add @evm-effect/rlp effect
+```
+
+```ts
+import { decode, encode } from "@evm-effect/rlp";
+import { Bytes } from "@evm-effect/ethereum-types";
+
+const encoded = encode(["cat", "dog"]);
+const decoded = decode(encoded);
+```
+
+`encode` accepts the `Extended` input type — byte strings, addresses, unsigned
+integers, booleans, strings and nested sequences. Decoding failures surface as
+`RlpDecodeError`, an Effect data type carrying the path at which decoding
+failed, so they can be handled without `try`/`catch`.
+
+<Cards>
+  <Card title="API reference" href="/docs/api/rlp">
+    Generated from the package's TSDoc comments.
+  </Card>
+</Cards>

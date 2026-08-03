@@ -1,0 +1,128 @@
+---
+title: Getting started
+description: Install evm-effect and execute your first transaction.
+---
+
+## Installation
+
+```bash
+npm add @evm-effect/evm effect @effect/platform @effect/platform-node
+```
+
+Align `effect` and `@effect/platform` versions with the rest of your
+application. Pre-1.0 releases may still change APIs, so pin versions in
+production as you would for any `0.x` dependency.
+
+From source, for contributors:
+
+```bash
+git clone https://github.com/julia-script/evm-effect.git
+cd evm-effect
+pnpm install
+pnpm build
+```
+
+## A simple ETH transfer
+
+The snippet below builds an empty chain, funds an account, signs a legacy
+transaction and executes it under the London fork.
+
+```ts title="transfer.ts"
+import { Console, Effect } from "effect";
+import { getRandomPrivateKey } from "@evm-effect/crypto/getRandomPrivateKey";
+import {
+  getAddressFromPrivateKey,
+  signTransaction,
+} from "@evm-effect/evm/transactions";
+import { Address, Bytes, Bytes32, U64, U256, Uint } from "@evm-effect/ethereum-types";
+import {
+  Account,
+  applyBody,
+  BlockChain,
+  BlockEnvironment,
+  Fork,
+  LegacyTransaction,
+  State,
+} from "@evm-effect/evm";
+
+const program = Effect.gen(function* () {
+  const chainId = U64.constant(1n);
+  const blockchain = BlockChain.empty(chainId);
+
+  const alicePrivateKey = getRandomPrivateKey();
+  const alice = getAddressFromPrivateKey(alicePrivateKey);
+  const bob = new Address("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+
+  // Fund Alice with 10 ETH.
+  yield* State.setAccount(
+    blockchain.state,
+    alice,
+    Account.make({
+      nonce: Uint.constant(0n),
+      balance: U256.constant(10n * 10n ** 18n),
+      code: Bytes.empty,
+    }),
+  );
+
+  const unsignedTx = LegacyTransaction.make({
+    nonce: U256.constant(0n),
+    gasPrice: Uint.constant(10n * 10n ** 9n),
+    gas: Uint.constant(21_000n),
+    to: bob,
+    value: U256.constant(1n * 10n ** 18n),
+    data: Bytes.empty,
+  });
+
+  const signature = signTransaction({
+    transaction: unsignedTx,
+    privateKey: alicePrivateKey,
+  });
+  const signedTx: LegacyTransaction = { ...unsignedTx, ...signature };
+
+  const blockEnv = BlockEnvironment.make({
+    chainId,
+    state: blockchain.state,
+    blockGasLimit: Uint.constant(30_000_000n),
+    blockHashes: [],
+    coinbase: new Address("0xcccccccccccccccccccccccccccccccccccccccc"),
+    number: Uint.constant(1n),
+    baseFeePerGas: Uint.constant(10n * 10n ** 9n),
+    time: U256.constant(BigInt(Math.floor(Date.now() / 1000))),
+    prevRandao: Bytes32.zero,
+    difficulty: Uint.constant(0n),
+    excessBlobGas: U64.constant(0n),
+    parentBeaconBlockRoot: Bytes32.zero,
+  });
+
+  const blockOutput = yield* applyBody(blockEnv, [signedTx], [], []);
+
+  yield* Console.log(`Gas used: ${blockOutput.blockGasUsed.value}`);
+});
+
+Effect.runPromise(program.pipe(Effect.provide(Fork.london())));
+```
+
+The fork is a layer, so switching the rules the transaction runs under is a
+one-line change: `Fork.cancun()`, `Fork.prague()`, and so on. See
+[`@evm-effect/evm`](/docs/api/evm) for the full list.
+
+## Runnable examples
+
+The repository ships end-to-end examples in
+[`packages/examples`](https://github.com/julia-script/evm-effect/tree/main/packages/examples):
+
+| Example | Command |
+| ------- | ------- |
+| Blockchain transaction | `pnpm --filter @evm-effect/examples blockchain-transaction` |
+| Contract deployment | `pnpm --filter @evm-effect/examples deploy-contract` |
+
+## Next steps
+
+<Cards>
+  <Card title="Packages" href="/docs/packages/evm">
+    What each package covers and when you need it.
+  </Card>
+  <Card title="API reference" href="/docs/api">
+    Generated from the TSDoc of every published package.
+  </Card>
+</Cards>

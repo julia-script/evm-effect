@@ -1,0 +1,16 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeExternals": true,
+  "includeVersion": false,
+  "sort": ["kind", "alphabetical"],
+  "categorizeByGroup": true,
+  "basePath": ".",
+  "sourceLinkTemplate": "https://github.com/julia-script/evm-effect/blob/main/{path}#L{line}",
+  "validation": {
+    "notExported": false,
+    "invalidLink": false,
+    "notDocumented": false
+  }
+}
