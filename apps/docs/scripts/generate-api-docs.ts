@@ -197,7 +197,7 @@ const generateIndex = async (packages: PackageJson[]) => {
   await writeFile(
     path.join(contentOut, "index.mdx"),
     `---
-title: API Reference
+title: Overview
 description: Generated from the TSDoc comments of every published evm-effect package.
 ---
 
@@ -245,8 +245,9 @@ const main = async () => {
     const alt = /-alt(\d+)\.mdx$/.exec(target);
     const displayName = alt ? `${name} (${Number(alt[1]) + 1})` : name;
 
+    // The folder already carries the package name in the sidebar.
     const frontmatter = [
-      `title: ${escapeYaml(isPackageIndex ? (packageJson?.name ?? name) : displayName)}`,
+      `title: ${escapeYaml(isPackageIndex ? "Overview" : displayName)}`,
     ];
     const description = isPackageIndex
       ? packageJson?.description
