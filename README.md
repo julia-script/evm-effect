@@ -15,15 +15,30 @@ Other packages in this repo (`@evm-effect/ethereum-types`, `@evm-effect/crypto`,
 
 ## Test Coverage
 
-This implementation is extensively tested against the official [Ethereum Execution Specs](https://github.com/ethereum/execution-specs) state tests and blockchain tests. The full fixture set (`tests-bal@v7.1.1`) runs on every push and pull request via [`.github/workflows/evm-tests.yml`](.github/workflows/evm-tests.yml):
+This implementation is extensively tested against the official [Ethereum Execution Specs](https://github.com/ethereum/execution-specs) state tests and blockchain tests, from the `tests-bal@v7.1.1` fixture release. Both suites run on every push and pull request via [`.github/workflows/evm-tests.yml`](.github/workflows/evm-tests.yml):
 
-| Suite | Tests | Result |
-|-------|------:|--------|
-| State tests | 49,931 | ✅ all passing |
-| Blockchain tests | 59,722 | ✅ all passing |
-| **Total** | **109,653** | ✅ all passing |
+| Suite | Tests | Result | Runtime |
+|-------|------:|--------|---------|
+| State tests | 49,931 | ✅ all passing | 2h 44m |
+| Blockchain tests | 59,722 | ✅ all passing | 4h 36m |
+| **Total** | **109,653** | ✅ **0 failures** | |
 
-Numbers from the latest run on `main` (commit `381b062`): state tests in 2h 44m, blockchain tests in 4h 36m, zero failures.
+Numbers from the latest run on `main` (commit `381b062`).
+
+<details>
+<summary>What isn't covered by those runs</summary>
+
+The fixture release contains 220,583 test cases in total; 148,067 of them are in the two formats this runner consumes (`state_test` and `blockchain_test`). Of those, 109,653 execute — the rest are skipped by the fork allowlist in [`test/cli.ts`](packages/evm/test/cli.ts):
+
+| Skipped | Tests | Why |
+|---------|------:|-----|
+| Amsterdam | 35,480 | Fork still in progress |
+| Petersburg (`ConstantinopleFix`) | 2,561 | Not yet in the enabled fork set |
+| Transition forks (`ShanghaiToCancunAtTime15k`, …) | 373 | Not yet in the enabled fork set |
+
+The remaining 72,516 fixtures are in formats the runner does not consume: `blockchain_test_engine` (72,333), `transaction_test` (165), and `blockchain_test_sync` (18).
+
+</details>
 
 ### Running the fixtures locally
 
