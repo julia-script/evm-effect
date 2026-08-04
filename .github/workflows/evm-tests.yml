@@ -12,32 +12,62 @@ on:
       - "**.md"
       - "LICENSE"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  state-tests:
-    name: StateTests
+  fixture-tests:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: StateTests
+            task: test:fixtures:state
+          - name: BlockchainTests
+            task: test:fixtures:blockchain
+    env:
+      # Turbo remote cache. Shared across branches and machines, so a hash
+      # already verified on main is never re-run on a PR branch.
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/ci-setup
       - uses: astral-sh/setup-uv@v4
-      - run: pnpm run build
+
+      # Local cache layer in front of the remote one: a same-branch re-run
+      # avoids even the remote round-trip. Harmless if the remote cache is
+      # unavailable, in which case this is the only cache.
+      - name: Restore turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ matrix.task }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ matrix.task }}-
+
+      - name: Check turbo cache before downloading fixtures
+        id: probe
+        run: |
+          # Call the turbo binary directly: the pnpm wrapper writes warnings to
+          # stdout, which would corrupt the JSON.
+          ./node_modules/.bin/turbo run ${{ matrix.task }} \
+            --filter=@evm-effect/evm --dry-run=json > "$RUNNER_TEMP/dry-run.json"
+          if node -e 'const d=require(process.env.RUNNER_TEMP+"/dry-run.json");process.exit(d.tasks.every(t=>t.cache.status==="HIT")?0:1)'; then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Fixtures are several GB and gitignored, so they are not part of the
+      # turbo hash. Only download them when we actually have to run the suite.
       - name: Download test fixtures
+        if: steps.probe.outputs.hit != 'true'
         working-directory: packages/evm
         run: pnpm run fixtures
 
-      - run: pnpm tsx ./test/cli.ts --format=state_test
-        working-directory: packages/evm
-
-  blockchain-tests:
-    name: BlockchainTests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/ci-setup
-      - uses: astral-sh/setup-uv@v4
-      - run: pnpm run build
-      - name: Download test fixtures
-        working-directory: packages/evm
-        run: pnpm run fixtures
-      - run: pnpm tsx ./test/cli.ts --format=blockchain_test
-        working-directory: packages/evm
+      - name: Run fixture tests
+        run: pnpm turbo run ${{ matrix.task }} --filter=@evm-effect/evm
