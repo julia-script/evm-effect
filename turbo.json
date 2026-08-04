@@ -1,16 +1,40 @@
 {
   "$schema": "https://turborepo.com/schema.json",
+  "globalDependencies": ["tsconfig.base.json", "pnpm-lock.yaml"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "inputs": ["src/**", "tsconfig*.json", "package.json"],
       "outputs": ["dist/**"]
     },
     "check": {
-      "dependsOn": ["^check"]
+      "dependsOn": ["^check"],
+      "inputs": ["src/**", "test/**", "tsconfig*.json", "package.json"]
     },
     "test": {
-      "outputs": ["coverage/**"],
-      "dependsOn": ["^test"]
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "test/**", "!test/test-fixtures/**", "vitest.config.ts", "package.json"],
+      "outputs": ["coverage/**"]
+    },
+    "test:fixtures:state": {
+      "dependsOn": ["build"],
+      "inputs": [
+        "src/**",
+        "test/**",
+        "!test/test-fixtures/**",
+        "package.json"
+      ],
+      "outputs": []
+    },
+    "test:fixtures:blockchain": {
+      "dependsOn": ["build"],
+      "inputs": [
+        "src/**",
+        "test/**",
+        "!test/test-fixtures/**",
+        "package.json"
+      ],
+      "outputs": []
     },
     "dev": {
       "persistent": true,

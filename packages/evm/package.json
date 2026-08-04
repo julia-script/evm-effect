@@ -35,6 +35,9 @@
     "dev": "tsc -b tsconfig.build.json --watch",
     "check": "tsc -b tsconfig.json",
     "test": "vitest run",
+    "test:fixtures": "tsx test/cli.ts",
+    "test:fixtures:state": "tsx test/cli.ts --format=state_test",
+    "test:fixtures:blockchain": "tsx test/cli.ts --format=blockchain_test",
     "print-failed-tests": "tsx test/print-failed-tests.ts",
     "fixtures": "uvx --from git+https://github.com/ethereum/execution-specs#subdirectory=packages/testing consume cache --input=https://github.com/ethereum/execution-specs/releases/download/tests-bal%40v7.1.1/fixtures_bal.tar.gz --extract-to ./test/test-fixtures"
   },
